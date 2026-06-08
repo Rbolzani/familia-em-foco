@@ -15,6 +15,9 @@ interface Props {
   emoji: string
   color: string
   subtypes?: string[]
+  // Pre-fetched from server → no client-side loading waterfall
+  initialActivities?: Activity[]
+  initialChildren?: Child[]
 }
 
 const ALERT_OPTIONS = [
@@ -54,11 +57,12 @@ const emptyForm = {
   child_id: '', title: '', description: '', date: '', time: '', alert_days: 3, location: '',
 }
 
-export default function ActivitiesPage({ category, title, emoji, color }: Props) {
+export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren }: Props) {
   const supabase = createClient()
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [children, setChildren] = useState<Child[]>([])
-  const [loading, setLoading] = useState(true)
+  // If server pre-fetched data, use it immediately (no loading flash)
+  const [activities, setActivities] = useState<Activity[]>(initialActivities ?? [])
+  const [children, setChildren] = useState<Child[]>(initialChildren ?? [])
+  const [loading, setLoading] = useState(!initialActivities)
   const [filterChild, setFilterChild] = useState('')
   const [filterStatus, setFilterStatus] = useState('pendente')
   const [modal, setModal] = useState<{ mode: 'new' | 'edit'; activity?: Activity } | null>(null)

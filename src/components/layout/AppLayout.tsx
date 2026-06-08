@@ -385,14 +385,11 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
           ══════════════════════════════════════════════════════════ */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
         style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
-        {/* This inner div gets the filter via navRef */}
+        {/* navRef receives the same CSS filter as app-wrap so palette/dark mode affects nav too */}
         <div ref={navRef} style={{
-          // Translucent dark-green glass — palette filter shifts the hue
-          background: 'rgba(30, 50, 32, 0.82)',
-          backdropFilter: 'blur(22px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
-          borderTop: '1px solid rgba(100, 160, 105, 0.22)',
-          boxShadow: '0 -4px 24px rgba(10,20,12,0.28)',
+          background: 'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
+          borderTop: '1px solid rgba(91,143,94,0.22)',
+          boxShadow: '0 -4px 20px rgba(10,20,12,0.32)',
         }}>
           <div style={{ display:'flex', alignItems:'center', height:58 }}>
             {([
