@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
-  ChevronRight, Palette, Moon, Sun,
+  ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -52,8 +52,9 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
   const [palIdx,     setPalIdx]     = useState(0)
   const [sepia,      setSepia]      = useState(0)
   const [brightness, setBrightness] = useState(100)
-  const [contrast,   setContrast]   = useState(100)
-  const [darkMode,   setDarkMode]   = useState(false)
+  const [contrast,       setContrast]       = useState(100)
+  const [darkMode,       setDarkMode]       = useState(false)
+  const [mobileTemaOpen, setMobileTemaOpen] = useState(false)
 
   const appRef = useRef<HTMLDivElement>(null)
 
@@ -126,8 +127,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
 
   // ── Sidebar noise + paper lines bg ───────────────────────────────────
   const sidebarBg = `
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(180deg,transparent 0px,transparent 55px,rgba(61,102,65,0.025) 55px,rgba(61,102,65,0.025) 56px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E"),
     linear-gradient(175deg,#F2EAD8 0%,#E8DEC8 100%)
   `
 
@@ -152,7 +152,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
             top: 0, left: 0,
             overflow: 'hidden',
             background: sidebarBg,
-            backgroundSize: '200px 200px, 100% 100%, 100% 100%',
+            backgroundSize: '200px 200px, 100% 100%',
             borderRight: '1px solid rgba(61,102,65,0.22)',
             boxShadow: '4px 0 24px rgba(44,74,46,0.07)',
           }}>
@@ -303,18 +303,94 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
 
       </div>{/* end app-wrap */}
 
-      {/* ══ BOTTOM NAV — OUTSIDE app-wrap so CSS filter doesn't break position:fixed ══
-          When a parent has filter≠none it becomes a containing block for fixed children,
-          making them "fixed to the parent" not to the viewport. Moving nav here (sibling
-          of app-wrap, same as TEMA panel) fixes this.
-          Ordem: Início · Escola · Atividades · Saúde · Docs · Agenda                 ══ */}
+      {/* ══ MOBILE TEMA BUTTON — floating above bottom nav ══ */}
+      <button
+        className="md:hidden fixed z-[55]"
+        onClick={() => setMobileTemaOpen(true)}
+        style={{
+          bottom: 68, right: 16,
+          width: 44, height: 44,
+          borderRadius: '50%',
+          background: 'linear-gradient(140deg,#2C4A2E,#1E3320)',
+          boxShadow: '0 4px 16px rgba(44,74,46,0.35)',
+          border: '1.5px solid rgba(255,255,255,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        <SlidersHorizontal size={18} color="#D4E8D5" />
+      </button>
+
+      {/* ══ MOBILE TEMA SHEET ══ */}
+      {mobileTemaOpen && (
+        <>
+          <div className="md:hidden fixed inset-0 z-[80]"
+            style={{ background:'rgba(15,31,17,0.50)', backdropFilter:'blur(3px)' }}
+            onClick={() => setMobileTemaOpen(false)} />
+          <div className="md:hidden fixed left-0 right-0 z-[90] animate-slide-up"
+            style={{
+              bottom: 58,
+              borderRadius: '20px 20px 0 0',
+              background: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),linear-gradient(180deg,#F2EAD8 0%,#E8DEC8 100%)`,
+              backgroundSize: '200px 200px, 100% 100%',
+              border: '1px solid rgba(61,102,65,0.22)',
+              boxShadow: '0 -8px 32px rgba(44,74,46,0.20)',
+              padding: '16px 24px 24px',
+            }}>
+            {/* Drag handle */}
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:'rgba(61,102,65,0.28)' }} />
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20,
+              fontFamily:'var(--font-lora)', fontSize:16, fontWeight:600, color:'#1A2B1C' }}>
+              <Palette size={15} color="#3D6641" /> Personalizar Tema
+            </div>
+            {/* Palettes */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:11, fontWeight:700, marginBottom:10, color:'rgba(26,43,28,0.55)' }}>Paleta de cor</div>
+              <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                {PALETTES.map((p, i) => (
+                  <button key={p.name} title={p.name} onClick={() => setPalIdx(i)}
+                    style={{
+                      width:36, height:36, borderRadius:12, background:p.dot, cursor:'pointer',
+                      boxShadow: palIdx===i ? '0 4px 14px rgba(0,0,0,0.28)' : '0 2px 8px rgba(44,74,46,0.12)',
+                      border: palIdx===i ? '2.5px solid rgba(0,0,0,0.28)' : '2px solid transparent',
+                      transform: palIdx===i ? 'scale(1.18)' : undefined,
+                      transition:'all .2s',
+                    }} />
+                ))}
+              </div>
+              <div style={{ fontSize:11, fontStyle:'italic', marginTop:8, color:'rgba(26,43,28,0.38)' }}>{PALETTES[palIdx].name}</div>
+            </div>
+            {/* Dark mode */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:12, borderTop:'1px solid rgba(61,102,65,0.14)' }}>
+              <div style={{ fontSize:14, fontWeight:700, display:'flex', alignItems:'center', gap:8, color:'rgba(26,43,28,0.60)' }}>
+                {darkMode ? <Moon size={16}/> : <Sun size={16}/>}
+                {darkMode ? 'Modo noturno' : 'Modo claro'}
+              </div>
+              <button onClick={() => setDarkMode(d => !d)}
+                style={{
+                  position:'relative', width:48, height:26, borderRadius:13, border:'none', cursor:'pointer',
+                  background: darkMode ? 'linear-gradient(135deg,#3D6641,#2C4A2E)' : 'rgba(61,102,65,0.22)',
+                  boxShadow:'0 1px 4px rgba(0,0,0,0.12)', flexShrink:0, transition:'background .25s',
+                }}>
+                <span style={{
+                  position:'absolute', top:3, width:20, height:20, borderRadius:'50%', background:'white',
+                  boxShadow:'0 2px 5px rgba(0,0,0,0.22)',
+                  left: darkMode ? 25 : 3,
+                  transition:'left .3s cubic-bezier(.4,0,.2,1)',
+                }} />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ BOTTOM NAV — dark forest green, outside app-wrap ══ */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
         style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
         <div style={{
-          background:'rgba(242,234,216,0.97)',
-          backdropFilter:'blur(20px)',
-          borderTop:'1px solid rgba(61,102,65,0.18)',
-          boxShadow:'0 -4px 16px rgba(44,74,46,0.10)',
+          background:'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
+          borderTop:'1px solid rgba(91,143,94,0.25)',
+          boxShadow:'0 -4px 20px rgba(15,25,16,0.35)',
         }}>
           <div style={{ display:'flex', alignItems:'center', height:58 }}>
             {([
@@ -329,20 +405,20 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
               return (
                 <Link key={href} href={href}
                   style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', position:'relative', padding:'8px 0' }}>
-                  <span style={{ color: active ? '#3D6641' : 'rgba(26,43,28,0.32)', transition:'color .15s' }}>
+                  <span style={{ color: active ? '#D4E8D5' : 'rgba(168,212,173,0.45)', transition:'color .15s' }}>
                     <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
                   </span>
                   <span style={{
                     fontSize:'8.5px', fontWeight:600, lineHeight:1, marginTop:3, letterSpacing:'0.01em',
-                    color: active ? '#3D6641' : 'rgba(26,43,28,0.32)',
+                    color: active ? '#D4E8D5' : 'rgba(168,212,173,0.40)',
                   }}>
                     {label}
                   </span>
                   {active && (
                     <span style={{
                       position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
-                      width:20, height:2.5, borderRadius:'2px 2px 0 0',
-                      background:'linear-gradient(90deg,#5A8C5E,#C49A6C)',
+                      width:22, height:3, borderRadius:'3px 3px 0 0',
+                      background:'linear-gradient(90deg,#C49A6C,#E5B87A)',
                     }} />
                   )}
                 </Link>

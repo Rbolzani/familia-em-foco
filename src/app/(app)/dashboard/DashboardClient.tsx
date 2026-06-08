@@ -19,10 +19,8 @@ interface Props {
   upcomingActivities: (Activity & { child: { name: string; avatar_color: string } })[]
 }
 
-// ── Textures — higher opacity for visible grain ────────────────────────────
+// ── Textures — noise grain only, no grid lines ─────────────────────────────
 const NOISE    = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.065'/%3E%3C/svg%3E")`
-// Subtle horizontal lines pattern (paper-like)
-const LINES    = `repeating-linear-gradient(180deg,transparent 0px,transparent 28px,rgba(61,102,65,0.018) 28px,rgba(61,102,65,0.018) 29px)`
 const NOISE_SM = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`
 
 // ── Shared card styles ─────────────────────────────────────────────────────
@@ -32,8 +30,8 @@ const STAT: React.CSSProperties = {
   cursor: 'pointer',
   position: 'relative',
   overflow: 'hidden',
-  background: `${NOISE}, ${LINES}, linear-gradient(160deg,#FFFFFF 0%,#F7F2EA 100%)`,
-  backgroundSize: '200px 200px, 100% 100%, 100% 100%',
+  background: `${NOISE}, linear-gradient(160deg,#FFFFFF 0%,#F7F2EA 100%)`,
+  backgroundSize: '200px 200px, 100% 100%',
   border: '1px solid rgba(61,102,65,0.18)',
   boxShadow: '0 6px 22px rgba(44,74,46,0.11),0 2px 6px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.95) inset,0 1px 0 rgba(0,0,0,0.035) inset,inset 1px 0 rgba(255,255,255,0.55),inset -1px 0 rgba(0,0,0,0.022)',
   transition: 'transform 0.25s, box-shadow 0.25s',
@@ -49,8 +47,8 @@ const ACT: React.CSSProperties = {
   cursor: 'pointer',
   position: 'relative',
   overflow: 'hidden',
-  background: `${NOISE}, ${LINES}, linear-gradient(160deg,#FFFFFF 0%,#FAFAF7 100%)`,
-  backgroundSize: '200px 200px, 100% 100%, 100% 100%',
+  background: `${NOISE}, linear-gradient(160deg,#FFFFFF 0%,#FAFAF7 100%)`,
+  backgroundSize: '200px 200px, 100% 100%',
   border: '1px solid rgba(61,102,65,0.18)',
   boxShadow: '0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.95) inset,0 1px 0 rgba(0,0,0,0.03) inset,inset 1px 0 rgba(255,255,255,0.55)',
   transition: 'transform 0.22s, box-shadow 0.22s',
@@ -243,17 +241,13 @@ export default function DashboardClient({ userName, children, todayActivities, u
       <div className="flex items-start justify-between mb-6 md:mb-8">
         {/* Left: greeting */}
         <div className="min-w-0">
-          {/* Date — hidden on very small, shown md+ */}
-          <div className="hidden md:flex items-center gap-[7px] mb-[5px]"
-            style={{ fontSize:'11.5px', fontWeight:700, letterSpacing:'0.14em', textTransform:'uppercase', color:'#5A8C5E' }}>
-            <SunMedium size={13}/> {fmtDate()}
+          {/* Date — full on all sizes */}
+          <div className="flex items-center gap-[7px] mb-[5px]"
+            style={{ fontSize:'11px', fontWeight:700, letterSpacing:'0.13em', textTransform:'uppercase', color:'#5A8C5E' }}>
+            <SunMedium size={13}/> <span className="md:hidden">{format(new Date(), "EEEE, d 'de' MMMM", { locale:ptBR }).replace(/^\w/,c=>c.toUpperCase())}</span>
+            <span className="hidden md:inline">{fmtDate()}</span>
           </div>
-          {/* Mobile: just weekday */}
-          <div className="md:hidden flex items-center gap-[6px] mb-[4px]"
-            style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#5A8C5E' }}>
-            <SunMedium size={11}/> {format(new Date(), 'EEEE', { locale:ptBR }).replace(/^\w/,c=>c.toUpperCase())}
-          </div>
-          {/* Name — smaller on mobile */}
+          {/* Name */}
           <h1 style={{ fontFamily:'var(--font-lora)', fontWeight:700, color:'#1A2B1C', lineHeight:1.1, letterSpacing:'-0.02em' }}
             className="text-[26px] md:text-[40px]">
             {greet()},<br/>
@@ -261,7 +255,8 @@ export default function DashboardClient({ userName, children, todayActivities, u
               {userName}
             </em>
           </h1>
-          <p className="mt-[4px] italic hidden md:block" style={{ fontSize:'13.5px', color:'rgba(26,43,28,0.36)' }}>
+          {/* Slogan — visible on all sizes */}
+          <p className="mt-[5px] italic" style={{ fontSize:'13px', color:'rgba(26,43,28,0.36)' }}>
             A família em ordem, o coração em paz.
           </p>
         </div>

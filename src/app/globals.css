@@ -119,13 +119,12 @@ h1, h2, h3   { font-family: var(--font-lora), Georgia, serif; }
 .stagger > *:nth-child(5) { animation-delay:.24s }
 .stagger > *:nth-child(6) { animation-delay:.29s }
 
-/* ─── Card ── rich paper texture ────────────────────────────── */
+/* ─── Card ── paper noise texture (no grid lines) ────────────── */
 .card {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.065'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(180deg,transparent 0px,transparent 28px,rgba(61,102,65,0.018) 28px,rgba(61,102,65,0.018) 29px),
     linear-gradient(160deg, #FFFFFF 0%, #F7F2EA 100%);
-  background-size: 200px 200px, 100% 100%, 100% 100%;
+  background-size: 200px 200px, 100% 100%;
   border: 1px solid rgba(61,102,65,0.18);
   border-radius: 20px 13px 18px 15px;
   box-shadow:
@@ -149,14 +148,12 @@ h1, h2, h3   { font-family: var(--font-lora), Georgia, serif; }
     inset -1px 0 rgba(0,0,0,0.022);
 }
 
-/* ─── Musgo background — paper + grid ───────────────────────── */
+/* ─── Musgo background — paper noise only, no grid ──────────── */
 .musgo-bg {
   background-color: #F8F3EA;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.028'/%3E%3C/svg%3E"),
-    linear-gradient(rgba(61,102,65,0.040) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(61,102,65,0.040) 1px, transparent 1px);
-  background-size: 200px 200px, 44px 44px, 44px 44px;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.032'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
   background-attachment: local;
 }
 
@@ -164,9 +161,8 @@ h1, h2, h3   { font-family: var(--font-lora), Georgia, serif; }
 .nav-active {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(180deg,transparent 0px,transparent 14px,rgba(61,102,65,0.02) 14px,rgba(61,102,65,0.02) 15px),
     linear-gradient(135deg, rgba(248,243,234,0.98) 0%, rgba(238,229,210,0.94) 100%) !important;
-  background-size: 200px 200px, 100% 100%, 100% 100% !important;
+  background-size: 200px 200px, 100% 100% !important;
   border: 1px solid rgba(61,102,65,0.26) !important;
   box-shadow:
     0 3px 14px rgba(44,74,46,0.14),

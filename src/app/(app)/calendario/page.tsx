@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, Child } from '@/lib/types'
 import { CategoryBadge } from '@/components/ui/Badge'
@@ -17,9 +17,9 @@ const CAT_BAR: Record<string, string> = {
   extracurricular: '#C49A6C',
 }
 const CAT_PILL_BG: Record<string, string> = {
-  escola:          'rgba(37,99,235,0.80)',
-  saude:           'rgba(6,95,70,0.80)',
-  extracurricular: 'rgba(146,64,14,0.75)',
+  escola:          'rgba(37,99,235,0.82)',
+  saude:           'rgba(6,95,70,0.82)',
+  extracurricular: 'rgba(146,64,14,0.80)',
 }
 const CAT_ICO_BG: Record<string, string> = {
   escola:          'linear-gradient(140deg,#DBEAFE,#BFDBFE)',
@@ -29,13 +29,20 @@ const CAT_ICO_BG: Record<string, string> = {
 const CAT_ICON: Record<string, React.ElementType> = {
   escola: BookOpen, saude: HeartPulse, extracurricular: Trophy,
 }
+const LEGEND = [
+  { key:'escola',          color:'#2563EB', label:'Escola'        },
+  { key:'saude',           color:'#065F46', label:'Saúde'         },
+  { key:'extracurricular', color:'#C49A6C', label:'Extracurricular' },
+]
 
-// ── Activity detail card (shared between bottom sheet and desktop panel) ──
-function ActivityDetailCard({ a, i }: { a: Activity & { child?: { name: string; avatar_color: string } }, i: number }) {
-  const bar  = CAT_BAR[a.category]  ?? '#5A8C5E'
+// ── Activity detail card ───────────────────────────────────────────────────
+type ActivityWithChild = Activity & { child?: { name: string; avatar_color: string } }
+
+function ActivityDetailCard({ a, i }: { a: ActivityWithChild; i: number }) {
+  const bar  = CAT_BAR[a.category]    ?? '#5A8C5E'
   const ibg  = CAT_ICO_BG[a.category] ?? 'rgba(61,102,65,0.08)'
-  const icol = CAT_BAR[a.category]  ?? '#3D6641'
-  const Icon = CAT_ICON[a.category] ?? CalendarDays
+  const icol = CAT_BAR[a.category]    ?? '#3D6641'
+  const Icon = CAT_ICON[a.category]   ?? CalendarDays
 
   return (
     <div className="rounded-[17px] p-3 flex items-start gap-2.5 animate-fade-up"
@@ -71,11 +78,58 @@ function ActivityDetailCard({ a, i }: { a: Activity & { child?: { name: string; 
             <MapPin size={10} /> {a.location}
           </p>
         )}
-        <div className="mt-1.5">
-          <CategoryBadge category={a.category} />
-        </div>
+        <div className="mt-1.5"><CategoryBadge category={a.category} /></div>
       </div>
     </div>
+  )
+}
+
+// ── Day detail panel content ───────────────────────────────────────────────
+function DayDetail({ selectedDay, selectedDayActs, onClose }: {
+  selectedDay: Date
+  selectedDayActs: ActivityWithChild[]
+  onClose: () => void
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+        style={{ borderBottom: '1px solid rgba(61,102,65,0.10)' }}>
+        <div>
+          <div className="text-xs font-extrabold uppercase tracking-[0.14em]" style={{ color: '#5A8C5E' }}>
+            {format(selectedDay, "EEEE", { locale: ptBR })}
+          </div>
+          <div className="text-lg font-bold capitalize mt-0.5"
+            style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>
+            {format(selectedDay, "d 'de' MMMM", { locale: ptBR })}
+          </div>
+        </div>
+        <button onClick={onClose}
+          className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all hover:bg-black/[0.05]"
+          style={{ color: 'rgba(26,43,28,0.45)', background: 'rgba(61,102,65,0.07)', border: '1px solid rgba(61,102,65,0.14)', boxShadow: '0 1px 3px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.55) inset' }}>
+          <X size={14} />
+        </button>
+      </div>
+      <div className="px-5 py-2.5 flex-shrink-0" style={{ borderBottom: '1px solid rgba(61,102,65,0.07)' }}>
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+          style={selectedDayActs.length > 0
+            ? { background: 'rgba(61,102,65,0.10)', color: '#3D6641', border: '1px solid rgba(61,102,65,0.18)' }
+            : { background: 'rgba(26,43,28,0.04)', color: 'rgba(26,43,28,0.40)' }
+          }>
+          {selectedDayActs.length === 0
+            ? 'Dia livre 🌿'
+            : `${selectedDayActs.length} atividade${selectedDayActs.length !== 1 ? 's' : ''}`}
+        </span>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {selectedDayActs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-24 text-center">
+            <p className="text-sm italic" style={{ color: 'rgba(26,43,28,0.40)' }}>Nenhuma atividade neste dia.</p>
+          </div>
+        ) : (
+          selectedDayActs.map((a, i) => <ActivityDetailCard key={a.id} a={a} i={i} />)
+        )}
+      </div>
+    </>
   )
 }
 
@@ -87,6 +141,11 @@ export default function CalendarioPage() {
   const [filterChild, setFilterChild] = useState('')
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [loading, setLoading]         = useState(true)
+
+  // Drag-to-close state
+  const [dragY, setDragY]           = useState(0)
+  const dragStartY                  = useRef(0)
+  const isDragging                  = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -112,136 +171,29 @@ export default function CalendarioPage() {
   const calEnd          = endOfWeek(endOfMonth(currentDate),     { weekStartsOn: 0 })
   const days            = eachDayOfInterval({ start: calStart, end: calEnd })
   const actsForDay      = (day: Date) => filtered.filter(a => a.date === format(day, 'yyyy-MM-dd'))
-  const selectedDayActs = (selectedDay ? actsForDay(selectedDay) : []) as (Activity & { child?: { name: string; avatar_color: string } })[]
+  const selectedDayActs = (selectedDay ? actsForDay(selectedDay) : []) as ActivityWithChild[]
 
-  const closeSheet = () => setSelectedDay(null)
+  function closeSheet() { setSelectedDay(null); setDragY(0) }
 
-  // ── Day grid cell ────────────────────────────────────────────────────────
-  function DayCell({ day, index }: { day: Date; index: number }) {
-    const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-    const dayActs   = actsForDay(day)
-    const isSelected = selectedDay ? isSameDay(day, selectedDay) : false
-    const todayDay  = isToday(day)
-
-    return (
-      <div
-        onClick={() => setSelectedDay(isSelected ? null : day)}
-        className="flex flex-col cursor-pointer transition-all overflow-hidden"
-        style={{
-          padding: '6px 4px 4px',
-          borderBottom: '1px solid rgba(61,102,65,0.07)',
-          borderRight:  index % 7 !== 6 ? '1px solid rgba(61,102,65,0.07)' : 'none',
-          background: isSelected
-            ? 'rgba(61,102,65,0.08)'
-            : todayDay
-            ? 'rgba(61,102,65,0.03)'
-            : 'transparent',
-          opacity: isCurrentMonth ? 1 : 0.28,
-          minHeight: 0,
-        }}>
-        {/* Day number */}
-        <div className="flex-shrink-0 mb-0.5">
-          <span className="text-[11px] font-bold w-5 h-5 flex items-center justify-center rounded-full"
-            style={
-              todayDay
-                ? { backgroundImage: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 2px 8px rgba(44,74,46,0.30)', fontSize: 10 }
-                : isSelected
-                ? { background: 'rgba(61,102,65,0.15)', color: '#3D6641' }
-                : { color: '#1A2B1C' }
-            }>
-            {day.getDate()}
-          </span>
-        </div>
-        {/* Event dots / pills */}
-        <div className="flex flex-col gap-0.5 overflow-hidden flex-1">
-          {dayActs.slice(0, 2).map((a, ai) => (
-            <div key={ai}
-              className="truncate font-semibold rounded-[5px] px-1 flex-shrink-0 hidden sm:block"
-              style={{
-                background: CAT_PILL_BG[a.category] ?? 'rgba(90,140,94,0.70)',
-                color: '#fff',
-                fontSize: 9,
-                paddingTop: 2,
-                paddingBottom: 2,
-                boxShadow: '0 1px 2px rgba(0,0,0,0.12)',
-              }}>
-              {a.title}
-            </div>
-          ))}
-          {/* On mobile: just dots */}
-          {dayActs.length > 0 && (
-            <div className="flex gap-0.5 flex-wrap sm:hidden mt-0.5">
-              {dayActs.slice(0, 3).map((a, ai) => (
-                <span key={ai} className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: CAT_BAR[a.category] ?? '#5A8C5E' }} />
-              ))}
-            </div>
-          )}
-          {dayActs.length > 2 && (
-            <div className="text-[9px] font-bold flex-shrink-0 italic hidden sm:block"
-              style={{ color: 'rgba(26,43,28,0.40)' }}>
-              +{dayActs.length - 2}
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  // Touch handlers for drag-to-close
+  function onTouchStart(e: React.TouchEvent) {
+    dragStartY.current = e.touches[0].clientY
+    isDragging.current = true
   }
-
-  // ── Day detail panel content ─────────────────────────────────────────────
-  function DayDetail({ onClose }: { onClose: () => void }) {
-    if (!selectedDay) return null
-    return (
-      <>
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
-          style={{ borderBottom: '1px solid rgba(61,102,65,0.10)' }}>
-          <div>
-            <div className="text-xs font-extrabold uppercase tracking-[0.14em]" style={{ color: '#5A8C5E' }}>
-              {format(selectedDay, "EEEE", { locale: ptBR })}
-            </div>
-            <div className="text-lg font-bold capitalize mt-0.5"
-              style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>
-              {format(selectedDay, "d 'de' MMMM", { locale: ptBR })}
-            </div>
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all hover:bg-black/[0.05]"
-            style={{ color: 'rgba(26,43,28,0.45)', background: 'rgba(61,102,65,0.07)', border: '1px solid rgba(61,102,65,0.14)', boxShadow: '0 1px 3px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.55) inset' }}>
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Count */}
-        <div className="px-5 py-2.5 flex-shrink-0" style={{ borderBottom: '1px solid rgba(61,102,65,0.07)' }}>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-            style={selectedDayActs.length > 0
-              ? { background: 'rgba(61,102,65,0.10)', color: '#3D6641', border: '1px solid rgba(61,102,65,0.18)' }
-              : { background: 'rgba(26,43,28,0.04)', color: 'rgba(26,43,28,0.40)' }
-            }>
-            {selectedDayActs.length === 0
-              ? 'Dia livre 🌿'
-              : `${selectedDayActs.length} atividade${selectedDayActs.length !== 1 ? 's' : ''}`}
-          </span>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {selectedDayActs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-24 text-center">
-              <p className="text-sm italic" style={{ color: 'rgba(26,43,28,0.40)' }}>Nenhuma atividade neste dia.</p>
-            </div>
-          ) : (
-            selectedDayActs.map((a, i) => <ActivityDetailCard key={a.id} a={a} i={i} />)
-          )}
-        </div>
-      </>
-    )
+  function onTouchMove(e: React.TouchEvent) {
+    if (!isDragging.current) return
+    const dy = Math.max(0, e.touches[0].clientY - dragStartY.current)
+    setDragY(dy)
+  }
+  function onTouchEnd() {
+    isDragging.current = false
+    if (dragY > 90) { closeSheet() }
+    else { setDragY(0) }
   }
 
   return (
-    // flex-col fills the main area; no fixed height so mobile topbar + bottom nav are respected
-    <div className="flex flex-col" style={{ height: '100%', minHeight: 0, background: '#F8F3EA' }}>
+    // flex-1 fills main's flex column; no fixed height so mobile layout is respected
+    <div className="flex flex-col flex-1 min-h-0" style={{ background: '#F8F3EA' }}>
 
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
@@ -253,45 +205,34 @@ export default function CalendarioPage() {
 
         <div className="flex items-center gap-2">
           <button onClick={() => setCurrentDate(d => subMonths(d, 1))}
-            className="w-8 h-8 rounded-[11px] flex items-center justify-center transition-all hover:brightness-95 active:scale-95"
+            className="w-8 h-8 rounded-[11px] flex items-center justify-center transition-all"
             style={{ backgroundImage: 'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border: '1px solid rgba(61,102,65,0.18)', boxShadow: '0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color: '#3D6641' }}>
             <ChevronLeft size={15} />
           </button>
 
-          <h1 className="text-[17px] font-bold capitalize leading-tight"
-            style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C', letterSpacing: '-0.01em', minWidth: 130, textAlign:'center' }}>
+          <h1 className="text-[16px] font-bold capitalize"
+            style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C', letterSpacing: '-0.01em', minWidth: 120, textAlign:'center' }}>
             {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
           </h1>
 
           <button onClick={() => setCurrentDate(d => addMonths(d, 1))}
-            className="w-8 h-8 rounded-[11px] flex items-center justify-center transition-all hover:brightness-95 active:scale-95"
+            className="w-8 h-8 rounded-[11px] flex items-center justify-center transition-all"
             style={{ backgroundImage: 'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border: '1px solid rgba(61,102,65,0.18)', boxShadow: '0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color: '#3D6641' }}>
             <ChevronRight size={15} />
           </button>
 
           <button onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()) }}
-            className="text-xs font-bold px-3 py-1 rounded-full transition-all hover:brightness-95 active:scale-95 ml-1"
+            className="text-xs font-bold px-3 py-1 rounded-full ml-1"
             style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641', border: '1px solid rgba(61,102,65,0.18)' }}>
             Hoje
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Legend — desktop only */}
-          <div className="hidden lg:flex gap-3">
-            {(['escola','saude','extracurricular'] as const).map(k => (
-              <span key={k} className="flex items-center gap-1.5 text-xs font-semibold"
-                style={{ color: 'rgba(26,43,28,0.50)' }}>
-                <span className="w-2 h-2 rounded-sm inline-block" style={{ background: CAT_BAR[k] }} />
-                {k === 'escola' ? 'Escola' : k === 'saude' ? 'Saúde' : 'Extracurr.'}
-              </span>
-            ))}
-          </div>
-          {/* Child filter */}
           {children.length > 0 && (
             <select value={filterChild} onChange={e => setFilterChild(e.target.value)}
               className="text-xs font-semibold px-2.5 py-1.5 rounded-[11px] outline-none cursor-pointer"
-              style={{ backgroundImage: 'linear-gradient(160deg,#FFFFFF,#F2EAD8)', color: '#1A2B1C', border: '1px solid rgba(61,102,65,0.18)', boxShadow: '0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset', maxWidth: 110 }}>
+              style={{ backgroundImage: 'linear-gradient(160deg,#FFFFFF,#F2EAD8)', color: '#1A2B1C', border: '1px solid rgba(61,102,65,0.18)', boxShadow: '0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset', maxWidth: 100 }}>
               <option value="">Todos</option>
               {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -300,28 +241,98 @@ export default function CalendarioPage() {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
-        {/* Calendar grid */}
+        {/* Calendar area */}
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Weekday headers */}
           <div className="grid grid-cols-7 flex-shrink-0"
             style={{ borderBottom: '1px solid rgba(61,102,65,0.10)', backgroundImage: 'linear-gradient(160deg,#FFFFFF,#FAF5EC)' }}>
             {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => (
-              <div key={d} className="text-center text-[10px] font-extrabold py-2.5 tracking-[0.06em] uppercase"
+              <div key={d} className="text-center text-[10px] font-extrabold py-2 tracking-[0.05em] uppercase"
                 style={{ color: 'rgba(26,43,28,0.38)' }}>{d}</div>
             ))}
           </div>
 
-          {/* Day cells — fill remaining height */}
-          <div className="grid grid-cols-7 flex-1 overflow-hidden"
-            style={{ gridAutoRows: '1fr' }}>
-            {days.map((day, i) => <DayCell key={i} day={day} index={i} />)}
+          {/* Legend row */}
+          <div className="flex items-center gap-3 px-3 py-1.5 flex-shrink-0"
+            style={{ borderBottom: '1px solid rgba(61,102,65,0.06)', background: 'rgba(248,243,234,0.80)' }}>
+            {LEGEND.map(l => (
+              <span key={l.key} className="flex items-center gap-1 text-[10px] font-semibold"
+                style={{ color: 'rgba(26,43,28,0.50)' }}>
+                <span className="w-2 h-2 rounded-[3px] inline-block flex-shrink-0" style={{ background: l.color }} />
+                {l.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Day grid */}
+          <div className="grid grid-cols-7 flex-1 overflow-hidden" style={{ gridAutoRows: '1fr' }}>
+            {days.map((day, i) => {
+              const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+              const dayActs   = actsForDay(day)
+              const isSelected = selectedDay ? isSameDay(day, selectedDay) : false
+              const todayDay  = isToday(day)
+
+              return (
+                <div key={i}
+                  onClick={() => setSelectedDay(isSelected ? null : day)}
+                  className="flex flex-col cursor-pointer transition-colors overflow-hidden"
+                  style={{
+                    padding: '4px 3px 3px',
+                    borderBottom: '1px solid rgba(61,102,65,0.07)',
+                    borderRight:  i % 7 !== 6 ? '1px solid rgba(61,102,65,0.07)' : 'none',
+                    background: isSelected
+                      ? 'rgba(61,102,65,0.09)'
+                      : todayDay
+                      ? 'rgba(61,102,65,0.03)'
+                      : 'transparent',
+                    opacity: isCurrentMonth ? 1 : 0.28,
+                    minHeight: 0,
+                  }}>
+                  {/* Day number */}
+                  <div className="flex-shrink-0 mb-0.5">
+                    <span className="font-bold flex items-center justify-center rounded-full"
+                      style={{
+                        fontSize: 10.5, width: 20, height: 20,
+                        ...(todayDay
+                          ? { backgroundImage: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 2px 8px rgba(44,74,46,0.30)' }
+                          : isSelected
+                          ? { background: 'rgba(61,102,65,0.18)', color: '#2C4A2E' }
+                          : { color: '#1A2B1C' })
+                      }}>
+                      {day.getDate()}
+                    </span>
+                  </div>
+
+                  {/* Event pills — same on mobile and desktop */}
+                  <div className="flex flex-col gap-[2px] overflow-hidden flex-1">
+                    {dayActs.slice(0, 2).map((a, ai) => (
+                      <div key={ai}
+                        className="text-white truncate font-semibold rounded-[5px] px-1 flex-shrink-0"
+                        style={{
+                          background: CAT_PILL_BG[a.category] ?? 'rgba(90,140,94,0.75)',
+                          fontSize: 9,
+                          lineHeight: '14px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.14)',
+                        }}>
+                        {a.title}
+                      </div>
+                    ))}
+                    {dayActs.length > 2 && (
+                      <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(26,43,28,0.42)', lineHeight:'14px' }}>
+                        +{dayActs.length - 2}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        {/* ── Desktop side panel (lg+) ── */}
+        {/* Desktop side panel (lg+) */}
         {selectedDay && (
           <div className="hidden lg:flex w-72 flex-shrink-0 flex-col overflow-hidden animate-fade-in"
             style={{
@@ -329,38 +340,43 @@ export default function CalendarioPage() {
               backgroundImage: 'linear-gradient(160deg,#FFFFFF 0%,#F8F3EA 100%)',
               boxShadow: '-4px 0 20px rgba(44,74,46,0.07)',
             }}>
-            <DayDetail onClose={closeSheet} />
+            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet} />
           </div>
         )}
       </div>
 
-      {/* ── Mobile bottom sheet ── */}
-      {/* Sits in the DOM flow outside the calendar flex, fixed to viewport bottom */}
+      {/* ── Mobile bottom sheet (drag to close) ── */}
       {selectedDay && (
         <>
           {/* Scrim */}
-          <div
-            className="lg:hidden fixed inset-0 z-[60]"
+          <div className="lg:hidden fixed inset-0 z-[60]"
             style={{ background: 'rgba(15,31,17,0.45)', backdropFilter: 'blur(2px)' }}
-            onClick={closeSheet}
-          />
-          {/* Sheet */}
+            onClick={closeSheet} />
+
+          {/* Sheet — translateY follows drag; transition only when not dragging */}
           <div
             className="lg:hidden fixed left-0 right-0 z-[70] flex flex-col animate-slide-up"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             style={{
-              bottom: 58, /* sits above the bottom nav bar */
+              bottom: 58,
               maxHeight: '65vh',
               borderRadius: '20px 20px 0 0',
               backgroundImage: 'linear-gradient(180deg,#FFFFFF 0%,#F8F3EA 100%)',
               border: '1px solid rgba(61,102,65,0.18)',
               boxShadow: '0 -8px 32px rgba(44,74,46,0.18)',
               overflow: 'hidden',
+              transform: `translateY(${dragY}px)`,
+              transition: isDragging.current ? 'none' : 'transform .3s cubic-bezier(.32,.72,0,1)',
+              willChange: 'transform',
             }}>
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(61,102,65,0.25)' }} />
+            {/* Drag handle bar */}
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing"
+              style={{ touchAction: 'none' }}>
+              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(61,102,65,0.28)' }} />
             </div>
-            <DayDetail onClose={closeSheet} />
+            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet} />
           </div>
         </>
       )}
