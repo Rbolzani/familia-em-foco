@@ -6,6 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
+  Users, LogOut,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -374,6 +375,14 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
                   left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
               </button>
             </div>
+            {/* Logout */}
+            <button onClick={handleLogout}
+              style={{ display:'flex', alignItems:'center', gap:8, width:'100%', marginTop:16,
+                padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
+                background:'rgba(220,38,38,0.06)', cursor:'pointer',
+                fontSize:13, fontWeight:700, color:'#DC2626' }}>
+              <LogOut size={15}/> Sair da conta
+            </button>
           </div>
         </>
       )}
@@ -393,12 +402,12 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
         }}>
           <div style={{ display:'flex', alignItems:'center', height:58 }}>
             {([
-              { href:'/dashboard',  label:'Início',     icon:LayoutDashboard },
-              { href:'/escola',     label:'Escola',     icon:BookOpen        },
-              { href:'/atividades', label:'Atividades', icon:Trophy          },
-              { href:'/saude',      label:'Saúde',      icon:HeartPulse      },
-              { href:'/vault',      label:'Docs',       icon:FolderLock      },
-              { href:'/calendario', label:'Agenda',     icon:CalendarDays    },
+              { href:'/dashboard',  label:'Início',   icon:LayoutDashboard },
+              { href:'/escola',     label:'Escola',   icon:BookOpen        },
+              { href:'/atividades', label:'Atividades',icon:Trophy         },
+              { href:'/saude',      label:'Saúde',    icon:HeartPulse      },
+              { href:'/children',   label:'Filhos',   icon:Users           },
+              { href:'/calendario', label:'Agenda',   icon:CalendarDays    },
             ] as const).map(({ href, label, icon: Icon }) => {
               const active = isActive(href)
               return (
