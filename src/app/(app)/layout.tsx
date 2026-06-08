@@ -1,5 +1,16 @@
+import { createClient } from '@/lib/supabase/server'
 import AppLayout from '@/components/layout/AppLayout'
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  return <AppLayout>{children}</AppLayout>
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: sidebarChildren } = await supabase
+    .from('children')
+    .select('id, name, avatar_color, birth_date, school_name')
+    .order('sort_order')
+
+  return (
+    <AppLayout sidebarChildren={sidebarChildren ?? []}>
+      {children}
+    </AppLayout>
+  )
 }
