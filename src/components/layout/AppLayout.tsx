@@ -375,14 +375,24 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
                   left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
               </button>
             </div>
-            {/* Logout */}
-            <button onClick={handleLogout}
-              style={{ display:'flex', alignItems:'center', gap:8, width:'100%', marginTop:16,
-                padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
-                background:'rgba(220,38,38,0.06)', cursor:'pointer',
-                fontSize:13, fontWeight:700, color:'#DC2626' }}>
-              <LogOut size={15}/> Sair da conta
-            </button>
+            {/* Account actions */}
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:16 }}>
+              <Link href="/children" onClick={() => setMobileTemaOpen(false)}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
+                  padding:'10px 14px', borderRadius:12, border:`1px solid ${panelBorder}`,
+                  background: darkMode ? 'rgba(90,140,94,0.12)' : 'rgba(61,102,65,0.07)', cursor:'pointer',
+                  fontSize:13, fontWeight:700, color: darkMode ? '#A8D4AB' : '#3D6641' }}>
+                  <Users size={15}/> Meus Filhos
+                </div>
+              </Link>
+              <button onClick={handleLogout}
+                style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
+                  padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
+                  background:'rgba(220,38,38,0.06)', cursor:'pointer',
+                  fontSize:13, fontWeight:700, color:'#DC2626' }}>
+                <LogOut size={15}/> Sair da conta
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -402,12 +412,12 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
         }}>
           <div style={{ display:'flex', alignItems:'center', height:58 }}>
             {([
-              { href:'/dashboard',  label:'Início',   icon:LayoutDashboard },
-              { href:'/escola',     label:'Escola',   icon:BookOpen        },
-              { href:'/atividades', label:'Atividades',icon:Trophy         },
-              { href:'/saude',      label:'Saúde',    icon:HeartPulse      },
-              { href:'/children',   label:'Filhos',   icon:Users           },
-              { href:'/calendario', label:'Agenda',   icon:CalendarDays    },
+              { href:'/dashboard',  label:'Início',    icon:LayoutDashboard },
+              { href:'/escola',     label:'Escola',    icon:BookOpen        },
+              { href:'/atividades', label:'Atividades', icon:Trophy         },
+              { href:'/saude',      label:'Saúde',     icon:HeartPulse      },
+              { href:'/vault',      label:'Docs',      icon:FolderLock      },
+              { href:'/calendario', label:'Agenda',    icon:CalendarDays    },
             ] as const).map(({ href, label, icon: Icon }) => {
               const active = isActive(href)
               return (

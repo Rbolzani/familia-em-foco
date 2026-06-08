@@ -185,11 +185,7 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
                 {activity.child.name}
               </span>
             )}
-            {/* Date with weekday */}
-            <span className="text-[11px] italic flex-shrink-0" style={{ color:'rgba(26,43,28,0.45)' }}>
-              {dateLabel}
-            </span>
-            {/* Location */}
+            {/* Location — only when available */}
             {activity.location && (
               <span className="text-[11px] italic flex items-center gap-1 truncate" style={{ color:'rgba(26,43,28,0.38)' }}>
                 <MapPin size={10}/> {activity.location}
@@ -198,7 +194,7 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
           </div>
         </div>
 
-        {/* Time / status badge */}
+        {/* Date/time badge — shows weekday+date, or hour if available, or overdue warning */}
         <div className="flex-none text-xs font-bold px-3 py-[5px] rounded-full"
           style={{
             background:'rgba(255,255,255,0.75)',
@@ -207,7 +203,7 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
             boxShadow:'0 2px 8px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset',
             whiteSpace:'nowrap',
           }}>
-          {timeText}
+          {overdue ? '⚠ Atrasado' : activity.time ? `${activity.time.slice(0,5)} · ${dateLabel}` : dateLabel}
         </div>
       </div>
     </Link>
