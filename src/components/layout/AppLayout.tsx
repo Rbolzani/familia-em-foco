@@ -8,6 +8,7 @@ import {
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
   Users, LogOut,
 } from 'lucide-react'
+import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ interface SidebarChild {
   id: string
   name: string
   avatar_color: string
+  avatar_url: string | null
   birth_date: string | null
   school_name: string | null
 }
@@ -151,7 +153,10 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
         <aside className="hidden md:flex flex-col w-[256px] flex-shrink-0 fixed z-40"
           style={{
             height: '100vh', top: 0, left: 0, overflow: 'hidden',
-            background: sidebarBg,
+            // Explicit backgroundColor ensures the sidebar fills to 100vh
+            // even if backgroundImage doesn't cover every pixel
+            backgroundColor: '#EAE1CE',
+            backgroundImage: sidebarBg,
             backgroundSize: '200px 200px, 100% 100%',
             borderRight: '1px solid rgba(61,102,65,0.22)',
             boxShadow: '4px 0 24px rgba(44,74,46,0.07)',
@@ -224,12 +229,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
                           border:'1px solid rgba(61,102,65,0.18)',
                           boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
                         }}>
-                        <div style={{ width:32, height:32, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-                          background: child.avatar_color || 'linear-gradient(140deg,#5A8C5E,#2C4A2E)',
-                          fontFamily:'var(--font-lora)', fontWeight:700, fontSize:14, color:'white',
-                          boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}>
-                          {child.name.charAt(0).toUpperCase()}
-                        </div>
+                        <ChildAvatar child={child} size={32} radius={10} />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
                           {(age !== null || child.school_name) && (

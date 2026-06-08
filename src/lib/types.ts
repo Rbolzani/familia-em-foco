@@ -8,6 +8,8 @@ export interface Child {
   birth_date: string | null
   school_name: string | null
   avatar_color: string
+  avatar_url: string | null   // photo uploaded to Supabase Storage
+  sort_order?: number
   created_at: string
 }
 
