@@ -271,8 +271,11 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
         {/* ══ MAIN ══
             pb-[58px] on mobile = height of bottom nav bar so last content
             is always reachable above the fixed bar                         ══ */}
-        <main className="flex-1 md:ml-[256px] min-h-screen musgo-bg relative z-[1] pb-[58px] md:pb-0"
-          style={{ paddingBottom:'calc(58px + env(safe-area-inset-bottom, 0px))' }}>
+        <main className="flex-1 md:ml-[256px] musgo-bg relative z-[1] flex flex-col"
+          style={{
+            minHeight: '100vh',
+            paddingBottom: 'calc(58px + env(safe-area-inset-bottom, 0px))',
+          }}>
 
           {/* Mobile topbar */}
           <div className="md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-30"
@@ -287,9 +290,10 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
               </span>
             </div>
             <Link href="/ia">
-              <div className="w-9 h-9 rounded-[11px] flex items-center justify-center"
-                style={{ background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 4px 12px rgba(44,74,46,0.28)' }}>
-                <Sparkles size={17} color="#D4E8D5" />
+              <div className="flex items-center gap-2 rounded-[14px] px-4"
+                style={{ height:40, background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 4px 14px rgba(44,74,46,0.32)' }}>
+                <Sparkles size={16} color="#D4E8D5" />
+                <span style={{ fontSize:13, fontWeight:700, color:'#D4E8D5', letterSpacing:'-0.01em' }}>Captura por IA</span>
               </div>
             </Link>
           </div>

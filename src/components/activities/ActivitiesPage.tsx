@@ -130,22 +130,22 @@ export default function ActivitiesPage({ category, title, emoji, color }: Props)
   const pendentes = activities.filter(a => a.status === 'pendente').length
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-3xl mx-auto px-4 py-5 space-y-5" style={{ boxSizing:'border-box' }}>
 
       {/* Header */}
-      <div className="flex items-start justify-between animate-fade-up">
-        <div>
+      <div className="flex items-start justify-between gap-3 animate-fade-up">
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: accent }}>
             {emoji} Módulo
           </p>
-          <h1 className="font-fraunces text-3xl font-bold" style={{ color: '#0F1F3D' }}>{title}</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#8B7A68' }}>
+          <h1 className="text-2xl font-bold" style={{ fontFamily:'var(--font-lora)', color: '#1A2B1C' }}>{title}</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(26,43,28,0.45)' }}>
             {pendentes} pendente{pendentes !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95 flex-shrink-0"
           style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
         >
           <Plus size={16} /> Nova
@@ -153,24 +153,24 @@ export default function ActivitiesPage({ category, title, emoji, color }: Props)
       </div>
 
       {/* Filter bar */}
-      <div className="card p-3.5 flex flex-wrap gap-3 items-center animate-fade-up">
-        <Filter size={14} style={{ color: '#8B7A68' }} />
+      <div className="card p-3 flex flex-wrap gap-2 items-center animate-fade-up">
+        <Filter size={13} style={{ color: 'rgba(26,43,28,0.45)', flexShrink:0 }} />
         {children.length > 0 && (
           <select
             value={filterChild}
             onChange={e => setFilterChild(e.target.value)}
-            className="text-xs font-semibold border rounded-xl px-3 py-1.5 focus:outline-none transition-colors"
-            style={{ borderColor: '#EDE4D6', color: '#0F1F3D', background: '#FDF8F2' }}
+            className="text-xs font-semibold border rounded-xl px-2 py-1.5 focus:outline-none transition-colors min-w-0"
+            style={{ borderColor: 'rgba(61,102,65,0.22)', color: '#1A2B1C', background: '#FDF8F2', maxWidth: 130 }}
           >
-            <option value="">Todos os filhos</option>
+            <option value="">Todos</option>
             {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         )}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {[
             { value: '', label: 'Todos' },
             { value: 'pendente', label: 'Pendentes' },
-            { value: 'concluido', label: 'Concluídos' },
+            { value: 'concluido', label: 'Feitos' },
           ].map(opt => (
             <button
               key={opt.value}
@@ -185,8 +185,8 @@ export default function ActivitiesPage({ category, title, emoji, color }: Props)
             </button>
           ))}
         </div>
-        <span className="ml-auto text-xs font-semibold" style={{ color: '#8B7A68' }}>
-          {filtered.length} atividade{filtered.length !== 1 ? 's' : ''}
+        <span className="ml-auto text-xs font-semibold flex-shrink-0" style={{ color: 'rgba(26,43,28,0.45)' }}>
+          {filtered.length}
         </span>
       </div>
 
