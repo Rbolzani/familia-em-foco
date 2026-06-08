@@ -1,42 +1,66 @@
 @import "tailwindcss";
 
-/* ─── Fonts ──────────────────────────────────────────────────── */
+/* ─── Fonts ─────────────────────────────────────────────────── */
 @theme inline {
   --font-display: var(--font-lora);
   --font-sans:    var(--font-dm);
+  --color-green-xdk:  #1E3320; --color-green-dk:  #2C4A2E;
+  --color-green-md:   #3D6641; --color-green-lt:  #5A8C5E;
+  --color-green-pale: #D4E8D5; --color-green-mist:#EBF3EB;
+  --color-earth:      #8B6B4A; --color-earth-lt:  #C49A6C;
+  --color-earth-pale: #F4E8D8; --color-earth-mist:#FAF3E8;
+  --color-cream:  #F8F3EA; --color-cream2: #F2EAD8; --color-cream3: #E8DEC8;
+  --color-bg:     #F8F3EA; --color-surface: #FFFFFF;
+  --color-text:   #1A2B1C;
+  --color-text-muted: rgba(26,43,28,0.58);
+  --color-text-faint: rgba(26,43,28,0.36);
+  --color-border:  rgba(61,102,65,0.14);
+  --color-border2: rgba(61,102,65,0.22);
+  --shadow-sm: 0 2px 8px rgba(44,74,46,0.10);
+  --shadow-md: 0 6px 20px rgba(44,74,46,0.12), 0 1px 4px rgba(44,74,46,0.08);
+  --shadow-lg: 0 12px 36px rgba(44,74,46,0.14), 0 2px 8px rgba(44,74,46,0.09);
+  --shadow-up: 0 -1px 0 rgba(255,255,255,0.80) inset;
+}
 
-  /* ─── Musgo Color System ─────────────────────────────────── */
-  --color-green-xdk:    #1E3320;
-  --color-green-dk:     #2C4A2E;
-  --color-green-md:     #3D6641;
-  --color-green-lt:     #5A8C5E;
-  --color-green-pale:   #D4E8D5;
-  --color-green-mist:   #EBF3EB;
+/* ─── Theme CSS Custom Properties (used by AppLayout via inline style) ─── */
+:root {
+  --g-md:    #3D6641;
+  --g-dk:    #2C4A2E;
+  --g-xdk:   #1E3320;
+  --g-lt:    #5A8C5E;
+  --g-pale:  #D4E8D5;
+  --g-mist:  #EBF3EB;
+  --sb-from: #F2EAD8;
+  --sb-to:   #E8DEC8;
+  --app-bg:  #F8F3EA;
+  --app-text:#1A2B1C;
+}
 
-  --color-earth:        #8B6B4A;
-  --color-earth-lt:     #C49A6C;
-  --color-earth-pale:   #F4E8D8;
-  --color-earth-mist:   #FAF3E8;
-
-  --color-cream:        #F8F3EA;
-  --color-cream2:       #F2EAD8;
-  --color-cream3:       #E8DEC8;
-
-  --color-bg:           #F8F3EA;
-  --color-surface:      #FFFFFF;
-
-  --color-text:         #1A2B1C;
-  --color-text-muted:   rgba(26,43,28,0.58);
-  --color-text-faint:   rgba(26,43,28,0.36);
-
-  --color-border:       rgba(61,102,65,0.14);
-  --color-border2:      rgba(61,102,65,0.22);
-
-  /* ─── Shadows ─────────────────────────────────────────────── */
-  --shadow-sm:   0 2px 8px rgba(44,74,46,0.10);
-  --shadow-md:   0 6px 20px rgba(44,74,46,0.12), 0 1px 4px rgba(44,74,46,0.08);
-  --shadow-lg:   0 12px 36px rgba(44,74,46,0.14), 0 2px 8px rgba(44,74,46,0.09);
-  --shadow-up:   0 -1px 0 rgba(255,255,255,0.80) inset;
+/* ─── Dark mode via [data-mode="dark"] on .app-wrap ────────────── */
+.app-wrap[data-mode="dark"] {
+  --g-md:    #2C5430;
+  --g-dk:    #152416;
+  --g-xdk:   #0A110B;
+  --g-lt:    #4A7C4E;
+  --g-pale:  #1E3B20;
+  --g-mist:  #162018;
+  --sb-from: #121B13;
+  --sb-to:   #192419;
+  --app-bg:  #0D160E;
+  --app-text:#E2EEE2;
+  background-color: #0D160E;
+  color: #E2EEE2;
+}
+.app-wrap[data-mode="dark"] .musgo-bg {
+  background-color: #0D160E !important;
+  background-image:
+    linear-gradient(rgba(74,124,78,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74,124,78,0.06) 1px, transparent 1px) !important;
+}
+.app-wrap[data-mode="dark"] .card {
+  background-image: linear-gradient(160deg,#1E2E1F 0%,#161F17 100%) !important;
+  border-color: rgba(74,124,78,0.22) !important;
+  color: #E2EEE2;
 }
 
 /* ─── Base Reset ─────────────────────────────────────────────── */
@@ -51,16 +75,15 @@ body {
   line-height: 1.55;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
 }
-
-/* Paper grid lines — applied to musgo-bg */
 
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
 
 /* ─── Typography ─────────────────────────────────────────────── */
 .font-display { font-family: var(--font-lora), Georgia, serif; }
-h1, h2, h3 { font-family: var(--font-lora), Georgia, serif; }
+h1, h2, h3   { font-family: var(--font-lora), Georgia, serif; }
 
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -73,87 +96,106 @@ h1, h2, h3 { font-family: var(--font-lora), Georgia, serif; }
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
-}
+@keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+@keyframes scaleIn { from { opacity:0; transform:scale(0.95) } to { opacity:1; transform:scale(1) } }
+@keyframes float   { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-6px) } }
 
 .animate-fade-up  { animation: fadeUp  .45s cubic-bezier(.22,.68,0,1.2) both; }
 .animate-fade-in  { animation: fadeIn  .3s ease both; }
 .animate-scale-in { animation: scaleIn .35s cubic-bezier(.22,.68,0,1.2) both; }
 .animate-float    { animation: float 3s ease-in-out infinite; }
 
-/* Staggered entrance */
-.stagger > *:nth-child(1) { animation-delay: .04s; }
-.stagger > *:nth-child(2) { animation-delay: .09s; }
-.stagger > *:nth-child(3) { animation-delay: .14s; }
-.stagger > *:nth-child(4) { animation-delay: .19s; }
-.stagger > *:nth-child(5) { animation-delay: .24s; }
-.stagger > *:nth-child(6) { animation-delay: .29s; }
+.stagger > *:nth-child(1) { animation-delay:.04s }
+.stagger > *:nth-child(2) { animation-delay:.09s }
+.stagger > *:nth-child(3) { animation-delay:.14s }
+.stagger > *:nth-child(4) { animation-delay:.19s }
+.stagger > *:nth-child(5) { animation-delay:.24s }
+.stagger > *:nth-child(6) { animation-delay:.29s }
 
-/* ─── Card Component ─────────────────────────────────────────── */
-/* Noise SVG texture (data URI) inlined as CSS custom prop */
+/* ─── Card ── richer texture ─────────────────────────────────── */
 .card {
-  background-image: linear-gradient(160deg, #FFFFFF 0%, #F8F3EA 100%);
-  border: 1px solid rgba(61,102,65,0.18);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+    linear-gradient(160deg, #FFFFFF 0%, #F5F0E8 100%);
+  background-size: 200px 200px, 100% 100%;
+  border: 1px solid rgba(61,102,65,0.20);
   border-radius: 20px 13px 18px 15px;
   box-shadow:
-    0 4px 16px rgba(44,74,46,0.10),
-    0 1px 4px rgba(44,74,46,0.07),
-    0 -1px 0 rgba(255,255,255,0.85) inset,
-    0 1px 0 rgba(0,0,0,0.035) inset;
+    0 6px 22px rgba(44,74,46,0.12),
+    0 2px 6px rgba(44,74,46,0.08),
+    0 -1px 0 rgba(255,255,255,0.90) inset,   /* stronger top highlight */
+    0 1px 0 rgba(0,0,0,0.04) inset,
+    inset 1px 0 rgba(255,255,255,0.50),       /* left edge highlight */
+    inset -1px 0 rgba(0,0,0,0.025);           /* right edge shadow */
   transition: box-shadow .22s ease, transform .22s ease;
 }
 
 .card-lift:hover {
   transform: translateY(-3px) rotate(-0.35deg);
   box-shadow:
-    0 10px 32px rgba(44,74,46,0.13),
-    0 2px 8px rgba(44,74,46,0.08),
-    0 -1px 0 rgba(255,255,255,0.85) inset,
-    0 1px 0 rgba(0,0,0,0.04) inset;
+    0 14px 36px rgba(44,74,46,0.15),
+    0 4px 10px rgba(44,74,46,0.09),
+    0 -1px 0 rgba(255,255,255,0.90) inset,
+    0 1px 0 rgba(0,0,0,0.04) inset,
+    inset 1px 0 rgba(255,255,255,0.55),
+    inset -1px 0 rgba(0,0,0,0.025);
 }
 
-/* ─── Musgo background — paper feel + grid lines ────────────── */
+/* ─── Musgo background — paper + grid ───────────────────────── */
 .musgo-bg {
   background-color: #F8F3EA;
   background-image:
-    linear-gradient(rgba(61,102,65,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(61,102,65,0.045) 1px, transparent 1px);
-  background-size: 44px 44px;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.028'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(61,102,65,0.040) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61,102,65,0.040) 1px, transparent 1px);
+  background-size: 200px 200px, 44px 44px, 44px 44px;
   background-attachment: local;
+}
+
+/* ─── Nav active highlight — richer ─────────────────────────── */
+.nav-active {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.75) 100%) !important;
+  background-size: 200px 200px, 100% 100% !important;
+  border: 1px solid rgba(61,102,65,0.22) !important;
+  box-shadow:
+    0 3px 12px rgba(44,74,46,0.12),
+    0 1px 3px rgba(44,74,46,0.08),
+    0 -1px 0 rgba(255,255,255,0.95) inset,
+    inset 1px 0 rgba(255,255,255,0.70) !important;
 }
 
 /* ─── Input Styles ───────────────────────────────────────────── */
 .input-field {
-  width: 100%;
-  padding: 13px 16px;
+  width: 100%; padding: 13px 16px;
   border: 1.5px solid rgba(61,102,65,0.20);
   border-radius: 14px;
   background: rgba(255,255,255,0.80);
-  font-size: 16px;
-  color: #1A2B1C;
+  font-size: 16px; color: #1A2B1C;
   transition: border-color .15s, box-shadow .15s, background .15s;
   outline: none;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   position: relative; z-index: 1;
   box-shadow: 0 1px 4px rgba(44,74,46,0.07), 0 -1px 0 rgba(255,255,255,0.70) inset;
 }
 .input-field:focus {
-  border-color: #3D6641;
-  background: #FFFFFF;
+  border-color: #3D6641; background: #FFFFFF;
   box-shadow: 0 0 0 4px rgba(61,102,65,0.12), 0 -1px 0 rgba(255,255,255,0.70) inset;
 }
 .input-field::placeholder { color: rgba(26,43,28,0.30); }
+
+/* ─── Range slider (TEMA panel) ─────────────────────────────── */
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 5px; border-radius: 3px;
+  background: rgba(61,102,65,0.22); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(140deg, var(--g-lt, #5A8C5E), var(--g-dk, #2C4A2E));
+  box-shadow: 0 2px 6px rgba(44,74,46,0.35); cursor: pointer;
+}
 
 /* ─── Safe area ──────────────────────────────────────────────── */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
@@ -163,10 +205,27 @@ h1, h2, h3 { font-family: var(--font-lora), Georgia, serif; }
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
-
 .shimmer {
   background: linear-gradient(90deg, #EDE6D9 25%, #F5EFE4 50%, #EDE6D9 75%);
   background-size: 200% auto;
   animation: shimmer 1.4s linear infinite;
   border-radius: 8px;
+}
+
+/* ─── Mobile utilities ───────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Prevent horizontal overflow on any element */
+  .no-hscroll { overflow-x: hidden; max-width: 100vw; }
+
+  /* Full-width content on mobile */
+  .mobile-full { width: 100%; min-width: 0; }
+
+  /* Stats 2-column on mobile */
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Single column layout on mobile */
+  .layout-cols { grid-template-columns: 1fr !important; }
+
+  /* Topbar stacked on mobile */
+  .topbar-actions { display: none !important; }
 }

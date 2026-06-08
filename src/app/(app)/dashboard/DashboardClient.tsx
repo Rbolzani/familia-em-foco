@@ -19,11 +19,11 @@ interface Props {
   upcomingActivities: (Activity & { child: { name: string; avatar_color: string } })[]
 }
 
-// ── Textures (exact data-URI from conceito-7-musgo-v2.html) ───────────────
+// ── Textures ───────────────────────────────────────────────────────────────
 const NOISE    = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`
 const NOISE_SM = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`
 
-// ── Shared card styles (exact from approved HTML) ─────────────────────────
+// ── Shared card styles ─────────────────────────────────────────────────────
 const STAT: React.CSSProperties = {
   borderRadius: '20px 13px 18px 15px',
   padding: '22px 20px',
@@ -51,19 +51,6 @@ const ACT: React.CSSProperties = {
   backgroundSize: '200px 200px, 100% 100%',
   border: '1px solid rgba(61,102,65,0.22)',
   boxShadow: '0 2px 8px rgba(44,74,46,0.10),0 -1px 0 rgba(255,255,255,0.90) inset,0 1px 0 rgba(0,0,0,0.03) inset',
-  transition: 'transform 0.22s, box-shadow 0.22s',
-}
-
-const MOD_CARD: React.CSSProperties = {
-  borderRadius: '17px 11px 15px 13px',
-  padding: '16px 15px',
-  cursor: 'pointer',
-  border: '1px solid rgba(61,102,65,0.22)',
-  position: 'relative',
-  overflow: 'hidden',
-  background: `${NOISE_SM}, linear-gradient(155deg,#FFFFFF 0%,#F8F3EA 100%)`,
-  backgroundSize: '150px 150px, 100% 100%',
-  boxShadow: '0 2px 8px rgba(44,74,46,0.10),0 -1px 0 rgba(255,255,255,0.85) inset,0 1px 0 rgba(0,0,0,0.04) inset',
   transition: 'transform 0.22s, box-shadow 0.22s',
 }
 
@@ -247,27 +234,38 @@ export default function DashboardClient({ userName, children, todayActivities, u
   ]
 
   return (
-    <div className="px-9 py-[34px] relative z-10 animate-fade-in">
+    /* px-4 on mobile, px-9 on desktop */
+    <div className="px-4 md:px-9 py-5 md:py-[34px] relative z-10 animate-fade-in max-w-full overflow-x-hidden">
 
       {/* ── Topbar ── */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-[7px] mb-[5px]"
+      <div className="flex items-start justify-between mb-6 md:mb-8">
+        {/* Left: greeting */}
+        <div className="min-w-0">
+          {/* Date — hidden on very small, shown md+ */}
+          <div className="hidden md:flex items-center gap-[7px] mb-[5px]"
             style={{ fontSize:'11.5px', fontWeight:700, letterSpacing:'0.14em', textTransform:'uppercase', color:'#5A8C5E' }}>
             <SunMedium size={13}/> {fmtDate()}
           </div>
-          <h1 style={{ fontFamily:'var(--font-lora)', fontSize:40, fontWeight:700, color:'#1A2B1C', lineHeight:1.1, letterSpacing:'-0.02em' }}>
+          {/* Mobile: just weekday */}
+          <div className="md:hidden flex items-center gap-[6px] mb-[4px]"
+            style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'#5A8C5E' }}>
+            <SunMedium size={11}/> {format(new Date(), 'EEEE', { locale:ptBR }).replace(/^\w/,c=>c.toUpperCase())}
+          </div>
+          {/* Name — smaller on mobile */}
+          <h1 style={{ fontFamily:'var(--font-lora)', fontWeight:700, color:'#1A2B1C', lineHeight:1.1, letterSpacing:'-0.02em' }}
+            className="text-[26px] md:text-[40px]">
             {greet()},<br/>
             <em style={{ fontStyle:'italic', background:'linear-gradient(120deg,#3D6641 30%,#C49A6C 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
               {userName}
             </em>
           </h1>
-          <p className="mt-[5px] italic" style={{ fontSize:'13.5px', color:'rgba(26,43,28,0.36)' }}>
+          <p className="mt-[4px] italic hidden md:block" style={{ fontSize:'13.5px', color:'rgba(26,43,28,0.36)' }}>
             A família em ordem, o coração em paz.
           </p>
         </div>
 
-        <div className="flex gap-[10px] pt-1 flex-shrink-0">
+        {/* Right: action buttons — topbar-actions hides on mobile via CSS */}
+        <div className="topbar-actions flex gap-[10px] pt-1 flex-shrink-0">
           <button className="flex items-center gap-2 px-5 py-[11px] rounded-full text-[14px] font-bold transition-all"
             style={{ background:'rgba(255,255,255,0.70)', color:'rgba(26,43,28,0.58)', border:'1px solid rgba(61,102,65,0.22)', boxShadow:'0 2px 8px rgba(44,74,46,0.10),0 -1px 0 rgba(255,255,255,0.70) inset' }}>
             <Bell size={15}/> Alertas
@@ -281,47 +279,47 @@ export default function DashboardClient({ userName, children, todayActivities, u
         </div>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="grid grid-cols-4 gap-[14px] mb-7">
+      {/* ── Stats — 2 cols mobile / 4 cols desktop ── */}
+      <div className="stats-grid grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[14px] mb-5 md:mb-7">
         {stats.map((s,i)=>(
-          <div key={i} style={STAT}
+          <div key={i} style={{ ...STAT, padding:'16px 14px' }}
+            className="md:p-[22px_20px]"
             onMouseEnter={e=>{ const el=e.currentTarget as HTMLElement; el.style.transform='translateY(-4px) rotate(-0.4deg)'; el.style.boxShadow='0 12px 36px rgba(44,74,46,0.14),0 2px 8px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,0 1px 0 rgba(0,0,0,0.04) inset' }}
             onMouseLeave={e=>{ const el=e.currentTarget as HTMLElement; el.style.transform=''; el.style.boxShadow='' }}>
 
-            {/* Corner colour wash — replicates nth-child::before from approved */}
             <div aria-hidden className="absolute pointer-events-none"
-              style={{ top:-24, right:-24, width:80, height:80, borderRadius:'50%', background:s.corner, opacity:0.10, transition:'opacity .28s, transform .28s' }} />
+              style={{ top:-24, right:-24, width:80, height:80, borderRadius:'50%', background:s.corner, opacity:0.10 }} />
 
-            <div className="w-10 h-10 rounded-[13px] flex items-center justify-center mb-4"
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-[11px] md:rounded-[13px] flex items-center justify-center mb-3 md:mb-4"
               style={{ backgroundImage:s.ibg, border:'1px solid rgba(0,0,0,0.06)', boxShadow:'0 1px 3px rgba(0,0,0,0.10),0 -1px 0 rgba(255,255,255,0.60) inset' }}>
-              <s.icon size={18} color={s.icolor} strokeWidth={2}/>
+              <s.icon size={16} color={s.icolor} strokeWidth={2}/>
             </div>
-            <div style={{ fontFamily:'var(--font-lora)', fontSize:40, fontWeight:700, lineHeight:1, color:'#1A2B1C' }}>{s.n}</div>
-            <div style={{ fontSize:'12.5px', color:'rgba(26,43,28,0.36)', marginTop:5, fontWeight:500 }}>{s.label}</div>
+            <div style={{ fontFamily:'var(--font-lora)', lineHeight:1, color:'#1A2B1C' }} className="text-[32px] md:text-[40px] font-bold">{s.n}</div>
+            <div style={{ color:'rgba(26,43,28,0.36)', fontWeight:500 }} className="text-[11px] md:text-[12.5px] mt-1">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Two-column layout (1fr 308px) ── */}
-      <div className="grid gap-[22px]" style={{ gridTemplateColumns:'1fr 308px' }}>
+      {/* ── Two-column layout — stacked mobile, side-by-side desktop ── */}
+      {/* layout-cols CSS class forces single column on mobile via globals.css */}
+      <div className="layout-cols grid gap-[18px] md:gap-[22px]" style={{ gridTemplateColumns:'1fr 308px' }}>
 
         {/* ─ LEFT ─ */}
-        <div>
+        <div className="min-w-0">
           <SectionH>Atividades de Hoje</SectionH>
 
           {todayActivities.length===0 ? (
-            <div className="text-center py-10" style={{ ...STAT, display:'block', padding:32 }}>
-              <div className="text-4xl mb-3">🎉</div>
+            <div className="text-center py-8" style={{ ...STAT, display:'block', padding:28 }}>
+              <div className="text-3xl mb-2">🎉</div>
               <p className="italic" style={{ fontSize:14, color:'rgba(26,43,28,0.50)' }}>Nenhuma atividade para hoje — aproveite!</p>
             </div>
           ) : (
             todayActivities.map(a=><ActivityRow key={a.id} activity={a}/>)
           )}
 
-
           {/* Upcoming */}
           {upcomingActivities.length>0 && (
-            <div className="mt-6">
+            <div className="mt-5 md:mt-6">
               <SectionH>Próximos 7 dias</SectionH>
               {upcomingActivities.slice(0,5).map(a=><ActivityRow key={a.id} activity={a}/>)}
             </div>
@@ -332,9 +330,11 @@ export default function DashboardClient({ userName, children, todayActivities, u
         <div>
           <SectionH>Calendário</SectionH>
           <MiniCalendar eventDates={eventDates}/>
-
         </div>
       </div>
+
+      {/* Bottom padding for mobile bottom nav */}
+      <div className="md:hidden h-20" />
     </div>
   )
 }
