@@ -53,16 +53,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Paper grid lines */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  opacity: 0.55;
-  background-image:
-    linear-gradient(rgba(61,102,65,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(61,102,65,0.045) 1px, transparent 1px);
-  background-size: 44px 44px;
-}
+/* Paper grid lines — applied to musgo-bg */
 
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
@@ -131,9 +122,14 @@ h1, h2, h3 { font-family: var(--font-lora), Georgia, serif; }
     0 1px 0 rgba(0,0,0,0.04) inset;
 }
 
-/* ─── Musgo background (paper feel) ────────────────────────── */
+/* ─── Musgo background — paper feel + grid lines ────────────── */
 .musgo-bg {
   background-color: #F8F3EA;
+  background-image:
+    linear-gradient(rgba(61,102,65,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61,102,65,0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-attachment: local;
 }
 
 /* ─── Input Styles ───────────────────────────────────────────── */
