@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -31,18 +31,16 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#FDF8F2' }}>
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#F7F5FF' }}>
         <div className="text-center animate-scale-in">
           <div className="text-6xl mb-5 animate-float">🎉</div>
-          <h2 className="font-fraunces text-3xl font-bold mb-2" style={{ color: '#0F1F3D' }}>
+          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
             Conta criada!
           </h2>
-          <p className="text-sm" style={{ color: '#8B7A68' }}>
-            Redirecionando para o seu painel...
-          </p>
-          <div className="mt-5 flex items-center justify-center gap-2" style={{ color: '#F4522D' }}>
-            <span className="w-4 h-4 border-2 border-coral/30 border-t-coral rounded-full animate-spin"
-              style={{ borderColor: 'rgba(244,82,45,.3)', borderTopColor: '#F4522D' }} />
+          <p className="text-sm" style={{ color: '#8585A8' }}>Redirecionando para o seu painel...</p>
+          <div className="mt-5 flex items-center justify-center gap-2" style={{ color: '#7B6FE8' }}>
+            <span className="w-4 h-4 border-2 rounded-full animate-spin"
+              style={{ borderColor: 'rgba(123,111,232,.3)', borderTopColor: '#7B6FE8' }} />
             <span className="text-xs font-semibold">Aguarde...</span>
           </div>
         </div>
@@ -51,163 +49,140 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FDF8F2' }}>
+    <div className="min-h-screen flex" style={{ background: '#F7F5FF' }}>
 
-      {/* ── Left hero (desktop) ── */}
-      <div
-        className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #0F1F3D 0%, #1D3461 60%, #16294F 100%)' }}
-      >
-        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full opacity-15"
-          style={{ background: 'radial-gradient(circle, #F4522D, transparent)' }} />
-        <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #00C48C, transparent)' }} />
+      {/* Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute rounded-full" style={{ width: 450, height: 450, background: 'rgba(196,195,255,0.45)', filter: 'blur(70px)', top: -100, right: -80 }} />
+        <div className="absolute rounded-full" style={{ width: 300, height: 300, background: 'rgba(168,221,181,0.35)', filter: 'blur(60px)', bottom: '15%', left: -60 }} />
+      </div>
+
+      {/* ── Painel esquerdo (desktop) ── */}
+      <div className="hidden lg:flex flex-col justify-between w-[480px] shrink-0 p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #EEF0FF 0%, #F0EBFF 50%, #F0FFF8 100%)' }}>
 
         <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold font-fraunces flex-none"
-            style={{ background: 'linear-gradient(135deg,#F4522D,#F5A623)', boxShadow: '0 8px 24px rgba(244,82,45,.4)' }}>
-            F
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl flex-none"
+            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.35)' }}>
+            🧒
           </div>
           <div>
-            <div className="text-white font-fraunces text-xl font-bold leading-tight">Família em Foco</div>
-            <div className="text-xs" style={{ color: 'rgba(255,255,255,.4)' }}>Organize. Cuide. Celebre.</div>
+            <div className="font-bold text-base leading-tight" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
+              Família em Foco
+            </div>
+            <div className="text-xs" style={{ color: '#8585A8' }}>Organize · Cuide · Celebre</div>
           </div>
         </div>
 
         <div className="relative flex-1 flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#00C48C' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#7B6FE8' }}>
             Comece hoje, é grátis
           </p>
-          <h1 className="font-fraunces text-4xl font-bold text-white leading-tight mb-5">
+          <h1 style={{ fontFamily: 'var(--font-gilda)', fontSize: 44, lineHeight: 1.2, color: '#1A1535' }}>
             Sua família<br/>merece o melhor<br/>da organização. 💚
           </h1>
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>
-            Crie sua conta em segundos e comece a organizar a rotina dos seus filhos com inteligência artificial.
+          <p className="text-sm leading-relaxed mt-5" style={{ color: '#8585A8' }}>
+            Crie sua conta em segundos e comece a organizar a rotina com inteligência artificial.
           </p>
 
-          {/* Steps */}
-          <div className="mt-8 space-y-4">
-            {[
-              { n: '1', text: 'Crie sua conta gratuita' },
-              { n: '2', text: 'Cadastre seus filhos' },
-              { n: '3', text: 'Adicione atividades com IA' },
-            ].map((s, i) => (
+          <div className="mt-8 space-y-3">
+            {['Crie sua conta gratuita', 'Cadastre seus filhos', 'Adicione atividades com IA'].map((s, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center flex-none"
-                  style={{ background: 'rgba(244,82,45,.2)', color: '#F4522D' }}>
-                  {s.n}
+                  style={{ background: 'rgba(123,111,232,0.15)', color: '#7B6FE8' }}>
+                  {i + 1}
                 </span>
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,.65)' }}>{s.text}</span>
+                <span className="text-sm" style={{ color: '#8585A8' }}>{s}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative">
-          <span className="text-xs" style={{ color: 'rgba(255,255,255,.3)' }}>
-            ✓ Sem cartão de crédito · ✓ Cancele quando quiser
-          </span>
-        </div>
+        <p className="text-xs" style={{ color: '#C0BFD5' }}>✓ Sem cartão de crédito · ✓ Cancele quando quiser</p>
       </div>
 
-      {/* ── Right form ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10">
+      {/* ── Painel direito — form ── */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative z-10">
+
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-bold font-fraunces mx-auto mb-2"
-            style={{ background: 'linear-gradient(135deg,#F4522D,#F5A623)', boxShadow: '0 6px 20px rgba(244,82,45,.3)' }}>
-            F
+          <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-2xl mx-auto mb-3"
+            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.3)' }}>
+            🧒
           </div>
-          <div className="font-fraunces text-xl font-bold" style={{ color: '#0F1F3D' }}>Família em Foco</div>
+          <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>Família em Foco</div>
         </div>
 
-        <div className="w-full max-w-sm animate-fade-up">
-          <div className="mb-8">
-            <h2 className="font-fraunces text-3xl font-bold leading-tight mb-1.5" style={{ color: '#0F1F3D' }}>
-              Criar sua conta 🚀
-            </h2>
-            <p className="text-sm" style={{ color: '#8B7A68' }}>
-              Grátis para sempre. Sem cartão de crédito.
-            </p>
-          </div>
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-3xl p-8 animate-fade-up"
+            style={{ boxShadow: '0 24px 80px rgba(123,111,232,0.12), 0 0 0 1px rgba(123,111,232,0.08)' }}>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#0F1F3D' }}>
-                Seu nome
-              </label>
-              <div className="relative">
-                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-0" style={{ color: '#8B7A68' }} />
-                <input
-                  type="text" required value={name} onChange={e => setName(e.target.value)}
-                  placeholder="João Silva"
-                  className="input-field pl-10 w-full"
-                />
-              </div>
+            <div className="mb-7">
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#7B6FE8' }}>
+                Crie sua conta 🚀
+              </p>
+              <h2 style={{ fontFamily: 'var(--font-gilda)', fontSize: 30, color: '#1A1535', lineHeight: 1.2 }}>
+                Grátis para sempre
+              </h2>
+              <p className="text-sm mt-2" style={{ color: '#8585A8' }}>Sem cartão de crédito.</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#0F1F3D' }}>
-                E-mail
-              </label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-0" style={{ color: '#8B7A68' }} />
-                <input
-                  type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="input-field pl-10 w-full"
-                />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>Seu nome</label>
+                <input type="text" required value={name} onChange={e => setName(e.target.value)}
+                  placeholder="João Silva" className="input-field" />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#0F1F3D' }}>
-                Senha
-              </label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-0" style={{ color: '#8B7A68' }} />
-                <input
-                  type={showPw ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                  className="input-field pl-10 pr-11 w-full"
-                />
-                <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-60 z-10 p-1" style={{ color: '#8B7A68' }}>
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+              <div>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>E-mail</label>
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com" className="input-field" />
               </div>
-              {password.length > 0 && (
-                <div className="mt-2 flex gap-1">
-                  {[1,2,3,4].map(n => (
-                    <div key={n} className="flex-1 h-1 rounded-full transition-all"
-                      style={{ background: password.length >= n * 2 ? (password.length >= 8 ? '#00C48C' : '#F5A623') : '#EDE4D6' }} />
-                  ))}
+
+              <div>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>Senha</label>
+                <div className="relative">
+                  <input type={showPw ? 'text' : 'password'} required value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres" className="input-field pr-11" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10 p-1 transition-opacity hover:opacity-60"
+                    style={{ color: '#8585A8' }}>
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {password.length > 0 && (
+                  <div className="mt-2 flex gap-1">
+                    {[1,2,3,4].map(n => (
+                      <div key={n} className="flex-1 h-1 rounded-full transition-all"
+                        style={{ background: password.length >= n * 2 ? (password.length >= 8 ? '#A8DDB5' : '#FFE4A0') : '#E8E4FF' }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="text-xs font-semibold px-4 py-3 rounded-2xl"
+                  style={{ background: '#FFF0F4', color: '#C0405A', border: '1px solid rgba(240,100,130,0.2)' }}>
+                  ⚠ {error}
                 </div>
               )}
-            </div>
 
-            {error && (
-              <div className="text-xs font-semibold px-3.5 py-2.5 rounded-xl"
-                style={{ background: '#FFF0EB', color: '#F4522D', border: '1px solid #FDD5C9' }}>
-                ⚠ {error}
-              </div>
-            )}
+              <button type="submit" disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 28px rgba(123,111,232,0.30)' }}>
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <><span>Criar conta grátis</span><ArrowRight size={15} /></>
+                }
+              </button>
+            </form>
+          </div>
 
-            <button
-              type="submit" disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#F4522D,#D93D1A)', boxShadow: '0 6px 20px rgba(244,82,45,.35)' }}
-            >
-              {loading
-                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                : <><span>Criar conta grátis</span><ArrowRight size={15} /></>
-              }
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm" style={{ color: '#8B7A68' }}>
+          <p className="mt-5 text-center text-sm" style={{ color: '#8585A8' }}>
             Já tem conta?{' '}
-            <Link href="/auth/login" className="font-bold transition-opacity hover:opacity-70" style={{ color: '#F4522D' }}>
+            <Link href="/auth/login" className="font-bold transition-opacity hover:opacity-70" style={{ color: '#7B6FE8' }}>
               Entrar
             </Link>
           </p>
