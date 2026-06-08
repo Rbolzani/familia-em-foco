@@ -297,53 +297,56 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
           {children}
         </main>
 
-        {/* ══ BOTTOM NAV — Mobile ══
-            Ordem: Início · Escola · Atividades · Saúde · Docs · Agenda  ══ */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
-          style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
-          <div style={{
-            background:'rgba(242,234,216,0.97)',
-            backdropFilter:'blur(20px)',
-            borderTop:'1px solid rgba(61,102,65,0.18)',
-            boxShadow:'0 -4px 16px rgba(44,74,46,0.10)',
-          }}>
-            <div style={{ display:'flex', alignItems:'center', height:58 }}>
-              {([
-                { href:'/dashboard',  label:'Início',     icon:LayoutDashboard },
-                { href:'/escola',     label:'Escola',     icon:BookOpen        },
-                { href:'/atividades', label:'Atividades', icon:Trophy          },
-                { href:'/saude',      label:'Saúde',      icon:HeartPulse      },
-                { href:'/vault',      label:'Docs',       icon:FolderLock      },
-                { href:'/calendario', label:'Agenda',     icon:CalendarDays    },
-              ] as const).map(({ href, label, icon: Icon }) => {
-                const active = isActive(href)
-                return (
-                  <Link key={href} href={href}
-                    style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', position:'relative', padding:'8px 0' }}>
-                    <span style={{ color: active ? '#3D6641' : 'rgba(26,43,28,0.32)', transition:'color .15s' }}>
-                      <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
-                    </span>
-                    <span style={{
-                      fontSize:'8.5px', fontWeight:600, lineHeight:1, marginTop:3, letterSpacing:'0.01em',
-                      color: active ? '#3D6641' : 'rgba(26,43,28,0.32)',
-                    }}>
-                      {label}
-                    </span>
-                    {active && (
-                      <span style={{
-                        position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
-                        width:20, height:2.5, borderRadius:'2px 2px 0 0',
-                        background:'linear-gradient(90deg,#5A8C5E,#C49A6C)',
-                      }} />
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </nav>
-
       </div>{/* end app-wrap */}
+
+      {/* ══ BOTTOM NAV — OUTSIDE app-wrap so CSS filter doesn't break position:fixed ══
+          When a parent has filter≠none it becomes a containing block for fixed children,
+          making them "fixed to the parent" not to the viewport. Moving nav here (sibling
+          of app-wrap, same as TEMA panel) fixes this.
+          Ordem: Início · Escola · Atividades · Saúde · Docs · Agenda                 ══ */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
+        style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
+        <div style={{
+          background:'rgba(242,234,216,0.97)',
+          backdropFilter:'blur(20px)',
+          borderTop:'1px solid rgba(61,102,65,0.18)',
+          boxShadow:'0 -4px 16px rgba(44,74,46,0.10)',
+        }}>
+          <div style={{ display:'flex', alignItems:'center', height:58 }}>
+            {([
+              { href:'/dashboard',  label:'Início',     icon:LayoutDashboard },
+              { href:'/escola',     label:'Escola',     icon:BookOpen        },
+              { href:'/atividades', label:'Atividades', icon:Trophy          },
+              { href:'/saude',      label:'Saúde',      icon:HeartPulse      },
+              { href:'/vault',      label:'Docs',       icon:FolderLock      },
+              { href:'/calendario', label:'Agenda',     icon:CalendarDays    },
+            ] as const).map(({ href, label, icon: Icon }) => {
+              const active = isActive(href)
+              return (
+                <Link key={href} href={href}
+                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', position:'relative', padding:'8px 0' }}>
+                  <span style={{ color: active ? '#3D6641' : 'rgba(26,43,28,0.32)', transition:'color .15s' }}>
+                    <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
+                  </span>
+                  <span style={{
+                    fontSize:'8.5px', fontWeight:600, lineHeight:1, marginTop:3, letterSpacing:'0.01em',
+                    color: active ? '#3D6641' : 'rgba(26,43,28,0.32)',
+                  }}>
+                    {label}
+                  </span>
+                  {active && (
+                    <span style={{
+                      position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
+                      width:20, height:2.5, borderRadius:'2px 2px 0 0',
+                      background:'linear-gradient(90deg,#5A8C5E,#C49A6C)',
+                    }} />
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      </nav>
 
       {/* ══ TEMA PANEL — sibling of app-wrap, NOT affected by filter ══ */}
       <div className="hidden md:block fixed z-[200]"
