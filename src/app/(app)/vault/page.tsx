@@ -1,3 +1,4 @@
+'use client'
 import { ExternalLink, Shield, HeartPulse, BadgeCheck, FileText, CreditCard, Lock } from 'lucide-react'
 
 // ── Musgo noise texture ──────────────────────────────────────────────────

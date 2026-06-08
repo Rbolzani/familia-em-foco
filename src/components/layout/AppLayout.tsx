@@ -131,11 +131,14 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
     linear-gradient(175deg,#F2EAD8 0%,#E8DEC8 100%)
   `
 
+  // NOTE: NO overflow:hidden/overflow-x:hidden on root div — breaks position:fixed children
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen relative">
 
       {/* ══ APP WRAP — receives filter; TEMA panel is a sibling outside ══ */}
-      <div ref={appRef} className="app-wrap flex min-h-screen overflow-x-hidden">
+      {/* overflow-x-hidden here would break position:fixed children on some browsers;
+          use max-w + clip on inner elements instead                               */}
+      <div ref={appRef} className="app-wrap flex min-h-screen">
 
         {/* ══ SIDEBAR ══
             Layout contract (prevents children from being pushed off-screen):
@@ -265,9 +268,11 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
 
         </aside>
 
-        {/* ══ MAIN ══ */}
-        <main className="flex-1 md:ml-[256px] min-h-screen musgo-bg relative z-[1]"
-          style={{ paddingBottom:'env(safe-area-inset-bottom, 80px)' }}>
+        {/* ══ MAIN ══
+            pb-[58px] on mobile = height of bottom nav bar so last content
+            is always reachable above the fixed bar                         ══ */}
+        <main className="flex-1 md:ml-[256px] min-h-screen musgo-bg relative z-[1] pb-[58px] md:pb-0"
+          style={{ paddingBottom:'calc(58px + env(safe-area-inset-bottom, 0px))' }}>
 
           {/* Mobile topbar */}
           <div className="md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-30"

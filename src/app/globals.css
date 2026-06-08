@@ -76,6 +76,8 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  /* overflow-x: clip prevents horizontal scroll WITHOUT breaking position:fixed */
+  overflow-x: clip;
 }
 
 button { font-family: inherit; cursor: pointer; }
