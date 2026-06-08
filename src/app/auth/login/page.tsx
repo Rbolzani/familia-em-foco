@@ -1,17 +1,22 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Leaf, CalendarDays, HeartPulse, BookOpen } from 'lucide-react'
+
+// Shared token helpers
+const CARD = {
+  background: 'linear-gradient(160deg,#FFFFFF 0%,#F8F3EA 100%)',
+  border: '1px solid rgba(61,102,65,0.18)',
+  boxShadow: '0 4px 16px rgba(44,74,46,0.10),0 1px 4px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.85) inset',
+}
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
-  const [showPw, setShowPw] = useState(false)
+  const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,97 +36,117 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#F7F5FF' }}>
+    <div className="min-h-screen flex" style={{ background: '#F8F3EA' }}>
 
-      {/* Orbs decorativos */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute rounded-full" style={{ width: 500, height: 500, background: 'rgba(196,195,255,0.45)', filter: 'blur(70px)', top: -150, right: -100, animation: 'float2 10s ease-in-out infinite' }} />
-        <div className="absolute rounded-full" style={{ width: 350, height: 350, background: 'rgba(244,167,185,0.35)', filter: 'blur(60px)', bottom: '10%', left: -80, animation: 'float1 8s ease-in-out infinite' }} />
-        <div className="absolute rounded-full" style={{ width: 280, height: 280, background: 'rgba(168,221,181,0.30)', filter: 'blur(55px)', bottom: '30%', right: '5%', animation: 'float2 12s ease-in-out infinite reverse' }} />
-      </div>
+      {/* Paper grid background */}
+      <div className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(61,102,65,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(61,102,65,0.045) 1px,transparent 1px)',
+          backgroundSize: '44px 44px',
+        }} />
 
-      {/* ── Painel esquerdo — hero (desktop) ── */}
-      <div className="hidden lg:flex flex-col justify-between w-[480px] shrink-0 p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #EEF0FF 0%, #F0EBFF 50%, #FFE8F0 100%)' }}>
+      {/* ── Left hero — desktop ── */}
+      <div className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 p-12 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(165deg,#F2EAD8 0%,#E8DEC8 60%,#DDD4B8 100%)',
+          borderRight: '1px solid rgba(61,102,65,0.16)',
+        }}>
+
+        {/* Organic stripe */}
+        <div className="absolute top-0 left-0 w-[3px] h-full"
+          style={{ background: 'linear-gradient(180deg,transparent 0%,#5A8C5E 20%,#3D6641 50%,#C49A6C 80%,transparent 100%)', opacity: 0.55 }} />
 
         {/* Logo */}
-        <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl flex-none"
-            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.35)' }}>
-            🧒
+        <div className="flex items-center gap-3 relative">
+          <div className="w-12 h-12 rounded-[15px] flex items-center justify-center flex-none relative"
+            style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 6px 20px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+            <Leaf size={22} color="#D4E8D5" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-tl-none rounded-tr-full rounded-bl-full"
+              style={{ background: '#C49A6C', opacity: 0.9 }} />
           </div>
           <div>
-            <div className="font-bold text-base leading-tight" style={{ color: '#1A1535', fontFamily: 'var(--font-gilda)' }}>
+            <div className="font-bold text-base leading-tight" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>
               Família em Foco
             </div>
-            <div className="text-xs" style={{ color: '#8585A8' }}>Organize · Cuide · Celebre</div>
+            <div className="text-xs italic mt-0.5" style={{ color: 'rgba(26,43,28,0.40)' }}>sua rotina, com leveza</div>
           </div>
         </div>
 
         {/* Hero copy */}
-        <div className="relative flex-1 flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#7B6FE8' }}>
+        <div className="flex-1 flex flex-col justify-center relative">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] mb-5"
+            style={{ color: '#5A8C5E' }}>
             Para mães e pais
           </p>
-          <h1 style={{ fontFamily: 'var(--font-gilda)', fontSize: 48, lineHeight: 1.2, color: '#1A1535' }}>
-            Organize a vida<br/>dos seus <span style={{ color: '#7B6FE8' }}>filhos</span><br/>com carinho.
+          <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 46, lineHeight: 1.18, color: '#1A2B1C', letterSpacing: '-0.02em' }}>
+            Organize a vida<br/>dos seus{' '}
+            <em style={{ fontStyle: 'italic', background: 'linear-gradient(120deg,#3D6641 30%,#C49A6C 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>filhos</em>
+            <br/>com carinho.
           </h1>
-          <p className="text-sm leading-relaxed mt-5" style={{ color: '#8585A8' }}>
-            Um lugar só para eles — escola, saúde, atividades e documentos em um app bonito e fácil.
+          <p className="text-sm leading-relaxed mt-5" style={{ color: 'rgba(26,43,28,0.52)' }}>
+            Escola, saúde, atividades e documentos reunidos em um app bonito e fácil.
           </p>
 
           {/* Preview cards */}
           <div className="mt-8 space-y-2.5">
             {[
-              { dot: '#7B6FE8', text: 'Prova de Matemática — Pedro', badge: 'Hoje', badgeBg: '#EEF0FF', badgeColor: '#7B6FE8' },
-              { dot: '#F4A7B9', text: 'Ballet da Sofia — 15h30', badge: '5ª feira', badgeBg: '#FFF0F4', badgeColor: '#E07A9A' },
-              { dot: '#A8DDB5', text: 'Consulta pediatra — 17h', badge: 'Amanhã', badgeBg: '#F0FAF2', badgeColor: '#4A9E5C' },
+              { icon: BookOpen,    icolor: '#2563EB', ibg: 'rgba(37,99,235,0.10)',   text: 'Prova de Matemática — Pedro', badge: 'Hoje',    bbg: 'rgba(37,99,235,0.10)',   bc: '#1D4ED8' },
+              { icon: HeartPulse, icolor: '#065F46', ibg: 'rgba(6,95,70,0.10)',     text: 'Consulta pediatra — Sofia',  badge: 'Amanhã',  bbg: 'rgba(6,95,70,0.10)',    bc: '#065F46' },
+              { icon: CalendarDays, icolor: '#92400E', ibg: 'rgba(146,64,14,0.10)', text: 'Natação — Lucas · 17h',      badge: 'Quinta',  bbg: 'rgba(146,64,14,0.10)', bc: '#92400E' },
             ].map((c, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3"
-                style={{ boxShadow: '0 4px 16px rgba(123,111,232,0.08)', animationDelay: `${i * 0.1}s` }}>
-                <div className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: c.dot }} />
-                <span className="flex-1 text-sm font-medium" style={{ color: '#1A1535' }}>{c.text}</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: c.badgeBg, color: c.badgeColor }}>{c.badge}</span>
+              <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-[15px] animate-fade-up"
+                style={{ ...CARD, animationDelay: `${i * 0.08}s` }}>
+                <span className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-none"
+                  style={{ background: c.ibg, boxShadow: '0 1px 3px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.60) inset' }}>
+                  <c.icon size={15} color={c.icolor} strokeWidth={2} />
+                </span>
+                <span className="flex-1 text-sm font-semibold" style={{ color: '#1A2B1C' }}>{c.text}</span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: c.bbg, color: c.bc, border: '1px solid currentColor', borderColor: `${c.bc}25` }}>
+                  {c.badge}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-xs" style={{ color: '#C0BFD5' }}>Powered by IA · 100% seguro</p>
+        <p className="text-xs relative" style={{ color: 'rgba(26,43,28,0.30)' }}>
+          Powered por IA · Dados protegidos
+        </p>
       </div>
 
-      {/* ── Painel direito — form ── */}
+      {/* ── Right form panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative z-10">
 
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-2xl mx-auto mb-3"
-            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.3)' }}>
-            🧒
+          <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto mb-3 relative"
+            style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 8px 24px rgba(44,74,46,0.30)' }}>
+            <Leaf size={28} color="#D4E8D5" />
           </div>
-          <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>Família em Foco</div>
+          <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>Família em Foco</div>
+          <div className="text-sm italic mt-1" style={{ color: 'rgba(26,43,28,0.45)' }}>sua rotina, com leveza</div>
         </div>
 
         <div className="w-full max-w-sm">
-          {/* Card de form */}
-          <div className="bg-white rounded-3xl p-8 animate-fade-up"
-            style={{ boxShadow: '0 24px 80px rgba(123,111,232,0.12), 0 0 0 1px rgba(123,111,232,0.08)' }}>
+          <div className="rounded-[20px] p-8 animate-fade-up" style={CARD}>
 
             <div className="mb-7">
-              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#7B6FE8' }}>
-                Bem-vindo de volta 👋
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] mb-3" style={{ color: '#5A8C5E' }}>
+                Bem-vindo de volta
               </p>
-              <h2 style={{ fontFamily: 'var(--font-gilda)', fontSize: 32, color: '#1A1535', lineHeight: 1.2 }}>
+              <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 30, color: '#1A2B1C', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
                 Entre na sua<br/>conta
               </h2>
-              <p className="text-sm mt-2" style={{ color: '#8585A8' }}>
+              <p className="text-sm mt-2 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>
                 Seu dia começa aqui — organizado e tranquilo.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>E-mail</label>
+                <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]"
+                  style={{ color: 'rgba(26,43,28,0.50)' }}>E-mail</label>
                 <input
                   type="email" required value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="seu@email.com"
@@ -130,7 +155,8 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>Senha</label>
+                <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]"
+                  style={{ color: 'rgba(26,43,28,0.50)' }}>Senha</label>
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'} required value={password}
@@ -140,35 +166,40 @@ export default function LoginPage() {
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)} tabIndex={-1}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10 p-1 transition-opacity hover:opacity-60"
-                    style={{ color: '#8585A8' }}>
+                    style={{ color: 'rgba(26,43,28,0.40)' }}>
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
               {error && (
-                <div className="text-xs font-semibold px-4 py-3 rounded-2xl"
-                  style={{ background: '#FFF0F4', color: '#C0405A', border: '1px solid rgba(240,100,130,0.2)' }}>
+                <div className="text-xs font-semibold px-4 py-3 rounded-[12px]"
+                  style={{ background: 'linear-gradient(140deg,#FEE2E2,#FECACA)', color: '#991B1B', border: '1px solid rgba(220,38,38,0.20)' }}>
                   ⚠ {error}
                 </div>
               )}
 
               <button
                 type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 28px rgba(123,111,232,0.30)' }}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[13px] text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
+                style={{
+                  background: 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+                  color: '#D4E8D5',
+                  boxShadow: '0 6px 20px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset',
+                }}
               >
                 {loading
-                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ? <span className="w-4 h-4 border-2 border-green-200/40 border-t-green-200 rounded-full animate-spin" />
                   : <><span>Entrar</span><ArrowRight size={15} /></>
                 }
               </button>
             </form>
           </div>
 
-          <p className="mt-5 text-center text-sm" style={{ color: '#8585A8' }}>
+          <p className="mt-5 text-center text-sm" style={{ color: 'rgba(26,43,28,0.45)' }}>
             Não tem conta?{' '}
-            <Link href="/auth/signup" className="font-bold transition-opacity hover:opacity-70" style={{ color: '#7B6FE8' }}>
+            <Link href="/auth/signup" className="font-bold transition-opacity hover:opacity-70"
+              style={{ color: '#3D6641' }}>
               Criar conta gratuita
             </Link>
           </p>

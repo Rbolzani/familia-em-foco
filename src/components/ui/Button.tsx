@@ -15,41 +15,44 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     `
 
     const sizes = {
-      sm: 'px-3.5 py-2 text-sm rounded-2xl',
-      md: 'px-5 py-2.5 text-sm rounded-2xl',
-      lg: 'px-6 py-3.5 text-base rounded-2xl',
+      sm: 'px-3.5 py-2 text-sm rounded-[12px]',
+      md: 'px-5 py-2.5 text-sm rounded-[13px]',
+      lg: 'px-6 py-3.5 text-base rounded-[14px]',
     }
 
     const variantStyles: Record<string, React.CSSProperties> = {
       primary: {
-        background: disabled ? '#C8C3FF' : 'linear-gradient(135deg, #7B6FE8 0%, #C084FC 100%)',
-        color: '#ffffff',
-        boxShadow: disabled ? 'none' : '0 4px 14px rgba(123,111,232,0.30)',
+        background: disabled
+          ? 'rgba(61,102,65,0.35)'
+          : 'linear-gradient(140deg, #3D6641 0%, #2C4A2E 100%)',
+        color: disabled ? 'rgba(212,232,213,0.55)' : '#D4E8D5',
+        boxShadow: disabled ? 'none'
+          : '0 4px 14px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset',
         border: 'none',
       },
       secondary: {
-        background: '#E8E4FF',
-        color: '#7B6FE8',
-        border: '1.5px solid rgba(123,111,232,0.20)',
-        boxShadow: 'none',
+        background: 'rgba(255,255,255,0.75)',
+        color: '#3D6641',
+        border: '1px solid rgba(61,102,65,0.22)',
+        boxShadow: '0 2px 8px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset',
       },
       ghost: {
         background: 'transparent',
-        color: '#8585A8',
-        border: '1.5px solid rgba(123,111,232,0.15)',
+        color: 'rgba(26,43,28,0.58)',
+        border: '1px solid rgba(61,102,65,0.18)',
         boxShadow: 'none',
       },
       danger: {
-        background: 'linear-gradient(135deg, #f87171, #ef4444)',
+        background: 'linear-gradient(140deg, #DC2626, #991B1B)',
         color: '#ffffff',
         border: 'none',
-        boxShadow: '0 4px 14px rgba(239,68,68,0.25)',
+        boxShadow: '0 4px 14px rgba(220,38,38,0.28),0 -1px 0 rgba(255,255,255,0.10) inset',
       },
       soft: {
-        background: '#F7F5FF',
-        color: '#7B6FE8',
-        border: 'none',
-        boxShadow: 'none',
+        background: 'rgba(61,102,65,0.08)',
+        color: '#3D6641',
+        border: '1px solid rgba(61,102,65,0.14)',
+        boxShadow: '0 1px 4px rgba(44,74,46,0.06)',
       },
     }
 
@@ -58,7 +61,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled}
         style={{ ...variantStyles[variant], ...style }}
-        className={`${base} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-105'} ${className}`}
+        className={`${base} ${sizes[size]} ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-105'} ${className}`}
         {...props}
       >
         {children}
