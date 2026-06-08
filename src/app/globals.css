@@ -219,20 +219,23 @@ input[type=range]::-webkit-slider-thumb {
   border-radius: 8px;
 }
 
+/* ─── main-container: bounded height on mobile so calendar grid *
+ * gets a definite height for flex-1 / grid 1fr to work.       */
+.main-container { min-height: 100vh; }
+@media (max-width: 767px) {
+  .main-container {
+    height: 100svh;
+    min-height: unset;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 /* ─── Mobile utilities ───────────────────────────────────────── */
 @media (max-width: 767px) {
-  /* Prevent horizontal overflow on any element */
-  .no-hscroll { overflow-x: hidden; max-width: 100vw; }
-
-  /* Full-width content on mobile */
-  .mobile-full { width: 100%; min-width: 0; }
-
-  /* Stats 2-column on mobile */
-  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-  /* Single column layout on mobile */
-  .layout-cols { grid-template-columns: 1fr !important; }
-
-  /* Topbar stacked on mobile */
+  .no-hscroll   { overflow-x: hidden; max-width: 100vw; }
+  .mobile-full  { width: 100%; min-width: 0; }
+  .stats-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .layout-cols  { grid-template-columns: 1fr !important; }
   .topbar-actions { display: none !important; }
 }
