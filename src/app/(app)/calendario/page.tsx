@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, Child } from '@/lib/types'
 import { CategoryBadge } from '@/components/ui/Badge'
-import { ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, MapPin, X } from 'lucide-react'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay,
   isToday, startOfWeek, endOfWeek, addMonths, subMonths,
@@ -11,26 +11,32 @@ import {
 import { ptBR } from 'date-fns/locale'
 
 const CAT_COLORS = {
-  escola: '#2563EB',
-  saude: '#00C48C',
-  extracurricular: '#7C3AED',
+  escola:          '#3B82F6',
+  saude:           '#4A9E5C',
+  extracurricular: '#B45309',
 }
 const CAT_BG = {
-  escola: '#EEF4FF',
-  saude: '#E6FBF4',
-  extracurricular: '#F3EEFF',
+  escola:          '#EFF6FF',
+  saude:           '#F0FAF2',
+  extracurricular: '#FFF8EC',
+}
+const CAT_PILL = {
+  escola:          'rgba(59,130,246,0.85)',
+  saude:           'rgba(74,158,92,0.85)',
+  extracurricular: 'rgba(180,83,9,0.75)',
 }
 
 export default function CalendarioPage() {
   const supabase = createClient()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [children, setChildren] = useState<Child[]>([])
+  const [activities, setActivities]   = useState<Activity[]>([])
+  const [children, setChildren]       = useState<Child[]>([])
   const [filterChild, setFilterChild] = useState('')
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]         = useState(true)
 
   const load = useCallback(async () => {
+    setLoading(true)
     const start = format(startOfMonth(currentDate), 'yyyy-MM-dd')
     const end   = format(endOfMonth(currentDate),   'yyyy-MM-dd')
     const [{ data: acts }, { data: kids }] = await Promise.all([
@@ -49,213 +55,231 @@ export default function CalendarioPage() {
   useEffect(() => { load() }, [load])
 
   const filtered = activities.filter(a => !filterChild || a.child_id === filterChild)
-
-  const calStart = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 })
-  const calEnd   = endOfWeek(endOfMonth(currentDate),     { weekStartsOn: 0 })
-  const days     = eachDayOfInterval({ start: calStart, end: calEnd })
-
+  const calStart  = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 })
+  const calEnd    = endOfWeek(endOfMonth(currentDate),     { weekStartsOn: 0 })
+  const days      = eachDayOfInterval({ start: calStart, end: calEnd })
   const actsForDay = (day: Date) => filtered.filter(a => a.date === format(day, 'yyyy-MM-dd'))
   const selectedDayActivities = selectedDay ? actsForDay(selectedDay) : []
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="flex flex-col h-screen md:h-[calc(100vh)] overflow-hidden" style={{ background: '#F7F5FF' }}>
 
-      {/* Header */}
-      <div className="flex items-start justify-between animate-fade-up">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#F5A623' }}>
-            📅 Agenda
-          </p>
-          <h1 className="font-fraunces text-3xl font-bold" style={{ color: '#0F1F3D' }}>Calendário</h1>
-          <p className="text-sm mt-0.5 capitalize" style={{ color: '#8B7A68' }}>
-            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-          </p>
-        </div>
-        {children.length > 0 && (
-          <select
-            value={filterChild}
-            onChange={e => setFilterChild(e.target.value)}
-            className="input-field text-sm"
-            style={{ width: 'auto' }}
-          >
-            <option value="">Todos os filhos</option>
-            {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        )}
-      </div>
+      {/* ── Top bar ── */}
+      <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+        style={{ borderBottom: '1px solid rgba(123,111,232,0.10)', background: '#FEFEFE' }}>
 
-      {/* Calendar card */}
-      <div className="card animate-fade-up overflow-hidden" style={{ padding: 0 }}>
-        {/* Month nav */}
-        <div className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid #F5EDE0' }}>
-          <button
-            onClick={() => setCurrentDate(d => subMonths(d, 1))}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-            style={{ background: '#F9F5F0', color: '#0F1F3D' }}
-          >
-            <ChevronLeft size={17} />
+        <div className="flex items-center gap-4">
+          {/* Navegação de mês */}
+          <button onClick={() => setCurrentDate(d => subMonths(d, 1))}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: '#F0EEFF', color: '#7B6FE8' }}>
+            <ChevronLeft size={18} />
           </button>
-          <h2 className="font-fraunces text-xl font-bold capitalize" style={{ color: '#0F1F3D' }}>
-            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-          </h2>
-          <button
-            onClick={() => setCurrentDate(d => addMonths(d, 1))}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-            style={{ background: '#F9F5F0', color: '#0F1F3D' }}
-          >
-            <ChevronRight size={17} />
-          </button>
-        </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7" style={{ borderBottom: '1px solid #F5EDE0' }}>
-          {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => (
-            <div key={d} className="text-center text-xs font-bold py-2.5" style={{ color: '#8B7A68' }}>{d}</div>
-          ))}
-        </div>
-
-        {/* Days grid */}
-        <div className="grid grid-cols-7" style={{ background: '#FDF8F2' }}>
-          {days.map((day, i) => {
-            const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-            const dayActs = actsForDay(day)
-            const isSelected = selectedDay && isSameDay(day, selectedDay)
-            const today = isToday(day)
-
-            return (
-              <div
-                key={i}
-                onClick={() => setSelectedDay(isSelected ? null : day)}
-                className="min-h-[72px] p-1.5 cursor-pointer transition-all"
-                style={{
-                  borderBottom: '1px solid #F5EDE0',
-                  borderRight: i % 7 !== 6 ? '1px solid #F5EDE0' : 'none',
-                  background: isSelected
-                    ? '#FFF0EB'
-                    : today
-                    ? '#FFFBF7'
-                    : isCurrentMonth ? '#FDF8F2' : '#F9F5F0',
-                  opacity: isCurrentMonth ? 1 : .45,
-                }}
-              >
-                <div
-                  className="text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full"
-                  style={
-                    today
-                      ? { background: '#F4522D', color: '#fff' }
-                      : isSelected
-                      ? { background: '#FDD5C9', color: '#F4522D' }
-                      : { color: '#0F1F3D' }
-                  }
-                >
-                  {day.getDate()}
-                </div>
-                <div className="space-y-0.5">
-                  {dayActs.slice(0, 2).map((a, ai) => (
-                    <div
-                      key={ai}
-                      className="text-xs px-1.5 py-0.5 rounded-md text-white truncate font-semibold"
-                      style={{ background: CAT_COLORS[a.category] ?? '#8B7A68', fontSize: 10 }}
-                      title={a.title}
-                    >
-                      {a.title}
-                    </div>
-                  ))}
-                  {dayActs.length > 2 && (
-                    <div className="text-xs font-bold" style={{ color: '#8B7A68', fontSize: 10 }}>
-                      +{dayActs.length - 2} mais
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex gap-4 flex-wrap animate-fade-up">
-        {Object.entries(CAT_COLORS).map(([cat, color]) => (
-          <span key={cat} className="flex items-center gap-1.5 text-xs font-semibold capitalize" style={{ color: '#8B7A68' }}>
-            <span className="w-3 h-3 rounded-sm inline-block" style={{ background: color }} />
-            {cat === 'extracurricular' ? 'Extracurricular' : cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </span>
-        ))}
-        <button
-          onClick={() => setCurrentDate(new Date())}
-          className="ml-auto text-xs font-bold px-3 py-1 rounded-full transition-all hover:opacity-80"
-          style={{ background: '#FFF0EB', color: '#F4522D' }}
-        >
-          Hoje
-        </button>
-      </div>
-
-      {/* Selected day */}
-      {selectedDay && (
-        <div className="animate-fade-up">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-fraunces text-lg font-bold capitalize" style={{ color: '#0F1F3D' }}>
-              {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </h3>
-            <span
-              className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: '#FFF8E6', color: '#D97706' }}
-            >
-              {selectedDayActivities.length} atividade{selectedDayActivities.length !== 1 ? 's' : ''}
-            </span>
+          <div>
+            <h1 className="text-xl font-bold capitalize leading-tight"
+              style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
+              {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+            </h1>
           </div>
 
-          {selectedDayActivities.length === 0 ? (
-            <div className="card p-5 text-center">
-              <div className="text-2xl mb-2">🌤</div>
-              <p className="text-sm" style={{ color: '#8B7A68' }}>
-                Nenhuma atividade neste dia
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2.5 stagger">
-              {selectedDayActivities.map((a, i) => {
-                const color = CAT_COLORS[a.category] ?? '#8B7A68'
-                const bg = CAT_BG[a.category] ?? '#F5F0EB'
-                return (
-                  <div
-                    key={a.id}
-                    className="card card-lift animate-fade-up flex items-start gap-3 p-4"
-                    style={{ animationDelay: `${i * 0.05}s` }}
-                  >
-                    <div className="w-1.5 self-stretch rounded-full flex-none" style={{ background: color }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm" style={{ color: '#0F1F3D' }}>{a.title}</div>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        {(a as any).child && (
-                          <span
-                            className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                            style={{ background: (a as any).child.avatar_color }}
-                          >
-                            {(a as any).child.name}
-                          </span>
-                        )}
-                        {a.time && (
-                          <span className="text-xs flex items-center gap-1" style={{ color: '#8B7A68' }}>
-                            <Clock size={11} /> {a.time.slice(0,5)}
-                          </span>
-                        )}
-                        <CategoryBadge category={a.category} />
-                      </div>
-                      {a.location && (
-                        <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#8B7A68' }}>
-                          <MapPin size={11} /> {a.location}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+          <button onClick={() => setCurrentDate(d => addMonths(d, 1))}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: '#F0EEFF', color: '#7B6FE8' }}>
+            <ChevronRight size={18} />
+          </button>
+
+          <button onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()) }}
+            className="text-xs font-bold px-3.5 py-1.5 rounded-full transition-all hover:brightness-95"
+            style={{ background: '#E8E4FF', color: '#7B6FE8' }}>
+            Hoje
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Legenda */}
+          <div className="hidden sm:flex gap-3">
+            {[['escola','Escola'],['saude','Saúde'],['extracurricular','Extracurricular']].map(([cat, label]) => (
+              <span key={cat} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#8585A8' }}>
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: CAT_COLORS[cat as keyof typeof CAT_COLORS], display: 'inline-block' }} />
+                {label}
+              </span>
+            ))}
+          </div>
+
+          {/* Filtro filho */}
+          {children.length > 0 && (
+            <select value={filterChild} onChange={e => setFilterChild(e.target.value)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-2xl outline-none cursor-pointer"
+              style={{ background: '#F7F5FF', color: '#1A1535', border: '1px solid rgba(123,111,232,0.15)' }}>
+              <option value="">Todos os filhos</option>
+              {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           )}
         </div>
-      )}
+      </div>
+
+      {/* ── Corpo: calendário + painel lateral ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Calendário */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Cabeçalho dias da semana */}
+          <div className="grid grid-cols-7 flex-shrink-0"
+            style={{ borderBottom: '1px solid rgba(123,111,232,0.08)', background: '#FEFEFE' }}>
+            {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => (
+              <div key={d} className="text-center text-xs font-bold py-3" style={{ color: '#8585A8' }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Grade de dias */}
+          <div className="grid grid-cols-7 flex-1 overflow-hidden"
+            style={{ gridAutoRows: '1fr' }}>
+            {days.map((day, i) => {
+              const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+              const dayActs  = actsForDay(day)
+              const isSelected = selectedDay && isSameDay(day, selectedDay)
+              const todayDay = isToday(day)
+
+              return (
+                <div key={i}
+                  onClick={() => setSelectedDay(isSelected ? null : day)}
+                  className="flex flex-col p-1.5 cursor-pointer transition-all overflow-hidden"
+                  style={{
+                    borderBottom: '1px solid rgba(123,111,232,0.07)',
+                    borderRight: i % 7 !== 6 ? '1px solid rgba(123,111,232,0.07)' : 'none',
+                    background: isSelected
+                      ? 'rgba(123,111,232,0.07)'
+                      : todayDay
+                      ? 'rgba(123,111,232,0.03)'
+                      : '#FEFEFE',
+                    opacity: isCurrentMonth ? 1 : 0.38,
+                  }}
+                >
+                  {/* Número do dia */}
+                  <div className="flex-shrink-0 mb-1">
+                    <span className="text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full"
+                      style={
+                        todayDay
+                          ? { background: '#7B6FE8', color: '#fff' }
+                          : isSelected
+                          ? { background: '#E8E4FF', color: '#7B6FE8' }
+                          : { color: '#1A1535' }
+                      }>
+                      {day.getDate()}
+                    </span>
+                  </div>
+
+                  {/* Pills de atividades */}
+                  <div className="flex flex-col gap-0.5 overflow-hidden flex-1">
+                    {dayActs.slice(0, 3).map((a, ai) => (
+                      <div key={ai}
+                        className="text-white truncate font-semibold rounded-md px-1.5 leading-tight flex-shrink-0"
+                        style={{
+                          background: CAT_PILL[a.category] ?? 'rgba(133,133,168,0.7)',
+                          fontSize: 10,
+                          paddingTop: 2,
+                          paddingBottom: 2,
+                        }}
+                        title={a.title}>
+                        {a.title}
+                      </div>
+                    ))}
+                    {dayActs.length > 3 && (
+                      <div className="text-xs font-bold flex-shrink-0" style={{ color: '#8585A8', fontSize: 10 }}>
+                        +{dayActs.length - 3}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Painel lateral — dia selecionado ── */}
+        {selectedDay && (
+          <div className="w-72 flex-shrink-0 border-l flex flex-col overflow-hidden animate-fade-in"
+            style={{ borderColor: 'rgba(123,111,232,0.10)', background: '#FEFEFE' }}>
+
+            {/* Header do painel */}
+            <div className="flex items-center justify-between px-4 py-4 flex-shrink-0"
+              style={{ borderBottom: '1px solid rgba(123,111,232,0.08)' }}>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest" style={{ color: '#7B6FE8' }}>
+                  {format(selectedDay, "EEEE", { locale: ptBR })}
+                </div>
+                <div className="text-lg font-bold capitalize" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
+                  {format(selectedDay, "d 'de' MMMM", { locale: ptBR })}
+                </div>
+              </div>
+              <button onClick={() => setSelectedDay(null)}
+                className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:bg-lavender"
+                style={{ color: '#8585A8', background: 'rgba(123,111,232,0.06)' }}>
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Contagem */}
+            <div className="px-4 py-2.5 flex-shrink-0"
+              style={{ borderBottom: '1px solid rgba(123,111,232,0.06)' }}>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{ background: selectedDayActivities.length > 0 ? '#E8E4FF' : '#F7F5FF', color: selectedDayActivities.length > 0 ? '#7B6FE8' : '#8585A8' }}>
+                {selectedDayActivities.length === 0
+                  ? 'Nenhuma atividade'
+                  : `${selectedDayActivities.length} atividade${selectedDayActivities.length !== 1 ? 's' : ''}`}
+              </span>
+            </div>
+
+            {/* Lista de atividades */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {selectedDayActivities.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 text-center">
+                  <div className="text-3xl mb-2">🌤</div>
+                  <p className="text-sm" style={{ color: '#8585A8' }}>Dia livre!</p>
+                </div>
+              ) : (
+                selectedDayActivities.map((a, i) => {
+                  const color = CAT_COLORS[a.category] ?? '#8585A8'
+                  return (
+                    <div key={a.id}
+                      className="rounded-2xl p-3 flex items-start gap-2.5 animate-fade-up"
+                      style={{ background: CAT_BG[a.category] ?? '#F7F5FF', animationDelay: `${i * 0.05}s` }}>
+                      <div className="w-1 self-stretch rounded-full flex-none mt-1" style={{ background: color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm leading-tight" style={{ color: '#1A1535' }}>
+                          {a.title}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {(a as any).child && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                              style={{ background: (a as any).child.avatar_color ?? '#8585A8' }}>
+                              {(a as any).child.name}
+                            </span>
+                          )}
+                          {a.time && (
+                            <span className="text-xs flex items-center gap-1" style={{ color: '#8585A8' }}>
+                              <Clock size={10} /> {a.time.slice(0, 5)}
+                            </span>
+                          )}
+                        </div>
+                        {a.location && (
+                          <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#8585A8' }}>
+                            <MapPin size={10} /> {a.location}
+                          </p>
+                        )}
+                        <div className="mt-1.5">
+                          <CategoryBadge category={a.category} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
