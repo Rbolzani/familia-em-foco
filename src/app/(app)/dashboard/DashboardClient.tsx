@@ -19,9 +19,11 @@ interface Props {
   upcomingActivities: (Activity & { child: { name: string; avatar_color: string } })[]
 }
 
-// ── Textures ───────────────────────────────────────────────────────────────
-const NOISE    = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`
-const NOISE_SM = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`
+// ── Textures — higher opacity for visible grain ────────────────────────────
+const NOISE    = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.065'/%3E%3C/svg%3E")`
+// Subtle horizontal lines pattern (paper-like)
+const LINES    = `repeating-linear-gradient(180deg,transparent 0px,transparent 28px,rgba(61,102,65,0.018) 28px,rgba(61,102,65,0.018) 29px)`
+const NOISE_SM = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`
 
 // ── Shared card styles ─────────────────────────────────────────────────────
 const STAT: React.CSSProperties = {
@@ -30,10 +32,10 @@ const STAT: React.CSSProperties = {
   cursor: 'pointer',
   position: 'relative',
   overflow: 'hidden',
-  background: `${NOISE}, linear-gradient(160deg,#FFFFFF 0%,#F5F0E8 100%)`,
-  backgroundSize: '200px 200px, 100% 100%',
-  border: '1px solid rgba(61,102,65,0.22)',
-  boxShadow: '0 6px 20px rgba(44,74,46,0.12),0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.85) inset,0 1px 0 rgba(0,0,0,0.04) inset',
+  background: `${NOISE}, ${LINES}, linear-gradient(160deg,#FFFFFF 0%,#F7F2EA 100%)`,
+  backgroundSize: '200px 200px, 100% 100%, 100% 100%',
+  border: '1px solid rgba(61,102,65,0.18)',
+  boxShadow: '0 6px 22px rgba(44,74,46,0.11),0 2px 6px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.95) inset,0 1px 0 rgba(0,0,0,0.035) inset,inset 1px 0 rgba(255,255,255,0.55),inset -1px 0 rgba(0,0,0,0.022)',
   transition: 'transform 0.25s, box-shadow 0.25s',
 }
 
@@ -47,10 +49,10 @@ const ACT: React.CSSProperties = {
   cursor: 'pointer',
   position: 'relative',
   overflow: 'hidden',
-  background: `${NOISE}, linear-gradient(160deg,#FFFFFF 0%,#FAFAF7 100%)`,
-  backgroundSize: '200px 200px, 100% 100%',
-  border: '1px solid rgba(61,102,65,0.22)',
-  boxShadow: '0 2px 8px rgba(44,74,46,0.10),0 -1px 0 rgba(255,255,255,0.90) inset,0 1px 0 rgba(0,0,0,0.03) inset',
+  background: `${NOISE}, ${LINES}, linear-gradient(160deg,#FFFFFF 0%,#FAFAF7 100%)`,
+  backgroundSize: '200px 200px, 100% 100%, 100% 100%',
+  border: '1px solid rgba(61,102,65,0.18)',
+  boxShadow: '0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.95) inset,0 1px 0 rgba(0,0,0,0.03) inset,inset 1px 0 rgba(255,255,255,0.55)',
   transition: 'transform 0.22s, box-shadow 0.22s',
 }
 
