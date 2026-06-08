@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  BookOpen, HeartPulse, Trophy, FolderLock,
-  Sparkles, Bell, SunMedium, MapPin,
+  BookOpen, HeartPulse, Trophy, Sparkles,
+  Bell, SunMedium, MapPin,
   ChevronLeft, ChevronRight,
   Users, CalendarCheck, CalendarRange, AlertTriangle, Stethoscope,
 } from 'lucide-react'
@@ -246,17 +246,6 @@ export default function DashboardClient({ userName, children, todayActivities, u
     },
   ]
 
-  const mods = [
-    { href:'/escola',     label:'Escola',     desc:`${todayActivities.filter(a=>a.category==='escola').length} pendentes`,
-      ibg:'linear-gradient(140deg,#DBEAFE,#BFDBFE)', icolor:'#2563EB', icon:BookOpen },
-    { href:'/saude',      label:'Saúde',      desc:`${todayActivities.filter(a=>a.category==='saude').length} consulta(s) hoje`,
-      ibg:'linear-gradient(140deg,#D1FAE5,#A7F3D0)', icolor:'#065F46', icon:HeartPulse },
-    { href:'/atividades', label:'Atividades', desc:`${todayActivities.filter(a=>a.category==='extracurricular').length} hoje`,
-      ibg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', icolor:'#92400E', icon:Trophy },
-    { href:'/vault',      label:'Documentos', desc:'Vault seguro',
-      ibg:'linear-gradient(140deg,#EDE9FE,#DDD6FE)', icolor:'#6D28D9', icon:FolderLock },
-  ]
-
   return (
     <div className="px-9 py-[34px] relative z-10 animate-fade-in">
 
@@ -329,27 +318,6 @@ export default function DashboardClient({ userName, children, todayActivities, u
             todayActivities.map(a=><ActivityRow key={a.id} activity={a}/>)
           )}
 
-          {/* AI CTA */}
-          <div style={{ marginTop:16, borderRadius:'20px 13px 18px 15px', padding:22, position:'relative', overflow:'hidden', border:'1px solid rgba(44,74,46,0.35)', background:'linear-gradient(140deg,#2C4A2E 0%,#1E3320 100%)', boxShadow:'0 8px 28px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.14) inset,0 1px 0 rgba(0,0,0,0.20) inset' }}>
-            <div className="absolute pointer-events-none" style={{ top:-16, right:-8, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
-            <div className="absolute pointer-events-none" style={{ bottom:-24, right:50, width:70, height:70, borderRadius:'50%', background:'rgba(212,165,116,0.12)' }} />
-            <div className="flex items-center gap-4 relative">
-              <div className="w-[52px] h-[52px] rounded-[17px] flex items-center justify-center flex-none"
-                style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.18)', boxShadow:'0 4px 14px rgba(0,0,0,0.20),0 -1px 0 rgba(255,255,255,0.15) inset' }}>
-                <Sparkles size={24} color="#D4E8D5"/>
-              </div>
-              <div className="flex-1">
-                <div style={{ fontFamily:'var(--font-lora)', fontSize:20, fontWeight:600, color:'#D4E8D5', lineHeight:1.2 }}>Adicionar com IA</div>
-                <div style={{ fontSize:'12.5px', color:'rgba(212,232,213,0.60)', marginTop:4, fontStyle:'italic' }}>Foto da agenda, texto livre ou voz — extração automática</div>
-              </div>
-              <Link href="/ia">
-                <button className="flex-none px-[22px] py-[11px] rounded-full text-[13.5px] font-bold transition-all hover:-translate-y-px"
-                  style={{ background:'rgba(255,255,255,0.15)', color:'#D4E8D5', border:'1px solid rgba(255,255,255,0.22)', boxShadow:'0 3px 10px rgba(0,0,0,0.15),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-                  Usar IA →
-                </button>
-              </Link>
-            </div>
-          </div>
 
           {/* Upcoming */}
           {upcomingActivities.length>0 && (
@@ -365,25 +333,6 @@ export default function DashboardClient({ userName, children, todayActivities, u
           <SectionH>Calendário</SectionH>
           <MiniCalendar eventDates={eventDates}/>
 
-          <div className="mt-[22px]">
-            <SectionH>Módulos</SectionH>
-            <div className="grid grid-cols-2 gap-[10px]">
-              {mods.map(m=>(
-                <Link key={m.href} href={m.href}>
-                  <div style={MOD_CARD}
-                    onMouseEnter={e=>{ const el=e.currentTarget as HTMLElement; el.style.transform='translateY(-3px) rotate(-0.4deg)'; el.style.boxShadow='0 6px 20px rgba(44,74,46,0.12),0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.85) inset' }}
-                    onMouseLeave={e=>{ const el=e.currentTarget as HTMLElement; el.style.transform=''; el.style.boxShadow='' }}>
-                    <div className="w-9 h-9 rounded-[11px] flex items-center justify-center mb-[10px]"
-                      style={{ backgroundImage:m.ibg, border:'1px solid rgba(0,0,0,0.07)', boxShadow:'0 1px 4px rgba(0,0,0,0.09),0 -1px 0 rgba(255,255,255,0.60) inset' }}>
-                      <m.icon size={16} color={m.icolor} strokeWidth={2}/>
-                    </div>
-                    <div className="font-bold" style={{ fontSize:'13.5px', color:'#1A2B1C' }}>{m.label}</div>
-                    <div className="italic mt-[2px]" style={{ fontSize:'11.5px', color:'rgba(26,43,28,0.36)' }}>{m.desc}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
