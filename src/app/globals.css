@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Mobile-only TEMA button — hidden on desktop regardless of Tailwind processing */
+.mobile-tema-btn { display: flex !important; }
+@media (min-width: 768px) { .mobile-tema-btn { display: none !important; } }
+
 /* ─── Fonts ─────────────────────────────────────────────────── */
 @theme inline {
   --font-display: var(--font-lora);

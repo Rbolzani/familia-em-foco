@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
@@ -46,16 +46,6 @@ export function ChildAvatar({
       )}
     </div>
   )
-}
-
-// ── Read file as data URL (returns a promise) ─────────────────────────────
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload  = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
 }
 
 // ── Photo picker ──────────────────────────────────────────────────────────
@@ -167,10 +157,24 @@ export default function ChildrenClient({ initialChildren }: Props) {
   const [photoFile,    setPhotoFile]    = useState<File|null>(null)
   const [photoPreview, setPhotoPreview] = useState<string|null>(null)
 
+  // Track current blob URL so we can revoke it when replaced or unmounted
+  const blobUrlRef = useRef<string | null>(null)
+
+  function revokeBlobUrl() {
+    if (blobUrlRef.current?.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrlRef.current)
+      blobUrlRef.current = null
+    }
+  }
+
+  // Revoke on unmount
+  useEffect(() => revokeBlobUrl, [])
+
   const closeModal = useCallback(() => {
+    revokeBlobUrl()
     setModal(null)
     setSaveError(null)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
     const { data } = await supabase.from('children').select('*').order('sort_order')
@@ -198,14 +202,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
     setModal({ mode: 'edit', child })
   }
 
-  async function handleFileSelected(f: File) {
+  function handleFileSelected(f: File) {
     setPhotoFile(f)
-    try {
-      const dataUrl = await readFileAsDataUrl(f)
-      setPhotoPreview(dataUrl)
-    } catch {
-      setPhotoPreview(null)
-    }
+    // Revoke previous blob URL before creating a new one
+    revokeBlobUrl()
+    const blobUrl = URL.createObjectURL(f)
+    blobUrlRef.current = blobUrl
+    setPhotoPreview(blobUrl)
   }
 
   async function uploadPhoto(userId: string, childId: string): Promise<string | null> {
@@ -427,7 +430,7 @@ export default function ChildrenClient({ initialChildren }: Props) {
             <PhotoPicker
               preview={photoPreview}
               onFile={handleFileSelected}
-              onClear={() => { setPhotoFile(null); setPhotoPreview(null) }}
+              onClear={() => { revokeBlobUrl(); setPhotoFile(null); setPhotoPreview(null) }}
             />
           </div>
 

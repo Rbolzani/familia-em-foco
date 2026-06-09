@@ -299,7 +299,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
 
       {/* ── Mobile TEMA floating button ── */}
       <button
-        className="md:hidden fixed z-[55]"
+        className="mobile-tema-btn fixed z-[55]"
         onClick={() => setMobileTemaOpen(true)}
         style={{
           bottom: 68, right: 16,
