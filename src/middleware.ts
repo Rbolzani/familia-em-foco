@@ -21,10 +21,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // getSession() lê o JWT do cookie localmente — sem round-trip de rede.
-  // getUser() fica nas server components (layout, pages) para validação forte.
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  // IMPORTANTE: getUser() é obrigatório aqui para que o Supabase SSR
+  // possa remontar e renovar os cookies de sessão fragmentados corretamente.
+  // getSession() não funciona no contexto do middleware com cookies chunked.
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth')
