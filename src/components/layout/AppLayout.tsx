@@ -49,7 +49,6 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
-  const [temaOpen,       setTemaOpen]       = useState(false)
   const [palIdx,         setPalIdx]         = useState(0)
   const [sepia,          setSepia]          = useState(0)
   const [brightness,     setBrightness]     = useState(100)
@@ -442,106 +441,6 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
         </div>
       </nav>
 
-      {/* ══ DESKTOP TEMA PANEL ══ */}
-      <div className="hidden md:block fixed z-[200]"
-        style={{ right:0, top:'50%', transform:'translateY(-50%)' }}>
-        <div style={{ display:'flex', alignItems:'stretch' }}>
-
-          {/* Panel body */}
-          <div style={{
-            overflow:'hidden',
-            width: temaOpen ? 272 : 0,
-            transition:'width 350ms cubic-bezier(.4,0,.2,1)',
-            borderLeft: temaOpen ? `1px solid ${panelBorder}` : 'none',
-            background: panelBg,
-            backgroundSize: darkMode ? 'auto' : '200px 200px, 100% 100%',
-            boxShadow:'-6px 0 28px rgba(0,0,0,0.14)',
-            borderRadius:'14px 0 0 14px',
-          }}>
-            <div style={{ width:272, minWidth:272, padding:24 }}>
-
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:24,
-                fontFamily:'var(--font-lora)', fontSize:17, fontWeight:600, color: panelText }}>
-                <Palette size={16} color={darkMode ? '#8CC891' : '#3D6641'} /> Personalizar Tema
-              </div>
-
-              {/* Palette */}
-              <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:11, fontWeight:700, marginBottom:12, color: panelMuted }}>Paleta de cor</div>
-                <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                  {PALETTES.map((p, i) => (
-                    <button key={p.name} title={p.name} onClick={() => setPalIdx(i)}
-                      style={{ width:32, height:32, borderRadius:11, background:p.dot, cursor:'pointer',
-                        boxShadow: palIdx===i ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(44,74,46,0.12)',
-                        border: palIdx===i ? '2.5px solid rgba(255,255,255,0.50)' : '2px solid transparent',
-                        transform: palIdx===i ? 'scale(1.20)' : undefined,
-                        transition:'all .2s' }} />
-                  ))}
-                </div>
-                <div style={{ fontSize:11, fontStyle:'italic', marginTop:8, color: panelMuted }}>{PALETTES[palIdx].name}</div>
-              </div>
-
-              {/* Sliders — light mode only */}
-              {!darkMode && (
-                <>
-                  {[
-                    { label:'Calor',    val:sepia,      set:setSepia,      min:0,  max:40  },
-                    { label:'Brilho',   val:brightness, set:setBrightness, min:70, max:130 },
-                    { label:'Contraste',val:contrast,   set:setContrast,   min:80, max:130 },
-                  ].map(({ label, val, set, min, max }) => (
-                    <div key={label} style={{ marginBottom:16 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontWeight:700, marginBottom:8, color: panelMuted }}>
-                        {label} <span style={{ fontStyle:'italic', color: panelMuted }}>{val}{label==='Calor'?'%':''}</span>
-                      </div>
-                      <input type="range" min={min} max={max} value={val} onChange={e => set(+e.target.value)} />
-                    </div>
-                  ))}
-                </>
-              )}
-
-              <div style={{ height:1, background: panelBorder, margin:'16px 0' }} />
-
-              {/* Dark mode toggle */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <div style={{ fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:8, color: panelMuted }}>
-                  {darkMode ? <Moon size={14}/> : <Sun size={14}/>}
-                  {darkMode ? 'Modo noturno' : 'Modo claro'}
-                </div>
-                <button onClick={() => setDarkMode(d => !d)}
-                  style={{ position:'relative', width:44, height:24, borderRadius:12, border:'none', cursor:'pointer',
-                    background: darkMode ? 'linear-gradient(135deg,#3D6641,#2C4A2E)' : 'rgba(61,102,65,0.22)',
-                    boxShadow:'0 1px 4px rgba(0,0,0,0.12)', flexShrink:0, transition:'background .25s' }}>
-                  <span style={{ position:'absolute', top:3, width:18, height:18, borderRadius:'50%', background:'white',
-                    boxShadow:'0 2px 5px rgba(0,0,0,0.22)',
-                    left: darkMode ? 23 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
-                </button>
-              </div>
-
-              {darkMode && (
-                <p style={{ fontSize:10.5, fontStyle:'italic', marginTop:12, color: panelMuted, lineHeight:1.5 }}>
-                  Modo noturno refinado — tons escuros com identidade visual preservada.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Tab button */}
-          <button onClick={() => setTemaOpen(o => !o)}
-            style={{ width:34, borderRadius: temaOpen ? '0' : '12px 0 0 12px',
-              background: darkMode
-                ? 'linear-gradient(180deg,#1C3A1E,#142A15)'
-                : 'linear-gradient(180deg,#2C4A2E,#1E3320)',
-              writingMode:'vertical-rl', textOrientation:'mixed',
-              fontSize:'10.5px', fontWeight:800, letterSpacing:'0.14em',
-              textTransform:'uppercase', color:'#D4E8D5',
-              padding:'20px 0', display:'flex', alignItems:'center', justifyContent:'center',
-              border:'none', cursor:'pointer', userSelect:'none',
-              boxShadow:'-4px 0 16px rgba(44,74,46,0.22)',
-              transition:'border-radius .35s, background .3s' }}>
-            Tema
-          </button>
-        </div>
-      </div>
 
     </div>
   )
