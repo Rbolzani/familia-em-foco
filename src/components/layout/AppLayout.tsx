@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
-  ChevronRight, Palette, Moon, Sun, LogOut,
+  ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
+  Users, LogOut,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -54,7 +55,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
   const [brightness,     setBrightness]     = useState(100)
   const [contrast,       setContrast]       = useState(100)
   const [darkMode,       setDarkMode]       = useState(false)
-
+  const [mobileTemaOpen, setMobileTemaOpen] = useState(false)
 
   const appRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLDivElement>(null)   // ← bottom nav gets same filter
@@ -296,6 +297,105 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
           We apply the same filter manually via navRef.
           ═══════════════════════════════════════════════════════════ */}
 
+
+      {/* ── Mobile TEMA floating button ── */}
+      <button
+        className="md:hidden fixed z-[55]"
+        onClick={() => setMobileTemaOpen(true)}
+        style={{
+          bottom: 68, right: 16,
+          width: 44, height: 44, borderRadius: '50%',
+          background: darkMode
+            ? 'rgba(80,130,84,0.28)'
+            : 'linear-gradient(140deg,#2C4A2E,#1E3320)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: darkMode
+            ? '0 4px 16px rgba(0,0,0,0.40), 0 0 0 1px rgba(90,140,94,0.30)'
+            : '0 4px 16px rgba(44,74,46,0.35)',
+          border: darkMode ? '1.5px solid rgba(90,140,94,0.35)' : '1.5px solid rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        <SlidersHorizontal size={18} color={darkMode ? '#A8D4AB' : '#D4E8D5'} />
+      </button>
+
+      {/* ── Mobile TEMA sheet ── */}
+      {mobileTemaOpen && (
+        <>
+          <div className="md:hidden fixed inset-0 z-[80]"
+            style={{ background:'rgba(10,20,11,0.55)', backdropFilter:'blur(4px)' }}
+            onClick={() => setMobileTemaOpen(false)} />
+          <div className="md:hidden fixed left-0 right-0 z-[90] animate-slide-up"
+            style={{
+              bottom: 58,
+              borderRadius: '20px 20px 0 0',
+              background: panelBg,
+              backgroundSize: darkMode ? 'auto' : '200px 200px, 100% 100%',
+              border: `1px solid ${panelBorder}`,
+              boxShadow: darkMode
+                ? '0 -8px 32px rgba(0,0,0,0.50)'
+                : '0 -8px 32px rgba(44,74,46,0.20)',
+              padding: '16px 24px 28px',
+            }}>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}>
+              <div style={{ width:36, height:4, borderRadius:2, background: darkMode ? 'rgba(140,200,145,0.30)' : 'rgba(61,102,65,0.28)' }} />
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20,
+              fontFamily:'var(--font-lora)', fontSize:16, fontWeight:600, color: panelText }}>
+              <Palette size={15} color={darkMode ? '#8CC891' : '#3D6641'} /> Personalizar Tema
+            </div>
+            {/* Palettes */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:11, fontWeight:700, marginBottom:10, color: panelMuted }}>Paleta de cor</div>
+              <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                {PALETTES.map((p, i) => (
+                  <button key={p.name} title={p.name} onClick={() => setPalIdx(i)}
+                    style={{
+                      width:36, height:36, borderRadius:12, background:p.dot, cursor:'pointer',
+                      boxShadow: palIdx===i ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(44,74,46,0.12)',
+                      border: palIdx===i ? '2.5px solid rgba(255,255,255,0.50)' : '2px solid transparent',
+                      transform: palIdx===i ? 'scale(1.18)' : undefined,
+                      transition:'all .2s',
+                    }} />
+                ))}
+              </div>
+              <div style={{ fontSize:11, fontStyle:'italic', marginTop:8, color: panelMuted }}>{PALETTES[palIdx].name}</div>
+            </div>
+            {/* Dark mode toggle */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:12, borderTop:`1px solid ${panelBorder}` }}>
+              <div style={{ fontSize:14, fontWeight:700, display:'flex', alignItems:'center', gap:8, color: panelMuted }}>
+                {darkMode ? <Moon size={16}/> : <Sun size={16}/>}
+                {darkMode ? 'Modo noturno' : 'Modo claro'}
+              </div>
+              <button onClick={() => setDarkMode(d => !d)}
+                style={{ position:'relative', width:48, height:26, borderRadius:13, border:'none', cursor:'pointer',
+                  background: darkMode ? 'linear-gradient(135deg,#3D6641,#2C4A2E)' : 'rgba(61,102,65,0.22)',
+                  boxShadow:'0 1px 4px rgba(0,0,0,0.15)', flexShrink:0, transition:'background .25s' }}>
+                <span style={{ position:'absolute', top:3, width:20, height:20, borderRadius:'50%', background:'white',
+                  boxShadow:'0 2px 5px rgba(0,0,0,0.25)',
+                  left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
+              </button>
+            </div>
+            {/* Account actions */}
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:16 }}>
+              <Link href="/children" onClick={() => setMobileTemaOpen(false)}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
+                  padding:'10px 14px', borderRadius:12, border:`1px solid ${panelBorder}`,
+                  background: darkMode ? 'rgba(90,140,94,0.12)' : 'rgba(61,102,65,0.07)', cursor:'pointer',
+                  fontSize:13, fontWeight:700, color: darkMode ? '#A8D4AB' : '#3D6641' }}>
+                  <Users size={15}/> Meus Filhos
+                </div>
+              </Link>
+              <button onClick={handleLogout}
+                style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
+                  padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
+                  background:'rgba(220,38,38,0.06)', cursor:'pointer',
+                  fontSize:13, fontWeight:700, color:'#DC2626' }}>
+                <LogOut size={15}/> Sair da conta
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ══ BOTTOM NAV ══
           • Outside app-wrap so position:fixed works correctly

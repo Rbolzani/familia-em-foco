@@ -268,7 +268,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
             <label className="block text-xs font-bold mb-2 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Foto</label>
             <PhotoPicker
               preview={photoPreview}
-              onFile={f => { setPhotoFile(f); setPhotoPreview(URL.createObjectURL(f)) }}
+              onFile={f => {
+                setPhotoFile(f)
+                // FileReader → data URL (universally supported on iOS/Android)
+                const reader = new FileReader()
+                reader.onload = e => setPhotoPreview(e.target?.result as string ?? null)
+                reader.readAsDataURL(f)
+              }}
               onClear={() => { setPhotoFile(null); setPhotoPreview(null) }}
             />
           </div>
@@ -316,11 +322,28 @@ export default function ChildrenClient({ initialChildren }: Props) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-1">
-            <Button variant="ghost" onClick={() => setModal(null)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving || !form.name.trim()}>
-              {saving ? 'Salvando...' : modal?.mode==='new' ? 'Adicionar' : 'Salvar'}
-            </Button>
+          <div className="flex gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setModal(null)} style={{ flex:1 }}>Cancelar</Button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !form.name.trim()}
+              style={{
+                flex: 2,
+                padding: '12px 20px',
+                borderRadius: 14,
+                border: 'none',
+                cursor: saving || !form.name.trim() ? 'not-allowed' : 'pointer',
+                background: saving || !form.name.trim()
+                  ? 'rgba(61,102,65,0.25)'
+                  : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+                color: 'white',
+                fontSize: 15,
+                fontWeight: 700,
+                boxShadow: saving || !form.name.trim() ? 'none' : '0 4px 16px rgba(44,74,46,0.35)',
+                transition: 'all .2s',
+              }}>
+              {saving ? 'Salvando…' : modal?.mode === 'new' ? '✓ Adicionar filho' : '✓ Salvar alterações'}
+            </button>
           </div>
         </div>
       </Modal>
