@@ -22,27 +22,33 @@ export default function SignupPage() {
     const supabase = createClient()
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { full_name: name } },
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
     if (error) { setError(error.message); setLoading(false); return }
     setSuccess(true)
-    setTimeout(() => router.push('/dashboard'), 2500)
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#F7F5FF' }}>
-        <div className="text-center animate-scale-in">
-          <div className="text-6xl mb-5 animate-float">🎉</div>
-          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
-            Conta criada!
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#F8F3EA' }}>
+        <div className="text-center animate-scale-in max-w-sm">
+          <div className="text-6xl mb-5 animate-float">📬</div>
+          <h2 className="text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>
+            Confirme seu e-mail
           </h2>
-          <p className="text-sm" style={{ color: '#8585A8' }}>Redirecionando para o seu painel...</p>
-          <div className="mt-5 flex items-center justify-center gap-2" style={{ color: '#7B6FE8' }}>
-            <span className="w-4 h-4 border-2 rounded-full animate-spin"
-              style={{ borderColor: 'rgba(123,111,232,.3)', borderTopColor: '#7B6FE8' }} />
-            <span className="text-xs font-semibold">Aguarde...</span>
-          </div>
+          <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(26,43,28,0.60)' }}>
+            Enviamos um link de confirmação para <strong style={{ color: '#1A2B1C' }}>{email}</strong>.
+            <br /><br />
+            Abra o e-mail e clique no link para ativar sua conta. Depois, volte aqui e faça login.
+          </p>
+          <a href="/auth/login"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white"
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
+            Ir para o login →
+          </a>
         </div>
       </div>
     )
