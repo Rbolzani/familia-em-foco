@@ -73,61 +73,56 @@ function PhotoPicker({ preview, onFile, onClear }: {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) onFile(f)
-    // Reset input so re-selecting same file fires onChange again
-    e.target.value = ''
+    e.target.value = '' // reset so re-selecting same file works
   }
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-      {/* Square preview / tap to change */}
-      <button
-        type="button"
-        onClick={openPicker}
-        style={{
-          width: 88, height: 88, borderRadius: 20, overflow: 'hidden',
-          flexShrink: 0, cursor: 'pointer', position: 'relative',
-          background: preview ? 'transparent' : 'rgba(61,102,65,0.07)',
-          border: `2px dashed ${preview ? 'transparent' : 'rgba(61,102,65,0.30)'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 0,
-        }}>
-        {preview ? (
-          <>
-            <img
-              src={preview}
-              alt="Prévia"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-            {/* dark overlay hint */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'rgba(0,0,0,0.32)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Camera size={20} color="white" />
-            </div>
-          </>
-        ) : (
-          <Camera size={28} color="rgba(61,102,65,0.45)" />
-        )}
-      </button>
 
-      {/* Hidden native file input */}
+      {/* Photo area — div (not button) to avoid Android Chrome img-in-button bug.
+          Uses backgroundImage so the data URL renders reliably on all mobile browsers. */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={openPicker}
+        onKeyDown={e => e.key === 'Enter' && openPicker()}
+        style={{
+          width: 88, height: 88, borderRadius: 20, flexShrink: 0,
+          cursor: 'pointer', position: 'relative', overflow: 'hidden',
+          // Show photo as CSS background — avoids img-in-button issues on Android
+          backgroundImage: preview ? `url("${preview}")` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: preview ? '#000' : 'rgba(61,102,65,0.07)',
+          border: preview ? 'none' : '2px dashed rgba(61,102,65,0.30)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        {/* Camera icon: always show when no photo; subtle overlay when photo exists */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: preview ? 'rgba(0,0,0,0.30)' : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Camera size={preview ? 20 : 28} color={preview ? 'white' : 'rgba(61,102,65,0.45)'} />
+        </div>
+      </div>
+
+      {/* Hidden native file input — off-screen, NOT display:none (iOS compatibility) */}
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
-        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        accept="image/*"
+        style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }}
         onChange={handleChange}
       />
 
-      {/* Buttons */}
+      {/* Action buttons */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <button
           type="button"
           onClick={openPicker}
           style={{
-            padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
+            padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
             background: 'rgba(61,102,65,0.10)', color: '#3D6641',
             border: '1px solid rgba(61,102,65,0.22)',
             fontSize: 13, fontWeight: 700,
@@ -140,7 +135,7 @@ function PhotoPicker({ preview, onFile, onClear }: {
             type="button"
             onClick={onClear}
             style={{
-              padding: '6px 16px', borderRadius: 10, cursor: 'pointer',
+              padding: '7px 16px', borderRadius: 10, cursor: 'pointer',
               background: 'rgba(220,38,38,0.07)', color: '#DC2626',
               border: '1px solid rgba(220,38,38,0.18)',
               fontSize: 12, fontWeight: 600,
@@ -498,13 +493,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
             }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 13, overflow: 'hidden', flexShrink: 0,
-                background: photoPreview ? 'transparent' : form.avatar_color,
+                background: form.avatar_color,
+                backgroundImage: photoPreview ? `url("${photoPreview}")` : 'none',
+                backgroundSize: 'cover', backgroundPosition: 'center',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'var(--font-lora)', fontWeight: 700, fontSize: 18, color: 'white',
               }}>
-                {photoPreview
-                  ? <img src={photoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : (form.name.charAt(0).toUpperCase() || '?')}
+                {!photoPreview && (form.name.charAt(0).toUpperCase() || '?')}
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C' }}>
                 {form.name || 'Nome do filho'}
