@@ -154,6 +154,8 @@ export default function ChildrenClient({ initialChildren }: Props) {
   const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
   const [saving,       setSaving]       = useState(false)
   const [saveError,    setSaveError]    = useState<string|null>(null)
+  const [deleteError,  setDeleteError]  = useState<string|null>(null)
+  const [deleting,     setDeleting]     = useState<string|null>(null)   // id being deleted
   const [form,         setForm]         = useState({
     name: '', birth_date: '', school_name: '', avatar_color: AVATAR_COLORS[0],
   })
@@ -220,19 +222,28 @@ export default function ChildrenClient({ initialChildren }: Props) {
     const ext  = photoFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
     const path = `${userId}/${childId}_${Date.now()}.${ext}`
 
+    console.log('[uploadPhoto] uploading to path:', path)
+
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, photoFile, { upsert: true })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
-      throw new Error(`Erro ao enviar foto: ${uploadError.message}`)
+      console.error('[uploadPhoto] storage error:', uploadError)
+      throw new Error(
+        `Erro no upload da foto: ${uploadError.message}\n\n` +
+        `Execute no Supabase SQL Editor (Storage → Policies → avatars bucket):\n` +
+        `CREATE POLICY "avatars_insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);\n` +
+        `CREATE POLICY "avatars_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);\n` +
+        `CREATE POLICY "avatars_select" ON storage.objects FOR SELECT TO public USING (bucket_id = 'avatars');`
+      )
     }
 
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(path)
 
+    console.log('[uploadPhoto] public URL:', publicUrl)
     return publicUrl
   }
 
@@ -259,19 +270,33 @@ export default function ChildrenClient({ initialChildren }: Props) {
           .insert({ ...baseFields, user_id: user.id, sort_order: children.length })
           .select()
           .single()
-        if (insertErr || !inserted) throw new Error(`Erro ao cadastrar filho: ${insertErr?.message}`)
+        if (insertErr || !inserted) {
+          console.error('[handleSave] insert error:', insertErr)
+          throw new Error(
+            `Erro ao cadastrar filho: ${insertErr?.message}\n\n` +
+            `Execute no Supabase SQL Editor:\n` +
+            `ALTER TABLE children ENABLE ROW LEVEL SECURITY;\n` +
+            `CREATE POLICY "children_insert" ON children FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);`
+          )
+        }
 
-        // Step 2: upload photo and update avatar_url (separate, non-blocking)
+        // Step 2: upload photo and update avatar_url
         if (photoFile) {
           const url = await uploadPhoto(user.id, inserted.id)
           if (url) {
+            console.log('[handleSave] updating avatar_url:', url)
             const { error: photoErr } = await supabase
               .from('children').update({ avatar_url: url }).eq('id', inserted.id)
             if (photoErr) {
-              // Filho salvo, mas foto falhou — mostrar aviso mas não bloquear
+              console.error('[handleSave] avatar_url update error:', photoErr)
+              // Filho salvo, foto falhou — mantém modal aberto com erro visível
               await load()
-              closeModal()
-              setSaveError(`Filho adicionado, mas a foto não salvou: ${photoErr.message}\n\nExecute no Supabase SQL Editor:\nALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`)
+              setSaveError(
+                `Filho adicionado ✓, mas a foto não salvou.\n\nErro: ${photoErr.message}\n\n` +
+                `Execute no Supabase SQL Editor e tente novamente:\n` +
+                `ALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;\n\n` +
+                `CREATE POLICY "children_update" ON children FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);`
+              )
               setSaving(false)
               return
             }
@@ -281,22 +306,34 @@ export default function ChildrenClient({ initialChildren }: Props) {
       } else {
         const child = modal!.child!
 
-        // Step 1: save base fields first (always works, even without avatar_url column)
+        // Step 1: save base fields first
+        console.log('[handleSave] updating base fields for', child.id)
         const { error: baseErr } = await supabase
           .from('children').update(baseFields).eq('id', child.id)
-        if (baseErr) throw new Error(`Erro ao salvar dados: ${baseErr.message}`)
+        if (baseErr) {
+          console.error('[handleSave] base update error:', baseErr)
+          throw new Error(
+            `Erro ao salvar dados: ${baseErr.message}\n\n` +
+            `Execute no Supabase SQL Editor:\n` +
+            `CREATE POLICY "children_update" ON children FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);`
+          )
+        }
 
-        // Step 2: save photo if changed
+        // Step 2: save photo if new file selected
         if (photoFile) {
           const url = await uploadPhoto(user.id, child.id)
           if (url) {
+            console.log('[handleSave] updating avatar_url:', url)
             const { error: photoErr } = await supabase
               .from('children').update({ avatar_url: url }).eq('id', child.id)
             if (photoErr) {
-              // Base fields saved OK, photo update failed
+              console.error('[handleSave] avatar_url update error:', photoErr)
               await load()
-              closeModal()
-              setSaveError(`Dados salvos, mas a foto não salvou: ${photoErr.message}\n\nExecute no Supabase SQL Editor:\nALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`)
+              setSaveError(
+                `Dados salvos ✓, mas a foto não salvou.\n\nErro: ${photoErr.message}\n\n` +
+                `Execute no Supabase SQL Editor e tente novamente:\n` +
+                `ALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`
+              )
               setSaving(false)
               return
             }
@@ -305,7 +342,6 @@ export default function ChildrenClient({ initialChildren }: Props) {
           // User removed the photo
           await supabase.from('children').update({ avatar_url: null }).eq('id', child.id)
         }
-        // else: no new file, keep existing avatar_url as-is
       }
 
       await load()
@@ -321,8 +357,26 @@ export default function ChildrenClient({ initialChildren }: Props) {
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Remover ${name}? As atividades associadas também serão removidas.`)) return
-    await supabase.from('children').delete().eq('id', id)
-    load()
+    setDeleteError(null)
+    setDeleting(id)
+    try {
+      const { error } = await supabase.from('children').delete().eq('id', id)
+      if (error) {
+        console.error('[handleDelete] error:', error)
+        setDeleteError(
+          `Não foi possível excluir "${name}": ${error.message}\n\n` +
+          `Execute no Supabase SQL Editor:\n` +
+          `CREATE POLICY "children_delete" ON children FOR DELETE TO authenticated USING (auth.uid() = user_id);`
+        )
+      } else {
+        await load()
+      }
+    } catch (err) {
+      console.error('[handleDelete] unexpected error:', err)
+      setDeleteError(`Erro inesperado ao excluir "${name}". Tente novamente.`)
+    } finally {
+      setDeleting(null)
+    }
   }
 
   return (
@@ -347,6 +401,23 @@ export default function ChildrenClient({ initialChildren }: Props) {
           <Plus size={16} /> Adicionar
         </button>
       </div>
+
+      {/* Delete error banner */}
+      {deleteError && (
+        <div className="animate-fade-up" style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '14px 16px', borderRadius: 14,
+          background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.22)',
+        }}>
+          <AlertCircle size={16} color="#DC2626" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.55, margin: 0, whiteSpace: 'pre-wrap' }}>{deleteError}</p>
+          </div>
+          <button onClick={() => setDeleteError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#DC2626', flexShrink: 0 }}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Empty state */}
       {children.length === 0 && (
@@ -402,8 +473,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
                   <Pencil size={15} />
                 </button>
                 <button onClick={() => handleDelete(child.id, child.name)}
+                  disabled={deleting === child.id}
                   className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{ background: 'rgba(220,38,38,0.08)', color: '#DC2626' }}>
+                  style={{
+                    background: 'rgba(220,38,38,0.08)', color: '#DC2626',
+                    opacity: deleting === child.id ? 0.5 : 1,
+                    cursor: deleting === child.id ? 'wait' : 'pointer',
+                  }}>
                   <Trash2 size={15} />
                 </button>
               </div>
