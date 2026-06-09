@@ -1,10 +1,13 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
-import { Baby, Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle } from 'lucide-react'
+
+// Stable singleton — not re-created on every render
+const supabase = createClient()
 
 const AVATAR_COLORS = [
   '#F4522D','#F5A623','#00C48C','#2563EB',
@@ -45,49 +48,111 @@ export function ChildAvatar({
   )
 }
 
+// ── Read file as data URL (returns a promise) ─────────────────────────────
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 // ── Photo picker ──────────────────────────────────────────────────────────
 function PhotoPicker({ preview, onFile, onClear }: {
-  preview: string | null; onFile: (f: File)=>void; onClear: ()=>void
+  preview: string | null
+  onFile: (f: File) => void
+  onClear: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  function openPicker() {
+    inputRef.current?.click()
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) onFile(f)
+    // Reset input so re-selecting same file fires onChange again
+    e.target.value = ''
+  }
+
   return (
-    <div className="flex items-center gap-4">
-      <div
-        onClick={() => inputRef.current?.click()}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* Square preview / tap to change */}
+      <button
+        type="button"
+        onClick={openPicker}
         style={{
-          width: 80, height: 80, borderRadius: 18, overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+          width: 88, height: 88, borderRadius: 20, overflow: 'hidden',
+          flexShrink: 0, cursor: 'pointer', position: 'relative',
           background: preview ? 'transparent' : 'rgba(61,102,65,0.07)',
-          border: '2px dashed rgba(61,102,65,0.30)', position: 'relative',
+          border: `2px dashed ${preview ? 'transparent' : 'rgba(61,102,65,0.30)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0,
         }}>
         {preview ? (
-          <img src={preview} alt="preview" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          <>
+            <img
+              src={preview}
+              alt="Prévia"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {/* dark overlay hint */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(0,0,0,0.32)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Camera size={20} color="white" />
+            </div>
+          </>
         ) : (
           <Camera size={28} color="rgba(61,102,65,0.45)" />
         )}
-        {/* camera overlay on hover */}
-        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.28)',
-          display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'opacity .2s' }}
-          className="hover:opacity-100">
-          <Camera size={20} color="white" />
-        </div>
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { const f=e.target.files?.[0]; if(f){onFile(f)} }} />
-      <div className="flex flex-col gap-1.5">
-        <button type="button" onClick={() => inputRef.current?.click()}
-          className="text-xs font-bold px-3 py-1.5 rounded-lg"
-          style={{ background:'rgba(61,102,65,0.10)', color:'#3D6641', border:'1px solid rgba(61,102,65,0.20)' }}>
-          {preview ? 'Trocar foto' : 'Escolher foto'}
+      </button>
+
+      {/* Hidden native file input */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        onChange={handleChange}
+      />
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button
+          type="button"
+          onClick={openPicker}
+          style={{
+            padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
+            background: 'rgba(61,102,65,0.10)', color: '#3D6641',
+            border: '1px solid rgba(61,102,65,0.22)',
+            fontSize: 13, fontWeight: 700,
+          }}>
+          {preview ? '📷 Trocar foto' : '📷 Escolher foto'}
         </button>
+
         {preview && (
-          <button type="button" onClick={onClear}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
-            style={{ background:'rgba(220,38,38,0.07)', color:'#DC2626', border:'1px solid rgba(220,38,38,0.15)' }}>
-            <X size={11}/> Remover foto
+          <button
+            type="button"
+            onClick={onClear}
+            style={{
+              padding: '6px 16px', borderRadius: 10, cursor: 'pointer',
+              background: 'rgba(220,38,38,0.07)', color: '#DC2626',
+              border: '1px solid rgba(220,38,38,0.18)',
+              fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+            <X size={11} /> Remover foto
           </button>
         )}
-        <p className="text-[10px]" style={{ color:'rgba(26,43,28,0.35)' }}>JPG, PNG • máx 5 MB</p>
+
+        <p style={{ fontSize: 11, color: 'rgba(26,43,28,0.35)', margin: 0 }}>
+          JPG, PNG, WEBP • máx 5 MB
+        </p>
       </div>
     </div>
   )
@@ -97,13 +162,20 @@ function PhotoPicker({ preview, onFile, onClear }: {
 interface Props { initialChildren: Child[] }
 
 export default function ChildrenClient({ initialChildren }: Props) {
-  const supabase = createClient()
-  const [children, setChildren] = useState<Child[]>(initialChildren)
-  const [modal, setModal] = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name:'', birth_date:'', school_name:'', avatar_color: AVATAR_COLORS[0] })
-  const [photoFile, setPhotoFile] = useState<File|null>(null)
+  const [children,     setChildren]     = useState<Child[]>(initialChildren)
+  const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
+  const [saving,       setSaving]       = useState(false)
+  const [saveError,    setSaveError]    = useState<string|null>(null)
+  const [form,         setForm]         = useState({
+    name: '', birth_date: '', school_name: '', avatar_color: AVATAR_COLORS[0],
+  })
+  const [photoFile,    setPhotoFile]    = useState<File|null>(null)
   const [photoPreview, setPhotoPreview] = useState<string|null>(null)
+
+  const closeModal = useCallback(() => {
+    setModal(null)
+    setSaveError(null)
+  }, [])
 
   async function load() {
     const { data } = await supabase.from('children').select('*').order('sort_order')
@@ -111,64 +183,134 @@ export default function ChildrenClient({ initialChildren }: Props) {
   }
 
   function openNew() {
-    setForm({ name:'', birth_date:'', school_name:'', avatar_color: AVATAR_COLORS[0] })
-    setPhotoFile(null); setPhotoPreview(null)
-    setModal({ mode:'new' })
-  }
-  function openEdit(child: Child) {
-    setForm({ name:child.name, birth_date:child.birth_date??'', school_name:child.school_name??'', avatar_color:child.avatar_color })
+    setForm({ name: '', birth_date: '', school_name: '', avatar_color: AVATAR_COLORS[0] })
     setPhotoFile(null)
-    setPhotoPreview(child.avatar_url ?? null)
-    setModal({ mode:'edit', child })
+    setPhotoPreview(null)
+    setSaveError(null)
+    setModal({ mode: 'new' })
   }
 
-  async function uploadPhoto(userId: string, childId: string): Promise<string|null> {
+  function openEdit(child: Child) {
+    setForm({
+      name: child.name,
+      birth_date: child.birth_date ?? '',
+      school_name: child.school_name ?? '',
+      avatar_color: child.avatar_color,
+    })
+    setPhotoFile(null)
+    setPhotoPreview(child.avatar_url ?? null)
+    setSaveError(null)
+    setModal({ mode: 'edit', child })
+  }
+
+  async function handleFileSelected(f: File) {
+    setPhotoFile(f)
+    try {
+      const dataUrl = await readFileAsDataUrl(f)
+      setPhotoPreview(dataUrl)
+    } catch {
+      setPhotoPreview(null)
+    }
+  }
+
+  async function uploadPhoto(userId: string, childId: string): Promise<string | null> {
     if (!photoFile) return null
-    const ext   = photoFile.name.split('.').pop() ?? 'jpg'
-    const path  = `${userId}/${childId}_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, photoFile, { upsert:true })
-    if (error) return null
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+
+    const ext  = photoFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const path = `${userId}/${childId}_${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, photoFile, { upsert: true })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw new Error(`Erro ao enviar foto: ${uploadError.message}`)
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(path)
+
     return publicUrl
   }
 
   async function handleSave() {
     if (!form.name.trim()) return
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setSaving(false); return }
+    setSaveError(null)
 
-    if (modal?.mode === 'new') {
-      // Insert first to get the ID, then upload photo
-      const { data: inserted } = await supabase.from('children').insert({
-        user_id: user.id,
-        name: form.name.trim(),
-        birth_date: form.birth_date || null,
-        school_name: form.school_name.trim() || null,
-        avatar_color: form.avatar_color,
-        sort_order: children.length,
-      }).select().single()
+    try {
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) throw new Error('Sessão expirada. Faça login novamente.')
 
-      if (inserted && photoFile) {
-        const url = await uploadPhoto(user.id, inserted.id)
-        if (url) await supabase.from('children').update({ avatar_url: url }).eq('id', inserted.id)
+      if (modal?.mode === 'new') {
+        // 1) Insert child first to get the generated ID
+        const { data: inserted, error: insertErr } = await supabase
+          .from('children')
+          .insert({
+            user_id:     user.id,
+            name:        form.name.trim(),
+            birth_date:  form.birth_date || null,
+            school_name: form.school_name.trim() || null,
+            avatar_color: form.avatar_color,
+            sort_order:  children.length,
+          })
+          .select()
+          .single()
+
+        if (insertErr || !inserted) throw new Error('Erro ao cadastrar filho.')
+
+        // 2) Upload photo if selected
+        if (photoFile) {
+          const url = await uploadPhoto(user.id, inserted.id)
+          if (url) {
+            const { error: upErr } = await supabase
+              .from('children')
+              .update({ avatar_url: url })
+              .eq('id', inserted.id)
+            if (upErr) console.warn('Foto enviada mas não salva no perfil:', upErr)
+          }
+        }
+
+      } else {
+        const child = modal!.child!
+
+        // Determine final avatar_url
+        let avatar_url: string | null = photoPreview // preserves existing URL if unchanged
+
+        if (photoFile) {
+          // New file selected → upload it
+          avatar_url = await uploadPhoto(user.id, child.id)
+        } else if (photoPreview === null) {
+          // User explicitly cleared photo
+          avatar_url = null
+        }
+        // else: photoPreview still holds the existing URL → keep it
+
+        const { error: updateErr } = await supabase
+          .from('children')
+          .update({
+            name:        form.name.trim(),
+            birth_date:  form.birth_date || null,
+            school_name: form.school_name.trim() || null,
+            avatar_color: form.avatar_color,
+            avatar_url,
+          })
+          .eq('id', child.id)
+
+        if (updateErr) throw new Error(`Erro ao salvar: ${updateErr.message}`)
       }
-    } else {
-      const child = modal!.child!
-      // If photoPreview is null and original had a photo → user removed it
-      const avatar_url = photoFile
-        ? await uploadPhoto(user.id, child.id)
-        : photoPreview   // null if cleared, existing URL otherwise
-      await supabase.from('children').update({
-        name: form.name.trim(),
-        birth_date: form.birth_date || null,
-        school_name: form.school_name.trim() || null,
-        avatar_color: form.avatar_color,
-        avatar_url,
-      }).eq('id', child.id)
-    }
 
-    setSaving(false); setModal(null); load()
+      closeModal()
+      load()
+
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido.'
+      setSaveError(msg)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string, name: string) {
@@ -183,31 +325,37 @@ export default function ChildrenClient({ initialChildren }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between animate-fade-up">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color:'#3D6641' }}>Perfis</p>
-          <h1 style={{ fontFamily:'var(--font-lora)', fontSize:30, fontWeight:700, color:'#1A2B1C', lineHeight:1.1 }}>Meus Filhos</h1>
-          <p className="text-sm mt-1" style={{ color:'rgba(26,43,28,0.45)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#3D6641' }}>Perfis</p>
+          <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 30, fontWeight: 700, color: '#1A2B1C', lineHeight: 1.1 }}>
+            Meus Filhos
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'rgba(26,43,28,0.45)' }}>
             {children.length > 0
-              ? `${children.length} filho${children.length>1?'s':''} cadastrado${children.length>1?'s':''}`
+              ? `${children.length} filho${children.length > 1 ? 's' : ''} cadastrado${children.length > 1 ? 's' : ''}`
               : 'Adicione os perfis dos seus filhos'}
           </p>
         </div>
         <button onClick={openNew}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-          style={{ background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 4px 16px rgba(44,74,46,0.30)' }}>
-          <Plus size={16}/> Adicionar
+          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
+          <Plus size={16} /> Adicionar
         </button>
       </div>
 
       {/* Empty state */}
       {children.length === 0 && (
-        <div className="card p-10 text-center animate-fade-up" style={{ border:'2px dashed #EDE4D6' }}>
+        <div className="card p-10 text-center animate-fade-up" style={{ border: '2px dashed #EDE4D6' }}>
           <div className="text-5xl mb-4 animate-float">👶</div>
-          <h3 style={{ fontFamily:'var(--font-lora)', fontSize:20, fontWeight:700, color:'#1A2B1C', marginBottom:8 }}>Nenhum filho cadastrado</h3>
-          <p className="text-sm mb-5" style={{ color:'rgba(26,43,28,0.45)' }}>Adicione seu primeiro filho para começar a organizar a rotina.</p>
+          <h3 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', marginBottom: 8 }}>
+            Nenhum filho cadastrado
+          </h3>
+          <p className="text-sm mb-5" style={{ color: 'rgba(26,43,28,0.45)' }}>
+            Adicione seu primeiro filho para começar a organizar a rotina.
+          </p>
           <button onClick={openNew}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-            style={{ background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 4px 14px rgba(44,74,46,0.28)' }}>
-            <Plus size={15}/> Adicionar filho
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 14px rgba(44,74,46,0.28)' }}>
+            <Plus size={15} /> Adicionar filho
           </button>
         </div>
       )}
@@ -218,25 +366,25 @@ export default function ChildrenClient({ initialChildren }: Props) {
           {children.map((child, i) => (
             <div key={child.id}
               className="card card-lift animate-fade-up p-4 flex items-center gap-4"
-              style={{ animationDelay:`${i*0.06}s` }}>
+              style={{ animationDelay: `${i * 0.06}s` }}>
 
               <ChildAvatar child={child} size={56} radius={16} />
 
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize:16, fontWeight:700, color:'#1A2B1C' }}>{child.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#1A2B1C' }}>{child.name}</div>
                 <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                   {child.birth_date && (
-                    <span className="text-xs flex items-center gap-1 font-medium" style={{ color:'rgba(26,43,28,0.50)' }}>
-                      <Cake size={12}/> {calcAge(child.birth_date)}
+                    <span className="text-xs flex items-center gap-1 font-medium" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                      <Cake size={12} /> {calcAge(child.birth_date)}
                     </span>
                   )}
                   {child.school_name && (
-                    <span className="text-xs flex items-center gap-1 font-medium" style={{ color:'rgba(26,43,28,0.50)' }}>
-                      <GraduationCap size={12}/> {child.school_name}
+                    <span className="text-xs flex items-center gap-1 font-medium" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                      <GraduationCap size={12} /> {child.school_name}
                     </span>
                   )}
                   {!child.birth_date && !child.school_name && (
-                    <span className="text-xs italic" style={{ color:'rgba(26,43,28,0.30)' }}>Sem informações adicionais</span>
+                    <span className="text-xs italic" style={{ color: 'rgba(26,43,28,0.30)' }}>Sem informações adicionais</span>
                   )}
                 </div>
               </div>
@@ -244,13 +392,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
               <div className="flex gap-1.5 flex-none">
                 <button onClick={() => openEdit(child)}
                   className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{ background:'rgba(61,102,65,0.10)', color:'#3D6641' }}>
-                  <Pencil size={15}/>
+                  style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+                  <Pencil size={15} />
                 </button>
                 <button onClick={() => handleDelete(child.id, child.name)}
                   className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{ background:'rgba(220,38,38,0.08)', color:'#DC2626' }}>
-                  <Trash2 size={15}/>
+                  style={{ background: 'rgba(220,38,38,0.08)', color: '#DC2626' }}>
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>
@@ -259,90 +407,134 @@ export default function ChildrenClient({ initialChildren }: Props) {
       )}
 
       {/* Modal */}
-      <Modal open={!!modal} onClose={() => setModal(null)}
-        title={modal?.mode==='new' ? '👶 Adicionar filho' : '✏️ Editar filho'} size="sm">
+      <Modal open={!!modal} onClose={closeModal}
+        title={modal?.mode === 'new' ? '👶 Adicionar filho' : '✏️ Editar filho'} size="sm">
         <div className="space-y-5">
+
+          {/* Error banner */}
+          {saveError && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              padding: '12px 14px', borderRadius: 12,
+              background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.22)',
+            }}>
+              <AlertCircle size={16} color="#DC2626" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.45, margin: 0 }}>{saveError}</p>
+            </div>
+          )}
 
           {/* Photo picker */}
           <div>
-            <label className="block text-xs font-bold mb-2 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Foto</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, marginBottom: 10,
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(26,43,28,0.55)' }}>
+              Foto
+            </label>
             <PhotoPicker
               preview={photoPreview}
-              onFile={f => {
-                setPhotoFile(f)
-                // FileReader → data URL (universally supported on iOS/Android)
-                const reader = new FileReader()
-                reader.onload = e => setPhotoPreview(e.target?.result as string ?? null)
-                reader.readAsDataURL(f)
-              }}
+              onFile={handleFileSelected}
               onClear={() => { setPhotoFile(null); setPhotoPreview(null) }}
             />
           </div>
 
+          {/* Name */}
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Nome *</label>
-            <input type="text" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
-              placeholder="Nome do filho(a)" className="input-field w-full" autoFocus />
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, marginBottom: 6,
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(26,43,28,0.55)' }}>
+              Nome *
+            </label>
+            <input type="text" value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Nome do filho(a)" className="input-field w-full" />
           </div>
 
+          {/* Birth date */}
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Data de nascimento</label>
-            <input type="date" value={form.birth_date} onChange={e=>setForm(f=>({...f,birth_date:e.target.value}))}
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, marginBottom: 6,
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(26,43,28,0.55)' }}>
+              Data de nascimento
+            </label>
+            <input type="date" value={form.birth_date}
+              onChange={e => setForm(f => ({ ...f, birth_date: e.target.value }))}
               className="input-field w-full" />
           </div>
 
+          {/* School */}
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Escola</label>
-            <input type="text" value={form.school_name} onChange={e=>setForm(f=>({...f,school_name:e.target.value}))}
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, marginBottom: 6,
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(26,43,28,0.55)' }}>
+              Escola
+            </label>
+            <input type="text" value={form.school_name}
+              onChange={e => setForm(f => ({ ...f, school_name: e.target.value }))}
               placeholder="Nome da escola" className="input-field w-full" />
           </div>
 
+          {/* Avatar color */}
           <div>
-            <label className="block text-xs font-bold mb-2 uppercase tracking-wide" style={{ color:'rgba(26,43,28,0.55)' }}>Cor do avatar</label>
-            <div className="flex gap-2.5 flex-wrap">
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, marginBottom: 8,
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(26,43,28,0.55)' }}>
+              Cor do avatar
+            </label>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {AVATAR_COLORS.map(color => (
-                <button key={color} type="button" onClick={() => setForm(f=>({...f,avatar_color:color}))}
-                  className="w-9 h-9 rounded-xl transition-all hover:scale-110"
-                  style={{ background:color,
-                    boxShadow:form.avatar_color===color?`0 0 0 3px white,0 0 0 5px ${color}`:'none',
-                    transform:form.avatar_color===color?'scale(1.15)':'scale(1)' }} />
+                <button key={color} type="button"
+                  onClick={() => setForm(f => ({ ...f, avatar_color: color }))}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10, background: color,
+                    border: 'none', cursor: 'pointer',
+                    boxShadow: form.avatar_color === color
+                      ? `0 0 0 3px white, 0 0 0 5px ${color}`
+                      : '0 2px 6px rgba(0,0,0,0.15)',
+                    transform: form.avatar_color === color ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'all .18s',
+                  }} />
               ))}
             </div>
-            {/* Preview */}
-            <div className="mt-3 flex items-center gap-3 p-3 rounded-xl" style={{ background:'rgba(61,102,65,0.06)' }}>
-              <div style={{ width:40, height:40, borderRadius:12, overflow:'hidden', flexShrink:0,
+
+            {/* Avatar preview */}
+            <div style={{
+              marginTop: 12, display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px', borderRadius: 14, background: 'rgba(61,102,65,0.06)',
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 13, overflow: 'hidden', flexShrink: 0,
                 background: photoPreview ? 'transparent' : form.avatar_color,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontFamily:'var(--font-lora)', fontWeight:700, fontSize:17, color:'white' }}>
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-lora)', fontWeight: 700, fontSize: 18, color: 'white',
+              }}>
                 {photoPreview
-                  ? <img src={photoPreview} alt="preview" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  ? <img src={photoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : (form.name.charAt(0).toUpperCase() || '?')}
               </div>
-              <div style={{ fontSize:14, fontWeight:600, color:'#1A2B1C' }}>{form.name || 'Nome do filho'}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C' }}>
+                {form.name || 'Nome do filho'}
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button variant="ghost" onClick={() => setModal(null)} style={{ flex:1 }}>Cancelar</Button>
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+            <Button variant="ghost" onClick={closeModal} style={{ flex: 1 }}>
+              Cancelar
+            </Button>
             <button
               onClick={handleSave}
               disabled={saving || !form.name.trim()}
               style={{
-                flex: 2,
-                padding: '12px 20px',
-                borderRadius: 14,
-                border: 'none',
+                flex: 2, padding: '13px 20px', borderRadius: 14, border: 'none',
                 cursor: saving || !form.name.trim() ? 'not-allowed' : 'pointer',
                 background: saving || !form.name.trim()
                   ? 'rgba(61,102,65,0.25)'
                   : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
-                color: 'white',
-                fontSize: 15,
-                fontWeight: 700,
-                boxShadow: saving || !form.name.trim() ? 'none' : '0 4px 16px rgba(44,74,46,0.35)',
+                color: 'white', fontSize: 15, fontWeight: 700,
+                boxShadow: saving || !form.name.trim() ? 'none' : '0 4px 16px rgba(44,74,46,0.32)',
                 transition: 'all .2s',
               }}>
-              {saving ? 'Salvando…' : modal?.mode === 'new' ? '✓ Adicionar filho' : '✓ Salvar alterações'}
+              {saving
+                ? 'Salvando…'
+                : modal?.mode === 'new'
+                  ? '✓ Adicionar filho'
+                  : '✓ Salvar alterações'}
             </button>
           </div>
         </div>
