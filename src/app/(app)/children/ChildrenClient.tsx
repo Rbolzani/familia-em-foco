@@ -245,66 +245,71 @@ export default function ChildrenClient({ initialChildren }: Props) {
       const { data: { user }, error: userErr } = await supabase.auth.getUser()
       if (userErr || !user) throw new Error('Sessão expirada. Faça login novamente.')
 
+      const baseFields = {
+        name:        form.name.trim(),
+        birth_date:  form.birth_date || null,
+        school_name: form.school_name.trim() || null,
+        avatar_color: form.avatar_color,
+      }
+
       if (modal?.mode === 'new') {
-        // 1) Insert child first to get the generated ID
+        // Step 1: insert base fields (no avatar_url yet)
         const { data: inserted, error: insertErr } = await supabase
           .from('children')
-          .insert({
-            user_id:     user.id,
-            name:        form.name.trim(),
-            birth_date:  form.birth_date || null,
-            school_name: form.school_name.trim() || null,
-            avatar_color: form.avatar_color,
-            sort_order:  children.length,
-          })
+          .insert({ ...baseFields, user_id: user.id, sort_order: children.length })
           .select()
           .single()
+        if (insertErr || !inserted) throw new Error(`Erro ao cadastrar filho: ${insertErr?.message}`)
 
-        if (insertErr || !inserted) throw new Error('Erro ao cadastrar filho.')
-
-        // 2) Upload photo if selected
+        // Step 2: upload photo and update avatar_url (separate, non-blocking)
         if (photoFile) {
           const url = await uploadPhoto(user.id, inserted.id)
           if (url) {
-            const { error: upErr } = await supabase
-              .from('children')
-              .update({ avatar_url: url })
-              .eq('id', inserted.id)
-            if (upErr) console.warn('Foto enviada mas não salva no perfil:', upErr)
+            const { error: photoErr } = await supabase
+              .from('children').update({ avatar_url: url }).eq('id', inserted.id)
+            if (photoErr) {
+              // Filho salvo, mas foto falhou — mostrar aviso mas não bloquear
+              await load()
+              closeModal()
+              setSaveError(`Filho adicionado, mas a foto não salvou: ${photoErr.message}\n\nExecute no Supabase SQL Editor:\nALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`)
+              setSaving(false)
+              return
+            }
           }
         }
 
       } else {
         const child = modal!.child!
 
-        // Determine final avatar_url
-        let avatar_url: string | null = photoPreview // preserves existing URL if unchanged
+        // Step 1: save base fields first (always works, even without avatar_url column)
+        const { error: baseErr } = await supabase
+          .from('children').update(baseFields).eq('id', child.id)
+        if (baseErr) throw new Error(`Erro ao salvar dados: ${baseErr.message}`)
 
+        // Step 2: save photo if changed
         if (photoFile) {
-          // New file selected → upload it
-          avatar_url = await uploadPhoto(user.id, child.id)
-        } else if (photoPreview === null) {
-          // User explicitly cleared photo
-          avatar_url = null
+          const url = await uploadPhoto(user.id, child.id)
+          if (url) {
+            const { error: photoErr } = await supabase
+              .from('children').update({ avatar_url: url }).eq('id', child.id)
+            if (photoErr) {
+              // Base fields saved OK, photo update failed
+              await load()
+              closeModal()
+              setSaveError(`Dados salvos, mas a foto não salvou: ${photoErr.message}\n\nExecute no Supabase SQL Editor:\nALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`)
+              setSaving(false)
+              return
+            }
+          }
+        } else if (photoPreview === null && child.avatar_url) {
+          // User removed the photo
+          await supabase.from('children').update({ avatar_url: null }).eq('id', child.id)
         }
-        // else: photoPreview still holds the existing URL → keep it
-
-        const { error: updateErr } = await supabase
-          .from('children')
-          .update({
-            name:        form.name.trim(),
-            birth_date:  form.birth_date || null,
-            school_name: form.school_name.trim() || null,
-            avatar_color: form.avatar_color,
-            avatar_url,
-          })
-          .eq('id', child.id)
-
-        if (updateErr) throw new Error(`Erro ao salvar: ${updateErr.message}`)
+        // else: no new file, keep existing avatar_url as-is
       }
 
+      await load()
       closeModal()
-      load()
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido.'
