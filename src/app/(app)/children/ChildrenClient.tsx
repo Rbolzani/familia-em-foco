@@ -49,76 +49,79 @@ export function ChildAvatar({
 }
 
 // ── Photo picker ──────────────────────────────────────────────────────────
+// Uses <label htmlFor> → <input> association: the most universally supported
+// way to trigger a file picker on mobile without programmatic .click() calls.
+// Image rendered as <img src={blobUrl}> inside the label — not backgroundImage,
+// not inside a <button> — the combination that works on all Android/iOS browsers.
 function PhotoPicker({ preview, onFile, onClear }: {
   preview: string | null
   onFile: (f: File) => void
   onClear: () => void
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  function openPicker() {
-    inputRef.current?.click()
-  }
+  const inputId = 'child-photo-input'
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) onFile(f)
-    e.target.value = '' // reset so re-selecting same file works
+    e.target.value = ''
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
 
-      {/* Photo area — div (not button) to avoid Android Chrome img-in-button bug.
-          Uses backgroundImage so the data URL renders reliably on all mobile browsers. */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={openPicker}
-        onKeyDown={e => e.key === 'Enter' && openPicker()}
+      {/* label triggers the file input natively — no .click() needed, works on all mobile */}
+      <label
+        htmlFor={inputId}
         style={{
           width: 88, height: 88, borderRadius: 20, flexShrink: 0,
           cursor: 'pointer', position: 'relative', overflow: 'hidden',
-          // Show photo as CSS background — avoids img-in-button issues on Android
-          backgroundImage: preview ? `url("${preview}")` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: preview ? '#000' : 'rgba(61,102,65,0.07)',
-          border: preview ? 'none' : '2px dashed rgba(61,102,65,0.30)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display: 'block',
+          background: 'rgba(61,102,65,0.07)',
+          border: preview ? '2px solid rgba(61,102,65,0.20)' : '2px dashed rgba(61,102,65,0.35)',
         }}>
-        {/* Camera icon: always show when no photo; subtle overlay when photo exists */}
+        {/* img inside label — renders blob URL reliably on all browsers */}
+        {preview && (
+          <img
+            src={preview}
+            alt=""
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', display: 'block',
+            }}
+          />
+        )}
+        {/* Camera overlay */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: preview ? 'rgba(0,0,0,0.30)' : 'transparent',
+          background: preview ? 'rgba(0,0,0,0.28)' : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Camera size={preview ? 20 : 28} color={preview ? 'white' : 'rgba(61,102,65,0.45)'} />
+          <Camera size={preview ? 18 : 28} color={preview ? 'white' : 'rgba(61,102,65,0.50)'} />
         </div>
-      </div>
+      </label>
 
-      {/* Hidden native file input — off-screen, NOT display:none (iOS compatibility) */}
+      {/* File input — display:none is fine when triggered via label htmlFor */}
       <input
-        ref={inputRef}
+        id={inputId}
         type="file"
         accept="image/*"
-        style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, pointerEvents: 'none' }}
+        style={{ display: 'none' }}
         onChange={handleChange}
       />
 
-      {/* Action buttons */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button
-          type="button"
-          onClick={openPicker}
+      {/* Buttons */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+        <label
+          htmlFor={inputId}
           style={{
             padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
             background: 'rgba(61,102,65,0.10)', color: '#3D6641',
             border: '1px solid rgba(61,102,65,0.22)',
-            fontSize: 13, fontWeight: 700,
+            fontSize: 13, fontWeight: 700, display: 'block', textAlign: 'center',
           }}>
           {preview ? '📷 Trocar foto' : '📷 Escolher foto'}
-        </button>
+        </label>
 
         {preview && (
           <button
