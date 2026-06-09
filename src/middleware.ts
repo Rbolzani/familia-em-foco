@@ -21,8 +21,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — essencial para manter cookies atualizados
-  const { data: { user } } = await supabase.auth.getUser()
+  // getSession() lê o JWT do cookie localmente — sem round-trip de rede.
+  // getUser() fica nas server components (layout, pages) para validação forte.
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth')
