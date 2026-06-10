@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Activity, ActivityCategory, Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
-import { DeadlineBadge, StatusBadge } from '@/components/ui/Badge'
-import { Plus, Check, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
+import { DeadlineBadge } from '@/components/ui/Badge'
+import { Plus, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -65,7 +65,6 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   const [children, setChildren] = useState<Child[]>(initialChildren ?? [])
   const [loading, setLoading] = useState(!initialActivities)
   const [filterChild, setFilterChild] = useState('')
-  const [filterStatus, setFilterStatus] = useState('pendente')
   const [modal, setModal] = useState<{ mode: 'new' | 'edit'; activity?: Activity } | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
@@ -114,25 +113,20 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
     setSaving(false); setModal(null); load()
   }
 
-  async function toggleStatus(a: Activity) {
-    const newStatus = a.status === 'pendente' ? 'concluido' : 'pendente'
-    await supabase.from('activities').update({ status: newStatus }).eq('id', a.id)
-    setActivities(prev => prev.map(x => x.id === a.id ? { ...x, status: newStatus } : x))
-  }
-
   async function handleDelete(id: string) {
     if (!confirm('Excluir esta atividade?')) return
     await supabase.from('activities').delete().eq('id', id)
     setActivities(prev => prev.filter(x => x.id !== id))
   }
 
+  // Today in Brazil timezone — activities before today are automatically hidden
+  const todayDs = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+
   const filtered = activities.filter(a => {
+    if (a.date < todayDs) return false
     if (filterChild && a.child_id !== filterChild) return false
-    if (filterStatus && a.status !== filterStatus) return false
     return true
   })
-
-  const pendentes = activities.filter(a => a.status === 'pendente').length
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-5 space-y-5" style={{ boxSizing:'border-box' }}>
@@ -145,7 +139,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
           </p>
           <h1 className="text-2xl font-bold" style={{ fontFamily:'var(--font-lora)', color: '#1A2B1C' }}>{title}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'rgba(26,43,28,0.45)' }}>
-            {pendentes} pendente{pendentes !== 1 ? 's' : ''}
+            {filtered.length} próxima{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
@@ -157,43 +151,24 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
         </button>
       </div>
 
-      {/* Filter bar */}
-      <div className="card p-3 flex flex-wrap gap-2 items-center animate-fade-up">
-        <Filter size={13} style={{ color: 'rgba(26,43,28,0.45)', flexShrink:0 }} />
-        {children.length > 0 && (
+      {/* Filter bar — child selector only */}
+      {children.length > 1 && (
+        <div className="card p-3 flex gap-2 items-center animate-fade-up">
+          <Filter size={13} style={{ color: 'rgba(26,43,28,0.45)', flexShrink:0 }} />
           <select
             value={filterChild}
             onChange={e => setFilterChild(e.target.value)}
             className="text-xs font-semibold border rounded-xl px-2 py-1.5 focus:outline-none transition-colors min-w-0"
-            style={{ borderColor: 'rgba(61,102,65,0.22)', color: '#1A2B1C', background: '#FDF8F2', maxWidth: 130 }}
+            style={{ borderColor: 'rgba(61,102,65,0.22)', color: '#1A2B1C', background: '#FDF8F2', maxWidth: 160 }}
           >
-            <option value="">Todos</option>
+            <option value="">Todos os filhos</option>
             {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-        )}
-        <div className="flex gap-1.5 flex-wrap">
-          {[
-            { value: '', label: 'Todos' },
-            { value: 'pendente', label: 'Pendentes' },
-            { value: 'concluido', label: 'Feitos' },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setFilterStatus(opt.value)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-              style={filterStatus === opt.value
-                ? { background: accent, color: '#fff', boxShadow: `0 2px 8px ${accent}44` }
-                : { background: bg, color: accent }
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
+          <span className="ml-auto text-xs font-semibold flex-shrink-0" style={{ color: 'rgba(26,43,28,0.45)' }}>
+            {filtered.length}
+          </span>
         </div>
-        <span className="ml-auto text-xs font-semibold flex-shrink-0" style={{ color: 'rgba(26,43,28,0.45)' }}>
-          {filtered.length}
-        </span>
-      </div>
+      )}
 
       {/* List */}
       {loading ? (
@@ -207,7 +182,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
             Nenhuma atividade
           </h3>
           <p className="text-sm mb-4" style={{ color: '#8B7A68' }}>
-            {filterStatus === 'pendente' ? 'Tudo em dia! Ou adicione uma nova.' : 'Nenhum registro encontrado.'}
+            Nenhuma atividade futura. Adicione uma nova.
           </p>
           <button
             onClick={openNew}
@@ -225,7 +200,6 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
               group={group}
               accent={accent}
               index={gi}
-              onToggle={(a) => toggleStatus(a)}
               onEdit={(a) => openEdit(a)}
               onDelete={(id) => handleDelete(id)}
             />
@@ -347,53 +321,30 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
 type ActivityWithChild = Activity & { child?: { name: string; avatar_color: string } }
 
 function ActivityCard({
-  group, accent, index, onToggle, onEdit, onDelete,
+  group, index, onEdit, onDelete,
 }: {
   group: ActivityWithChild[]
   accent: string
   index: number
-  onToggle: (a: ActivityWithChild) => void
   onEdit: (a: ActivityWithChild) => void
   onDelete: (id: string) => void
 }) {
-  const first   = group[0]
-  const merged  = group.length > 1
-  const allDone = group.every(a => a.status === 'concluido')
-  const anyDone = group.some(a => a.status === 'concluido')
+  const first  = group[0]
+  const merged = group.length > 1
   const fmtDate = (d: string) => format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })
-
-  function handleToggleAll() { group.forEach(a => onToggle(a)) }
 
   return (
     <div
       className="card card-lift animate-fade-up p-4"
-      style={{ animationDelay: `${index * 0.04}s`, opacity: allDone ? .65 : 1 }}
+      style={{ animationDelay: `${index * 0.04}s` }}
     >
       <div className="flex items-start gap-3">
-        {/* Toggle — toggles ALL in the group */}
-        <button
-          onClick={handleToggleAll}
-          className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110"
-          style={allDone
-            ? { background: '#00C48C', borderColor: '#00C48C', color: '#fff' }
-            : anyDone
-              ? { background: '#00C48C44', borderColor: '#00C48C', color: '#00C48C' }
-              : { borderColor: '#EDE4D6', background: 'transparent' }
-          }
-        >
-          {(allDone || anyDone) && <Check size={12} strokeWidth={3} />}
-        </button>
-
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div
-            className="font-semibold text-sm"
-            style={{ color: allDone ? '#8B7A68' : '#0F1F3D', textDecoration: allDone ? 'line-through' : 'none' }}
-          >
+          <div className="font-semibold text-sm" style={{ color: '#0F1F3D' }}>
             {first.title}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {/* All child badges when merged */}
             {group.map(a => a.child && (
               <span key={a.id} className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                 style={{ background: a.child.avatar_color }}>
@@ -409,7 +360,6 @@ function ActivityCard({
               </span>
             )}
             <DeadlineBadge date={first.date} />
-            {!merged && <StatusBadge status={first.status} />}
           </div>
           {first.location && (
             <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#8B7A68' }}>
@@ -431,7 +381,6 @@ function ActivityCard({
                       {a.child.name}
                     </span>
                   )}
-                  <StatusBadge status={a.status} />
                   <div className="ml-auto flex gap-1 flex-shrink-0">
                     <button onClick={() => onEdit(a)}
                       className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
