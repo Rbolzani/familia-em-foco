@@ -196,17 +196,26 @@ function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, A
   )
 }
 
+// ── Merge identical activities across children ─────────────────────────────
+function mergeActivities(acts: ActWithChild[]): ActWithChild[][] {
+  const map = new Map<string, ActWithChild[]>()
+  for (const a of acts) {
+    const key = `${a.title}||${a.date}||${a.category}`
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(a)
+  }
+  return Array.from(map.values())
+}
+
 // ── Activity Row ───────────────────────────────────────────────────────────
-function ActivityRow({ activity }: { activity: Activity & { child:{name:string;avatar_color:string} } }) {
+function ActivityRow({ activities }: { activities: ActWithChild[] }) {
+  const activity = activities[0]
   const cat    = CAT[activity.category as CatKey]??CAT.escola
-  const todayDs= new Date().toISOString().split('T')[0]
+  const todayDs= format(new Date(), 'yyyy-MM-dd')
   const overdue= activity.status==='pendente'&&activity.date<todayDs
 
-  // Weekday + date
   const dateLabel = format(new Date(activity.date+'T00:00:00'), "EEE, dd/MM", {locale:ptBR})
     .replace(/^\w/,c=>c.toUpperCase())
-
-  const timeText = overdue ? '⚠ Atrasado' : activity.time ? activity.time.slice(0,5) : dateLabel
 
   return (
     <Link href={`/${activity.category==='escola'?'escola':activity.category==='saude'?'saude':'atividades'}`}>
@@ -223,17 +232,15 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* Title — full width, no truncation constrained by right chip */}
           <div className="font-bold" style={{ fontSize:14, color:'#1A2B1C', lineHeight:1.3 }}>{activity.title}</div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {/* Child badge */}
-            {activity.child && (
-              <span className="text-[11px] font-extrabold px-2.5 py-[3px] rounded-full text-white flex-shrink-0"
-                style={{ background:activity.child.avatar_color, boxShadow:`0 2px 6px ${activity.child.avatar_color}55` }}>
-                {activity.child.name}
+            {/* All children badges (merged) */}
+            {activities.map(a => a.child && (
+              <span key={a.id} className="text-[11px] font-extrabold px-2.5 py-[3px] rounded-full text-white flex-shrink-0"
+                style={{ background:a.child.avatar_color, boxShadow:`0 2px 6px ${a.child.avatar_color}55` }}>
+                {a.child.name}
               </span>
-            )}
-            {/* Date/time chip — now inline below the title */}
+            ))}
             <span className="text-[11px] font-bold px-2.5 py-[3px] rounded-full flex-shrink-0"
               style={{
                 background:'rgba(255,255,255,0.75)',
@@ -243,7 +250,6 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
               }}>
               {overdue ? '⚠ Atrasado' : activity.time ? `${activity.time.slice(0,5)} · ${dateLabel}` : dateLabel}
             </span>
-            {/* Location */}
             {activity.location && (
               <span className="text-[11px] italic flex items-center gap-1 truncate" style={{ color:'rgba(26,43,28,0.38)' }}>
                 <MapPin size={10}/> {activity.location}
@@ -347,13 +353,13 @@ export default function DashboardClient({ userName, children, todayActivities, u
               <p className="italic" style={{ fontSize:14, color:'rgba(26,43,28,0.50)' }}>Nenhuma atividade para hoje — aproveite!</p>
             </div>
           ) : (
-            todayActivities.map(a=><ActivityRow key={a.id} activity={a}/>)
+            mergeActivities(todayActivities).map((g,i)=><ActivityRow key={g[0].id} activities={g}/>)
           )}
 
           {upcomingActivities.length>0&&(
             <div className="mt-5 md:mt-6">
               <SectionH>Próximos 7 dias</SectionH>
-              {upcomingActivities.slice(0,5).map(a=><ActivityRow key={a.id} activity={a}/>)}
+              {mergeActivities(upcomingActivities).map((g,i)=><ActivityRow key={g[0].id} activities={g}/>)}
             </div>
           )}
         </div>

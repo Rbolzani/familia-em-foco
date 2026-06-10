@@ -212,7 +212,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
           </nav>
 
           {/* Children pinned at bottom */}
-          <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)' }}>
+          <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:240 }}>
             {sidebarChildren.length > 0 && (
               <>
                 <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase',

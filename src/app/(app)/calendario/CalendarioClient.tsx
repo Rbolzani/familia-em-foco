@@ -287,27 +287,25 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
             ))}
           </div>
 
-          {/* Legend — categories always shown; "by child" adds child pills */}
+          {/* Legend — by child: categories; by natureza: only children */}
           <div className="flex items-center gap-3 px-3 py-1.5 flex-shrink-0 flex-wrap"
             style={{ borderBottom:'1px solid rgba(61,102,65,0.06)', background:'rgba(248,243,234,0.80)' }}>
-            {LEGEND.map(l=>(
-              <span key={l.key} className="flex items-center gap-1 text-[10px] font-semibold"
-                style={{ color:'rgba(26,43,28,0.50)' }}>
-                <span className="w-2 h-2 rounded-[3px] inline-block flex-shrink-0" style={{ background:l.color }}/>
-                {l.label}
-              </span>
-            ))}
-            {viewMode==='category' && children.length>1 && (
-              <>
-                <span style={{ width:1, height:10, background:'rgba(61,102,65,0.18)', flexShrink:0 }}/>
-                {children.map(c=>(
-                  <span key={c.id} className="flex items-center gap-1 text-[10px] font-bold"
-                    style={{ color:'rgba(26,43,28,0.55)' }}>
-                    <span style={{ width:8, height:8, borderRadius:'50%', background:c.avatar_color, display:'inline-block', flexShrink:0 }}/>
-                    {c.name}
-                  </span>
-                ))}
-              </>
+            {viewMode === 'child' ? (
+              LEGEND.map(l=>(
+                <span key={l.key} className="flex items-center gap-1 text-[10px] font-semibold"
+                  style={{ color:'rgba(26,43,28,0.50)' }}>
+                  <span className="w-2 h-2 rounded-[3px] inline-block flex-shrink-0" style={{ background:l.color }}/>
+                  {l.label}
+                </span>
+              ))
+            ) : (
+              children.map(c=>(
+                <span key={c.id} className="flex items-center gap-1 text-[10px] font-bold"
+                  style={{ color:'rgba(26,43,28,0.55)' }}>
+                  <span style={{ width:8, height:8, borderRadius:'50%', background:c.avatar_color, display:'inline-block', flexShrink:0 }}/>
+                  {c.name}
+                </span>
+              ))
             )}
           </div>
 
@@ -348,9 +346,7 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
                       return (
                         <div key={ai} className="text-white truncate font-semibold rounded-[5px] px-1 flex-shrink-0"
                           style={{ background:pillColor, fontSize:9, lineHeight:'14px', boxShadow:'0 1px 2px rgba(0,0,0,0.14)' }}>
-                          {viewMode==='category' && (a as ActivityWithChild).child
-                            ? `${(a as ActivityWithChild).child!.name.split(' ')[0]}: ${a.title}`
-                            : a.title}
+                          {a.title}
                         </div>
                       )
                     })}

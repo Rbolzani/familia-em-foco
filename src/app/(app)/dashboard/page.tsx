@@ -9,8 +9,9 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login')
 
   const today   = new Date()
-  const todayDs = today.toISOString().split('T')[0]
-  const weekEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().split('T')[0]
+  // Use local date (not UTC) to avoid showing tomorrow's activities at night
+  const todayDs = format(today, 'yyyy-MM-dd')
+  const weekEnd = format(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7), 'yyyy-MM-dd')
   const moStart = format(startOfMonth(today), 'yyyy-MM-dd')
   const moEnd   = format(endOfMonth(today),   'yyyy-MM-dd')
 
@@ -34,8 +35,7 @@ export default async function DashboardPage() {
       .gt('date', todayDs)
       .lte('date', weekEnd)
       .neq('status', 'cancelado')
-      .order('date').order('time', { nullsFirst: false })
-      .limit(10),
+      .order('date').order('time', { nullsFirst: false }),
 
     // Full current month — used for mini-calendar dots + click detail
     supabase.from('activities')
