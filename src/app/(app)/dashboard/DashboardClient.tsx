@@ -274,6 +274,7 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
   const [adding, setAdding] = useState(false)
   const [text, setText] = useState('')
   const [childId, setChildId] = useState(allChildren[0]?.id ?? '')
+  const [category, setCategory] = useState<'escola'|'saude'|'extracurricular'>('escola')
   const [saving, setSaving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -285,7 +286,7 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from('activities').insert({
       user_id: user!.id, child_id: childId,
-      category: 'escola', title: text.trim(),
+      category, title: text.trim(),
       date: null, alert_days: 0, ai_generated: false,
     }).select('*, child:children(name, avatar_color)').single()
     if (data) setItems(prev => [data as ActWithChild, ...prev])
@@ -347,6 +348,13 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
             className="w-full text-[13px] outline-none bg-transparent"
             style={{ color:'#1A2B1C' }}
           />
+          <select value={category} onChange={e => setCategory(e.target.value as typeof category)}
+            className="text-[11px] font-semibold border rounded-[9px] px-2 py-1 outline-none w-full"
+            style={{ borderColor:'rgba(61,102,65,0.22)', background:'white', color:'#1A2B1C' }}>
+            <option value="escola">📚 Escola</option>
+            <option value="saude">🩺 Saúde</option>
+            <option value="extracurricular">🏆 Atividade</option>
+          </select>
           {allChildren.length > 1 && (
             <select value={childId} onChange={e => setChildId(e.target.value)}
               className="text-[11px] font-semibold border rounded-[9px] px-2 py-1 outline-none w-full"
