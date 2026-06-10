@@ -39,6 +39,7 @@ interface ExtractedActivity {
 export default function IAPage() {
   const supabase  = createClient()
   const fileRef   = useRef<HTMLInputElement>(null)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
   const [children, setChildren]         = useState<Child[]>([])
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([])
   const [mode, setMode]                 = useState<'image' | 'text'>('image')
@@ -50,6 +51,7 @@ export default function IAPage() {
   const [saving, setSaving]             = useState(false)
   const [saved, setSaved]               = useState(false)
   const [error, setError]               = useState('')
+  const [pasteHint, setPasteHint]       = useState(false)
 
   useEffect(() => {
     supabase.from('children').select('*').order('sort_order').then(({ data }) => {
@@ -57,6 +59,27 @@ export default function IAPage() {
       if (data?.[0]) setSelectedChildIds([data[0].id])
     })
   }, [])
+
+  // Global paste listener — captures Ctrl+V anywhere on the page when in image mode
+  useEffect(() => {
+    if (mode !== 'image') return
+    function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items
+      if (!items) return
+      const imageItems = Array.from(items).filter(it => it.type.startsWith('image/'))
+      if (imageItems.length === 0) return
+      e.preventDefault()
+      const files = imageItems.map(it => it.getAsFile()).filter(Boolean) as File[]
+      if (files.length > 0) {
+        addFiles(files)
+        // Flash hint
+        setPasteHint(true)
+        setTimeout(() => setPasteHint(false), 1800)
+      }
+    }
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [mode, selectedChildIds, extracted]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleDefaultChild(childId: string) {
     setSelectedChildIds(prev => {
@@ -286,25 +309,53 @@ export default function IAPage() {
         <div className="animate-fade-up space-y-3">
           {/* Upload drop zone */}
           <div
-            className="cursor-pointer transition-all"
+            ref={dropZoneRef}
+            className="cursor-pointer transition-all relative"
             style={{ ...CARD, textAlign:'center', padding:'28px 20px',
               borderStyle:'dashed', borderWidth:2,
-              borderColor: images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)',
+              borderColor: pasteHint ? '#3D6641' : (images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)'),
+              background: pasteHint
+                ? `linear-gradient(140deg,#D1FAE5 0%,#FAFAF7 100%)`
+                : undefined,
+              transition:'border-color .25s, background .25s',
             }}
             onClick={() => fileRef.current?.click()}
             onDrop={e => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
-            onDragOver={e => e.preventDefault()}>
+            onDragOver={e => e.preventDefault()}
+            onPaste={e => {
+              const items = e.clipboardData?.items
+              if (!items) return
+              const imageItems = Array.from(items).filter(it => it.type.startsWith('image/'))
+              if (imageItems.length === 0) return
+              e.preventDefault()
+              const files = imageItems.map(it => it.getAsFile()).filter(Boolean) as File[]
+              if (files.length > 0) addFiles(files)
+            }}>
 
             <div className="w-14 h-14 rounded-[18px] flex items-center justify-center mx-auto mb-3"
               style={{ backgroundImage:'linear-gradient(140deg,#D1FAE5,#A7F3D0)', border:'1px solid rgba(0,0,0,0.06)', boxShadow:'0 1px 4px rgba(44,74,46,0.10)' }}>
               <Upload size={24} color="#3D6641" />
             </div>
             <p className="font-bold text-sm mb-1" style={{ color:'#1A2B1C' }}>
-              Clique ou arraste imagens aqui
+              {pasteHint ? '✓ Imagem colada!' : 'Clique, arraste ou cole imagens aqui'}
             </p>
             <p className="text-xs italic" style={{ color:'rgba(26,43,28,0.45)' }}>
               Agenda escolar, anotações à mão, prints de tela — vários arquivos permitidos
             </p>
+            {/* Paste shortcut hint */}
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background:'rgba(61,102,65,0.07)', border:'1px solid rgba(61,102,65,0.15)' }}>
+              <kbd className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background:'rgba(61,102,65,0.12)', color:'#3D6641', fontFamily:'monospace', border:'1px solid rgba(61,102,65,0.25)' }}>
+                Ctrl
+              </kbd>
+              <span className="text-[10px] font-semibold" style={{ color:'rgba(26,43,28,0.45)' }}>+</span>
+              <kbd className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background:'rgba(61,102,65,0.12)', color:'#3D6641', fontFamily:'monospace', border:'1px solid rgba(61,102,65,0.25)' }}>
+                V
+              </kbd>
+              <span className="text-[10px] font-semibold" style={{ color:'rgba(26,43,28,0.45)' }}>para colar captura de tela</span>
+            </div>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
               onChange={e => e.target.files && addFiles(e.target.files)} />
           </div>
