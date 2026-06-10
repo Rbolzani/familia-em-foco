@@ -39,7 +39,6 @@ interface ExtractedActivity {
 export default function IAPage() {
   const supabase  = createClient()
   const fileRef   = useRef<HTMLInputElement>(null)
-  const dropZoneRef = useRef<HTMLDivElement>(null)
   const [children, setChildren]         = useState<Child[]>([])
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([])
   const [mode, setMode]                 = useState<'image' | 'text'>('image')
@@ -52,8 +51,8 @@ export default function IAPage() {
   const [saved, setSaved]               = useState(false)
   const [error, setError]               = useState('')
   const [pasteHint, setPasteHint]       = useState(false)
-  // Stable ref for addFiles so paste handler never holds a stale closure
-  const addFilesRef = useRef<(files: FileList | File[]) => void>(() => {})
+  const [pasteZoneFocused, setPasteZoneFocused] = useState(false)
+  const pasteZoneRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     supabase.from('children').select('*').order('sort_order').then(({ data }) => {
@@ -62,51 +61,6 @@ export default function IAPage() {
     })
   }, [])
 
-  // Paste via navigator.clipboard.read() — most reliable cross-browser approach for images
-  async function pasteFromClipboard() {
-    try {
-      const items = await navigator.clipboard.read()
-      const files: File[] = []
-      for (const item of items) {
-        for (const type of item.types) {
-          if (type.startsWith('image/')) {
-            const blob = await item.getType(type)
-            files.push(new File([blob], `clipboard.${type.split('/')[1]}`, { type }))
-          }
-        }
-      }
-      if (files.length === 0) {
-        setError('Nenhuma imagem encontrada no clipboard. Copie uma imagem primeiro.')
-        return
-      }
-      addFilesRef.current(files)
-      setPasteHint(true)
-      setTimeout(() => setPasteHint(false), 1800)
-    } catch {
-      // Fallback: try reading via paste event simulation
-      setError('Permissão negada. Use Ctrl+V com o foco no campo abaixo, ou selecione um arquivo.')
-    }
-  }
-
-  // Global document paste listener — only depends on mode; uses ref for addFiles to avoid stale closure
-  useEffect(() => {
-    if (mode !== 'image') return
-    function handlePaste(e: ClipboardEvent) {
-      const items = e.clipboardData?.items
-      if (!items) return
-      const imageItems = Array.from(items).filter(it => it.type.startsWith('image/'))
-      if (imageItems.length === 0) return
-      e.preventDefault()
-      const files = imageItems.map(it => it.getAsFile()).filter(Boolean) as File[]
-      if (files.length > 0) {
-        addFilesRef.current(files)
-        setPasteHint(true)
-        setTimeout(() => setPasteHint(false), 1800)
-      }
-    }
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
-  }, [mode])
 
   function toggleDefaultChild(childId: string) {
     setSelectedChildIds(prev => {
@@ -133,8 +87,6 @@ export default function IAPage() {
     })
     setExtracted(null); setError('')
   }
-  // Keep ref up-to-date so the paste handler (which only runs once) always calls the latest addFiles
-  addFilesRef.current = addFiles
 
   function removeImage(idx: number) {
     setImages(prev  => prev.filter((_,i)=>i!==idx))
@@ -336,72 +288,113 @@ export default function IAPage() {
       {/* ── Image Upload ── */}
       {mode === 'image' && (
         <div className="animate-fade-up space-y-3">
-          {/* Upload drop zone */}
+          {/* File upload drop zone */}
           <div
-            ref={dropZoneRef}
             className="cursor-pointer transition-all relative"
-            style={{ ...CARD, textAlign:'center', padding:'28px 20px',
+            style={{ ...CARD, textAlign:'center', padding:'24px 20px',
               borderStyle:'dashed', borderWidth:2,
-              borderColor: pasteHint ? '#3D6641' : (images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)'),
-              background: pasteHint ? 'linear-gradient(140deg,#D1FAE5 0%,#FAFAF7 100%)' : undefined,
-              transition:'border-color .25s, background .25s',
+              borderColor: images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)',
             }}
             onClick={() => fileRef.current?.click()}
             onDrop={e => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
             onDragOver={e => e.preventDefault()}>
-
-            <div className="w-14 h-14 rounded-[18px] flex items-center justify-center mx-auto mb-3"
-              style={{ backgroundImage:'linear-gradient(140deg,#D1FAE5,#A7F3D0)', border:'1px solid rgba(0,0,0,0.06)', boxShadow:'0 1px 4px rgba(44,74,46,0.10)' }}>
-              <Upload size={24} color="#3D6641" />
+            <div className="w-12 h-12 rounded-[16px] flex items-center justify-center mx-auto mb-2"
+              style={{ backgroundImage:'linear-gradient(140deg,#D1FAE5,#A7F3D0)', border:'1px solid rgba(0,0,0,0.06)' }}>
+              <Upload size={20} color="#3D6641" />
             </div>
-            <p className="font-bold text-sm mb-1" style={{ color:'#1A2B1C' }}>
-              {pasteHint ? '✓ Imagem colada!' : 'Clique ou arraste imagens aqui'}
+            <p className="font-bold text-sm mb-0.5" style={{ color:'#1A2B1C' }}>
+              Clique ou arraste imagens aqui
             </p>
             <p className="text-xs italic" style={{ color:'rgba(26,43,28,0.45)' }}>
-              Agenda escolar, anotações à mão, prints de tela — vários arquivos permitidos
+              Agenda escolar, anotações à mão, prints — vários arquivos permitidos
             </p>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
               onChange={e => e.target.files && addFiles(e.target.files)} />
           </div>
 
-          {/* Paste button row — uses navigator.clipboard.read() for maximum reliability */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); pasteFromClipboard() }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[13px] text-sm font-bold transition-all hover:brightness-105 active:scale-95"
-              style={{ background:'rgba(61,102,65,0.08)', border:'1.5px solid rgba(61,102,65,0.22)', color:'#3D6641' }}>
-              {/* clipboard icon inline */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="2" width="6" height="4" rx="1"/>
-                <path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/>
-              </svg>
-              Colar imagem (Ctrl+V)
-            </button>
-            <span className="text-xs italic flex-shrink-0" style={{ color:'rgba(26,43,28,0.38)' }}>
-              ou use o atalho em qualquer lugar
-            </span>
-          </div>
-
-          {/* Hidden focusable textarea that captures paste via keyboard shortcut */}
-          <textarea
-            className="sr-only"
-            aria-hidden="true"
-            tabIndex={-1}
+          {/* ── Paste zone — click to focus, then Ctrl+V ── */}
+          <div
+            ref={pasteZoneRef}
+            tabIndex={0}
+            role="button"
+            aria-label="Área de colagem — clique aqui e pressione Ctrl+V"
+            onClick={() => pasteZoneRef.current?.focus()}
+            onFocus={() => setPasteZoneFocused(true)}
+            onBlur={() => { setPasteZoneFocused(false); setPasteHint(false) }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') pasteZoneRef.current?.focus() }}
             onPaste={e => {
-              const items = e.clipboardData?.items
-              if (!items) return
-              const imageItems = Array.from(items).filter(it => it.type.startsWith('image/'))
-              if (imageItems.length === 0) return
               e.preventDefault()
-              const files = imageItems.map(it => it.getAsFile()).filter(Boolean) as File[]
-              if (files.length > 0) {
-                addFiles(files)
-                setPasteHint(true)
-                setTimeout(() => setPasteHint(false), 1800)
+              const items = Array.from(e.clipboardData?.items ?? [])
+              const imageItems = items.filter(it => it.type.startsWith('image/'))
+              if (imageItems.length === 0) {
+                setError('Nenhuma imagem no clipboard. Faça um print (Win+Shift+S ou PrintScreen) antes de colar.')
+                return
               }
+              const files = imageItems.map(it => it.getAsFile()).filter(Boolean) as File[]
+              addFiles(files)
+              setPasteHint(true)
+              setTimeout(() => { setPasteHint(false); pasteZoneRef.current?.blur() }, 1500)
             }}
-          />
+            style={{
+              ...CARD,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '20px',
+              cursor: 'pointer',
+              outline: 'none',
+              borderWidth: 2,
+              borderStyle: 'solid',
+              borderColor: pasteHint
+                ? '#3D6641'
+                : pasteZoneFocused
+                  ? 'rgba(61,102,65,0.60)'
+                  : 'rgba(61,102,65,0.22)',
+              background: pasteHint
+                ? 'linear-gradient(140deg,#D1FAE5,#FAFAF7)'
+                : pasteZoneFocused
+                  ? 'linear-gradient(140deg,rgba(61,102,65,0.07),rgba(61,102,65,0.03))'
+                  : undefined,
+              transition: 'border-color .2s, background .2s',
+              boxShadow: pasteZoneFocused
+                ? '0 0 0 3px rgba(61,102,65,0.15), 0 4px 16px rgba(44,74,46,0.10)'
+                : undefined,
+            }}>
+            {pasteHint ? (
+              <>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background:'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                  <Check size={20} color="#D4E8D5" strokeWidth={3}/>
+                </div>
+                <p className="font-bold text-sm" style={{ color:'#3D6641' }}>Imagem colada!</p>
+              </>
+            ) : pasteZoneFocused ? (
+              <>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center animate-pulse"
+                  style={{ background:'rgba(61,102,65,0.15)', border:'2px solid rgba(61,102,65,0.35)' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D6641" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/>
+                  </svg>
+                </div>
+                <p className="font-bold text-sm" style={{ color:'#3D6641' }}>Pronto! Pressione Ctrl+V agora</p>
+                <p className="text-xs italic" style={{ color:'rgba(26,43,28,0.45)' }}>A imagem do clipboard será carregada</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3D6641" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2"/>
+                  </svg>
+                  <span className="font-bold text-sm" style={{ color:'#1A2B1C' }}>Colar captura de tela</span>
+                </div>
+                <p className="text-xs italic" style={{ color:'rgba(26,43,28,0.45)' }}>
+                  Clique aqui para ativar → depois pressione <kbd style={{ fontFamily:'monospace', fontSize:11, padding:'1px 5px', borderRadius:4, background:'rgba(61,102,65,0.10)', border:'1px solid rgba(61,102,65,0.25)', color:'#3D6641' }}>Ctrl+V</kbd>
+                </p>
+              </>
+            )}
+          </div>
 
           {/* Previews grid */}
           {previews.length > 0 && (
