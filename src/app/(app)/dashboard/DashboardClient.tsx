@@ -196,15 +196,52 @@ function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, A
   )
 }
 
-// ── Merge identical activities across children ─────────────────────────────
+// ── Semantic merge: group activities that likely mean the same thing ────────
+const SYNONYM_MAP: Record<string, string> = {
+  avaliacao: 'PROVA', prova: 'PROVA', teste: 'PROVA', exame: 'PROVA',
+  atividade: 'TAREFA', licao: 'TAREFA', tarefa: 'TAREFA', exercicio: 'TAREFA',
+  consulta: 'CONSULTA', retorno: 'CONSULTA', sessao: 'CONSULTA',
+}
+const STOP_WORDS = new Set(['de', 'da', 'do', 'dos', 'das', 'a', 'o', 'e', 'em', 'um', 'uma'])
+
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // strip accents
+    .replace(/[^a-z0-9\s]/g, ' ')                        // punctuation → space
+    .replace(/\s+/g, ' ').trim()
+    .split(' ')
+    .filter(w => !STOP_WORDS.has(w))
+    .map(w => SYNONYM_MAP[w] ?? w)
+    .join(' ')
+}
+
+function titlesSimilar(a: string, b: string): boolean {
+  const na = normalizeTitle(a)
+  const nb = normalizeTitle(b)
+  if (na === nb) return true
+  // Containment: one is a prefix/suffix of the other (handles extra words like "liberada")
+  const [shorter, longer] = na.length <= nb.length ? [na, nb] : [nb, na]
+  if (longer.startsWith(shorter) || longer.endsWith(shorter) || longer.includes(shorter)) return true
+  // Word-overlap ratio: if ≥80% of the shorter title's words appear in the longer one
+  const wordsA = na.split(' ')
+  const wordsB = new Set(nb.split(' '))
+  const overlap = wordsA.filter(w => wordsB.has(w)).length
+  return overlap / wordsA.length >= 0.80
+}
+
 function mergeActivities(acts: ActWithChild[]): ActWithChild[][] {
-  const map = new Map<string, ActWithChild[]>()
+  const groups: ActWithChild[][] = []
   for (const a of acts) {
-    const key = `${a.title}||${a.date}||${a.category}`
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(a)
+    const existing = groups.find(g =>
+      g[0].date === a.date &&
+      g[0].category === a.category &&
+      titlesSimilar(g[0].title, a.title)
+    )
+    if (existing) existing.push(a)
+    else groups.push([a])
   }
-  return Array.from(map.values())
+  return groups
 }
 
 // ── Activity Row ───────────────────────────────────────────────────────────

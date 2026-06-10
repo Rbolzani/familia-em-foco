@@ -33,14 +33,14 @@ interface ExtractedActivity {
   description: string | null
   location: string | null
   selected: boolean
-  child_id: string
+  child_ids: string[]   // multi-child support
 }
 
 export default function IAPage() {
   const supabase  = createClient()
   const fileRef   = useRef<HTMLInputElement>(null)
   const [children, setChildren]         = useState<Child[]>([])
-  const [defaultChildId, setDefaultChildId] = useState('')
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([])
   const [mode, setMode]                 = useState<'image' | 'text'>('image')
   const [images, setImages]             = useState<File[]>([])
   const [previews, setPreviews]         = useState<string[]>([])
@@ -54,16 +54,23 @@ export default function IAPage() {
   useEffect(() => {
     supabase.from('children').select('*').order('sort_order').then(({ data }) => {
       setChildren(data ?? [])
-      if (data?.[0]) setDefaultChildId(data[0].id)
+      if (data?.[0]) setSelectedChildIds([data[0].id])
     })
   }, [])
 
-  // When the default child changes after extraction, update all extracted items
-  function handleDefaultChildChange(childId: string) {
-    setDefaultChildId(childId)
-    if (extracted) {
-      setExtracted(prev => prev!.map(a => ({ ...a, child_id: childId })))
-    }
+  function toggleDefaultChild(childId: string) {
+    setSelectedChildIds(prev => {
+      const next = prev.includes(childId)
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+      // At least one must always be selected
+      if (next.length === 0) return prev
+      // If extraction already done, update child_ids on all extracted items
+      if (extracted) {
+        setExtracted(ex => ex!.map(a => ({ ...a, child_ids: next })))
+      }
+      return next
+    })
   }
 
   function addFiles(files: FileList | File[]) {
@@ -98,7 +105,7 @@ export default function IAPage() {
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || 'Erro ao processar imagem')
           const acts: ExtractedActivity[] = (data.activities ?? []).map((a: any) => ({
-            ...a, selected: true, child_id: defaultChildId,
+            ...a, selected: true, child_ids: selectedChildIds,
           }))
           allActivities = [...allActivities, ...acts]
         }
@@ -109,7 +116,7 @@ export default function IAPage() {
         const res  = await fetch('/api/ai-extract', { method:'POST', body:fd })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Erro desconhecido')
-        allActivities = (data.activities ?? []).map((a: any) => ({ ...a, selected:true, child_id:defaultChildId }))
+        allActivities = (data.activities ?? []).map((a: any) => ({ ...a, selected:true, child_ids:selectedChildIds }))
       }
 
       setExtracted(allActivities)
@@ -124,13 +131,14 @@ export default function IAPage() {
     if (!extracted) return
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
+    // For each selected activity, create one row per child_id
     const toSave = extracted
-      .filter(a => a.selected && a.date && a.child_id)
-      .map(a => ({
-        user_id: user!.id, child_id: a.child_id, category: a.category,
+      .filter(a => a.selected && a.date && a.child_ids.length > 0)
+      .flatMap(a => a.child_ids.map(child_id => ({
+        user_id: user!.id, child_id, category: a.category,
         title: a.title, description: a.description, date: a.date!,
         time: a.time, location: a.location, ai_generated: true, alert_days: 3,
-      }))
+      })))
     if (toSave.length === 0) { setSaving(false); return }
     const { error: saveErr } = await supabase.from('activities').insert(toSave)
     if (saveErr) { setError(saveErr.message); setSaving(false); return }
@@ -141,11 +149,19 @@ export default function IAPage() {
   function toggleSelect(i: number) {
     setExtracted(prev => prev!.map((a,idx) => idx===i ? {...a, selected:!a.selected} : a))
   }
-  function setChildForActivity(i: number, childId: string) {
-    setExtracted(prev => prev!.map((a,idx) => idx===i ? {...a, child_id:childId} : a))
+  function toggleChildForActivity(i: number, childId: string) {
+    setExtracted(prev => prev!.map((a,idx) => {
+      if (idx !== i) return a
+      const ids = a.child_ids.includes(childId)
+        ? a.child_ids.filter(id => id !== childId)
+        : [...a.child_ids, childId]
+      return { ...a, child_ids: ids.length > 0 ? ids : a.child_ids }
+    }))
   }
 
-  const selectedCount = extracted?.filter(a => a.selected && a.date).length ?? 0
+  // Total rows that will be saved (1 per activity × number of selected children)
+  const selectedCount = extracted?.filter(a => a.selected && a.date)
+    .reduce((sum, a) => sum + a.child_ids.length, 0) ?? 0
 
   // ── Success screen ─────────────────────────────────────────────────────
   if (saved) {
@@ -201,50 +217,48 @@ export default function IAPage() {
         </div>
       </div>
 
-      {/* ── Child Selector ── */}
+      {/* ── Child Selector (multi-select) ── */}
       {children.length > 0 && (
         <div className="animate-fade-up" style={{ ...CARD, padding:'16px 18px' }}>
-          <label style={{ display:'block', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.10em', color:'rgba(26,43,28,0.50)', marginBottom:10 }}>
+          <label style={{ display:'block', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.10em', color:'rgba(26,43,28,0.50)', marginBottom:4 }}>
             As atividades são para qual filho?
           </label>
+          <p style={{ fontSize:11, color:'rgba(26,43,28,0.38)', fontStyle:'italic', marginBottom:10 }}>
+            Selecione um ou mais filhos — cada atividade será salva para todos os selecionados.
+          </p>
           <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-            {children.map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleDefaultChildChange(c.id)}
-                style={{
-                  display:'flex', alignItems:'center', gap:8,
-                  padding:'8px 14px', borderRadius:12, cursor:'pointer',
-                  border:`2px solid ${defaultChildId===c.id?c.avatar_color:'rgba(61,102,65,0.18)'}`,
-                  background: defaultChildId===c.id ? `${c.avatar_color}14` : 'rgba(255,255,255,0.70)',
-                  transition:'all .18s',
-                  boxShadow: defaultChildId===c.id ? `0 0 0 1px ${c.avatar_color}40, 0 2px 8px ${c.avatar_color}22` : 'none',
-                }}
-              >
-                {/* Avatar circle */}
-                <span style={{
-                  width:28, height:28, borderRadius:'50%', flexShrink:0, display:'flex',
-                  alignItems:'center', justifyContent:'center',
-                  background: c.avatar_color,
-                  fontFamily:'var(--font-lora)', fontWeight:700, fontSize:13, color:'white',
-                }}>
-                  {c.name.charAt(0).toUpperCase()}
-                </span>
-                <span style={{ fontSize:13, fontWeight:700, color: defaultChildId===c.id ? c.avatar_color : '#1A2B1C' }}>
-                  {c.name}
-                </span>
-                {defaultChildId===c.id && (
-                  <span style={{ fontSize:11, marginLeft:2 }}>✓</span>
-                )}
-              </button>
-            ))}
+            {children.map(c => {
+              const isSelected = selectedChildIds.includes(c.id)
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => toggleDefaultChild(c.id)}
+                  style={{
+                    display:'flex', alignItems:'center', gap:8,
+                    padding:'8px 14px', borderRadius:12, cursor:'pointer',
+                    border:`2px solid ${isSelected ? c.avatar_color : 'rgba(61,102,65,0.18)'}`,
+                    background: isSelected ? `${c.avatar_color}14` : 'rgba(255,255,255,0.70)',
+                    transition:'all .18s',
+                    boxShadow: isSelected ? `0 0 0 1px ${c.avatar_color}40, 0 2px 8px ${c.avatar_color}22` : 'none',
+                  }}
+                >
+                  <span style={{
+                    width:28, height:28, borderRadius:'50%', flexShrink:0, display:'flex',
+                    alignItems:'center', justifyContent:'center',
+                    background: c.avatar_color,
+                    fontFamily:'var(--font-lora)', fontWeight:700, fontSize:13, color:'white',
+                  }}>
+                    {c.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span style={{ fontSize:13, fontWeight:700, color: isSelected ? c.avatar_color : '#1A2B1C' }}>
+                    {c.name}
+                  </span>
+                  {isSelected && <Check size={13} strokeWidth={3} style={{ color: c.avatar_color, marginLeft:2 }} />}
+                </button>
+              )
+            })}
           </div>
-          {children.length === 1 && (
-            <p style={{ fontSize:11, color:'rgba(26,43,28,0.35)', marginTop:8, fontStyle:'italic' }}>
-              Adicione mais filhos em "Meus Filhos" para ter múltiplas opções.
-            </p>
-          )}
         </div>
       )}
 
@@ -456,15 +470,31 @@ export default function IAPage() {
                         </div>
                       )}
 
-                      {/* Child selector */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold" style={{ color:'rgba(26,43,28,0.50)' }}>Filho(a):</span>
-                        <select value={a.child_id} onChange={e => setChildForActivity(i, e.target.value)}
-                          className="text-xs rounded-[10px] px-2.5 py-1 border outline-none transition-colors"
-                          style={{ borderColor:'rgba(61,102,65,0.22)', color:'#1A2B1C', background:'rgba(255,255,255,0.80)' }}>
-                          {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                      </div>
+                      {/* Per-activity child selector (pills) */}
+                      {children.length > 1 && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold flex-shrink-0" style={{ color:'rgba(26,43,28,0.50)' }}>Filho(a):</span>
+                          {children.map(c => {
+                            const active = a.child_ids.includes(c.id)
+                            return (
+                              <button key={c.id} type="button" onClick={() => toggleChildForActivity(i, c.id)}
+                                style={{
+                                  display:'flex', alignItems:'center', gap:5,
+                                  padding:'3px 10px', borderRadius:99, cursor:'pointer',
+                                  fontSize:11, fontWeight:700,
+                                  border:`1.5px solid ${active ? c.avatar_color : 'rgba(61,102,65,0.18)'}`,
+                                  background: active ? `${c.avatar_color}18` : 'rgba(255,255,255,0.70)',
+                                  color: active ? c.avatar_color : 'rgba(26,43,28,0.45)',
+                                  transition:'all .15s',
+                                }}>
+                                <span style={{ width:10, height:10, borderRadius:'50%', background:c.avatar_color, display:'inline-block', flexShrink:0 }}/>
+                                {c.name}
+                                {active && <Check size={10} strokeWidth={3}/>}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <button onClick={() => toggleSelect(i)}

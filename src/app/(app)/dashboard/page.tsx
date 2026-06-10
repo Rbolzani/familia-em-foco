@@ -9,9 +9,14 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login')
 
   const today   = new Date()
-  // Use local date (not UTC) to avoid showing tomorrow's activities at night
-  const todayDs = format(today, 'yyyy-MM-dd')
-  const weekEnd = format(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7), 'yyyy-MM-dd')
+  // Use Brazil timezone (America/Sao_Paulo) — server runs in UTC, so toISOString() would
+  // give tomorrow's date for Brazilian users between 21h–24h local time.
+  // 'fr-CA' locale returns yyyy-MM-dd which is what Supabase expects.
+  const tz      = 'America/Sao_Paulo'
+  const todayDs = new Intl.DateTimeFormat('fr-CA', { timeZone: tz }).format(today)
+  const weekEnd = new Intl.DateTimeFormat('fr-CA', { timeZone: tz }).format(
+    new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7)
+  )
   const moStart = format(startOfMonth(today), 'yyyy-MM-dd')
   const moEnd   = format(endOfMonth(today),   'yyyy-MM-dd')
 
