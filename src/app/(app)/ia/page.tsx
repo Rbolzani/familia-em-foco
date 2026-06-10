@@ -39,20 +39,32 @@ interface ExtractedActivity {
 export default function IAPage() {
   const supabase  = createClient()
   const fileRef   = useRef<HTMLInputElement>(null)
-  const [children, setChildren]   = useState<Child[]>([])
-  const [mode, setMode]           = useState<'image' | 'text'>('image')
-  const [images, setImages]       = useState<File[]>([])
-  const [previews, setPreviews]   = useState<string[]>([])
-  const [text, setText]           = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [extracted, setExtracted] = useState<ExtractedActivity[] | null>(null)
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-  const [error, setError]         = useState('')
+  const [children, setChildren]         = useState<Child[]>([])
+  const [defaultChildId, setDefaultChildId] = useState('')
+  const [mode, setMode]                 = useState<'image' | 'text'>('image')
+  const [images, setImages]             = useState<File[]>([])
+  const [previews, setPreviews]         = useState<string[]>([])
+  const [text, setText]                 = useState('')
+  const [loading, setLoading]           = useState(false)
+  const [extracted, setExtracted]       = useState<ExtractedActivity[] | null>(null)
+  const [saving, setSaving]             = useState(false)
+  const [saved, setSaved]               = useState(false)
+  const [error, setError]               = useState('')
 
   useEffect(() => {
-    supabase.from('children').select('*').order('sort_order').then(({ data }) => setChildren(data ?? []))
+    supabase.from('children').select('*').order('sort_order').then(({ data }) => {
+      setChildren(data ?? [])
+      if (data?.[0]) setDefaultChildId(data[0].id)
+    })
   }, [])
+
+  // When the default child changes after extraction, update all extracted items
+  function handleDefaultChildChange(childId: string) {
+    setDefaultChildId(childId)
+    if (extracted) {
+      setExtracted(prev => prev!.map(a => ({ ...a, child_id: childId })))
+    }
+  }
 
   function addFiles(files: FileList | File[]) {
     const arr = Array.from(files).filter(f => f.type.startsWith('image/'))
@@ -73,7 +85,6 @@ export default function IAPage() {
   async function handleExtract() {
     setLoading(true); setError(''); setExtracted(null)
     try {
-      const defaultChildId = children[0]?.id ?? ''
       let allActivities: ExtractedActivity[] = []
 
       if (mode === 'image') {
@@ -189,6 +200,53 @@ export default function IAPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Child Selector ── */}
+      {children.length > 0 && (
+        <div className="animate-fade-up" style={{ ...CARD, padding:'16px 18px' }}>
+          <label style={{ display:'block', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.10em', color:'rgba(26,43,28,0.50)', marginBottom:10 }}>
+            As atividades são para qual filho?
+          </label>
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            {children.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => handleDefaultChildChange(c.id)}
+                style={{
+                  display:'flex', alignItems:'center', gap:8,
+                  padding:'8px 14px', borderRadius:12, cursor:'pointer',
+                  border:`2px solid ${defaultChildId===c.id?c.avatar_color:'rgba(61,102,65,0.18)'}`,
+                  background: defaultChildId===c.id ? `${c.avatar_color}14` : 'rgba(255,255,255,0.70)',
+                  transition:'all .18s',
+                  boxShadow: defaultChildId===c.id ? `0 0 0 1px ${c.avatar_color}40, 0 2px 8px ${c.avatar_color}22` : 'none',
+                }}
+              >
+                {/* Avatar circle */}
+                <span style={{
+                  width:28, height:28, borderRadius:'50%', flexShrink:0, display:'flex',
+                  alignItems:'center', justifyContent:'center',
+                  background: c.avatar_color,
+                  fontFamily:'var(--font-lora)', fontWeight:700, fontSize:13, color:'white',
+                }}>
+                  {c.name.charAt(0).toUpperCase()}
+                </span>
+                <span style={{ fontSize:13, fontWeight:700, color: defaultChildId===c.id ? c.avatar_color : '#1A2B1C' }}>
+                  {c.name}
+                </span>
+                {defaultChildId===c.id && (
+                  <span style={{ fontSize:11, marginLeft:2 }}>✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {children.length === 1 && (
+            <p style={{ fontSize:11, color:'rgba(26,43,28,0.35)', marginTop:8, fontStyle:'italic' }}>
+              Adicione mais filhos em "Meus Filhos" para ter múltiplas opções.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Mode Selector ── */}
       <div className="animate-fade-up p-[6px] flex gap-1.5"

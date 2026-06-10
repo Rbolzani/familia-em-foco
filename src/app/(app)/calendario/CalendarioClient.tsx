@@ -123,14 +123,22 @@ interface Props {
   initialChildren:   Child[]
 }
 
+const CATEGORIES = [
+  { value:'escola',          label:'Escola',          color:'#2563EB' },
+  { value:'saude',           label:'Saúde',            color:'#065F46' },
+  { value:'extracurricular', label:'Extracurricular',  color:'#C49A6C' },
+]
+
 export default function CalendarioClient({ initialActivities, initialChildren }: Props) {
   const supabase = createClient()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [activities,  setActivities]  = useState<Activity[]>(initialActivities)
   const [children,    setChildren]    = useState<Child[]>(initialChildren)
+  const [viewMode,    setViewMode]    = useState<'child'|'category'>('child')
   const [filterChild, setFilterChild] = useState('')
+  const [filterCat,   setFilterCat]   = useState('')
   const [selectedDay, setSelectedDay] = useState<Date|null>(null)
-  const [loading,     setLoading]     = useState(false)   // no initial load spinner
+  const [loading,     setLoading]     = useState(false)
 
   // track if we've already loaded the current month (initial data covers it)
   const loadedMonth = useRef(format(new Date(),'yyyy-MM'))
@@ -162,7 +170,11 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
   // only re-fetch when month changes, not on initial render
   useEffect(() => { load(currentDate) }, [currentDate, load])
 
-  const filtered        = activities.filter(a => !filterChild || a.child_id===filterChild)
+  const filtered = activities.filter(a =>
+    viewMode === 'child'
+      ? (!filterChild || a.child_id === filterChild)
+      : (!filterCat   || a.category === filterCat)
+  )
   const calStart        = startOfWeek(startOfMonth(currentDate),{weekStartsOn:0})
   const calEnd          = endOfWeek(endOfMonth(currentDate),    {weekStartsOn:0})
   const days            = eachDayOfInterval({start:calStart, end:calEnd})
@@ -185,42 +197,81 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
     <div className="flex flex-col flex-1 min-h-0" style={{ background:'#F8F3EA' }}>
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+      <div className="flex flex-col gap-0 flex-shrink-0"
         style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF 0%,#F8F3EA 100%)',
           borderBottom:'1px solid rgba(61,102,65,0.16)',
           boxShadow:'0 2px 8px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.85) inset' }}>
 
-        <div className="flex items-center gap-2">
-          <button onClick={()=>setCurrentDate(d=>subMonths(d,1))}
-            className="w-8 h-8 rounded-[11px] flex items-center justify-center"
-            style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color:'#3D6641' }}>
-            <ChevronLeft size={15}/>
-          </button>
-          <h1 className="text-[16px] font-bold capitalize"
-            style={{ fontFamily:'var(--font-lora)', color:'#1A2B1C', minWidth:120, textAlign:'center' }}>
-            {format(currentDate,'MMMM yyyy',{locale:ptBR})}
-            {loading && <span className="ml-1 text-[11px] font-normal italic" style={{ color:'rgba(26,43,28,0.38)' }}>…</span>}
-          </h1>
-          <button onClick={()=>setCurrentDate(d=>addMonths(d,1))}
-            className="w-8 h-8 rounded-[11px] flex items-center justify-center"
-            style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color:'#3D6641' }}>
-            <ChevronRight size={15}/>
-          </button>
-          <button onClick={()=>{setCurrentDate(new Date());setSelectedDay(new Date())}}
-            className="text-xs font-bold px-3 py-1 rounded-full ml-1"
-            style={{ background:'rgba(61,102,65,0.10)', color:'#3D6641', border:'1px solid rgba(61,102,65,0.18)' }}>
-            Hoje
-          </button>
+        {/* Row 1: month nav + filter combo */}
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <button onClick={()=>setCurrentDate(d=>subMonths(d,1))}
+              className="w-8 h-8 rounded-[11px] flex items-center justify-center"
+              style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color:'#3D6641' }}>
+              <ChevronLeft size={15}/>
+            </button>
+            <h1 className="text-[16px] font-bold capitalize"
+              style={{ fontFamily:'var(--font-lora)', color:'#1A2B1C', minWidth:120, textAlign:'center' }}>
+              {format(currentDate,'MMMM yyyy',{locale:ptBR})}
+              {loading && <span className="ml-1 text-[11px] font-normal italic" style={{ color:'rgba(26,43,28,0.38)' }}>…</span>}
+            </h1>
+            <button onClick={()=>setCurrentDate(d=>addMonths(d,1))}
+              className="w-8 h-8 rounded-[11px] flex items-center justify-center"
+              style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset', color:'#3D6641' }}>
+              <ChevronRight size={15}/>
+            </button>
+            <button onClick={()=>{setCurrentDate(new Date());setSelectedDay(new Date())}}
+              className="text-xs font-bold px-3 py-1 rounded-full ml-1"
+              style={{ background:'rgba(61,102,65,0.10)', color:'#3D6641', border:'1px solid rgba(61,102,65,0.18)' }}>
+              Hoje
+            </button>
+          </div>
+
+          {/* Dynamic filter combo — changes based on view */}
+          <div>
+            {viewMode === 'child' ? (
+              <select value={filterChild} onChange={e=>setFilterChild(e.target.value)}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-[11px] outline-none cursor-pointer"
+                style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', color:'#1A2B1C', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset', maxWidth:110 }}>
+                <option value="">Todos</option>
+                {children.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            ) : (
+              <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-[11px] outline-none cursor-pointer"
+                style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', color:'#1A2B1C', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset', maxWidth:130 }}>
+                <option value="">Todas</option>
+                {CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            )}
+          </div>
         </div>
 
-        {children.length>0 && (
-          <select value={filterChild} onChange={e=>setFilterChild(e.target.value)}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-[11px] outline-none cursor-pointer"
-            style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF,#F2EAD8)', color:'#1A2B1C', border:'1px solid rgba(61,102,65,0.18)', boxShadow:'0 1px 4px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.80) inset', maxWidth:100 }}>
-            <option value="">Todos</option>
-            {children.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        )}
+        {/* Row 2: view toggle */}
+        <div className="flex px-4 pb-2 gap-2">
+          {([
+            { key:'child',    label:'Por filho',    icon:'👶' },
+            { key:'category', label:'Por natureza', icon:'📂' },
+          ] as const).map(v=>(
+            <button key={v.key}
+              onClick={()=>{ setViewMode(v.key); setFilterChild(''); setFilterCat(''); setSelectedDay(null) }}
+              style={{
+                display:'flex', alignItems:'center', gap:5,
+                padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:700,
+                cursor:'pointer', transition:'all .18s',
+                border:`1px solid ${viewMode===v.key?'rgba(61,102,65,0.40)':'rgba(61,102,65,0.14)'}`,
+                background: viewMode===v.key
+                  ? 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+                  : 'rgba(255,255,255,0.70)',
+                color: viewMode===v.key ? '#D4E8D5' : 'rgba(26,43,28,0.50)',
+                boxShadow: viewMode===v.key
+                  ? '0 2px 8px rgba(44,74,46,0.22),0 -1px 0 rgba(255,255,255,0.12) inset'
+                  : '0 1px 3px rgba(44,74,46,0.06)',
+              }}>
+              <span style={{ fontSize:13 }}>{v.icon}</span> {v.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Body */}
@@ -236,8 +287,8 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-3 px-3 py-1.5 flex-shrink-0"
+          {/* Legend — categories always shown; "by child" adds child pills */}
+          <div className="flex items-center gap-3 px-3 py-1.5 flex-shrink-0 flex-wrap"
             style={{ borderBottom:'1px solid rgba(61,102,65,0.06)', background:'rgba(248,243,234,0.80)' }}>
             {LEGEND.map(l=>(
               <span key={l.key} className="flex items-center gap-1 text-[10px] font-semibold"
@@ -246,6 +297,18 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
                 {l.label}
               </span>
             ))}
+            {viewMode==='category' && children.length>1 && (
+              <>
+                <span style={{ width:1, height:10, background:'rgba(61,102,65,0.18)', flexShrink:0 }}/>
+                {children.map(c=>(
+                  <span key={c.id} className="flex items-center gap-1 text-[10px] font-bold"
+                    style={{ color:'rgba(26,43,28,0.55)' }}>
+                    <span style={{ width:8, height:8, borderRadius:'50%', background:c.avatar_color, display:'inline-block', flexShrink:0 }}/>
+                    {c.name}
+                  </span>
+                ))}
+              </>
+            )}
           </div>
 
           {/* Day grid */}
@@ -277,12 +340,20 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
                     </span>
                   </div>
                   <div className="flex flex-col gap-[2px] overflow-hidden flex-1">
-                    {dayActs.slice(0,2).map((a,ai)=>(
-                      <div key={ai} className="text-white truncate font-semibold rounded-[5px] px-1 flex-shrink-0"
-                        style={{ background:CAT_PILL_BG[a.category]??'rgba(90,140,94,0.75)', fontSize:9, lineHeight:'14px', boxShadow:'0 1px 2px rgba(0,0,0,0.14)' }}>
-                        {a.title}
-                      </div>
-                    ))}
+                    {dayActs.slice(0,2).map((a,ai)=>{
+                      // By-category view: use child color so each child is visually distinct
+                      const pillColor = viewMode==='category' && (a as ActivityWithChild).child?.avatar_color
+                        ? `${(a as ActivityWithChild).child!.avatar_color}CC`
+                        : CAT_PILL_BG[a.category]??'rgba(90,140,94,0.75)'
+                      return (
+                        <div key={ai} className="text-white truncate font-semibold rounded-[5px] px-1 flex-shrink-0"
+                          style={{ background:pillColor, fontSize:9, lineHeight:'14px', boxShadow:'0 1px 2px rgba(0,0,0,0.14)' }}>
+                          {viewMode==='category' && (a as ActivityWithChild).child
+                            ? `${(a as ActivityWithChild).child!.name.split(' ')[0]}: ${a.title}`
+                            : a.title}
+                        </div>
+                      )
+                    })}
                     {dayActs.length>2&&(
                       <div style={{ fontSize:9, fontWeight:700, color:'rgba(26,43,28,0.42)', lineHeight:'14px' }}>
                         +{dayActs.length-2}
