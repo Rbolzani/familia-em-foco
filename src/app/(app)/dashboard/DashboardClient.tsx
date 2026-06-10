@@ -8,6 +8,7 @@ import {
   CalendarCheck, CalendarRange, AlertTriangle, Stethoscope,
 } from 'lucide-react'
 import { Activity, Child } from '@/lib/types'
+import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -173,22 +174,27 @@ function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, A
             <span style={{ fontSize:11, color:'rgba(26,43,28,0.40)' }}>{selectedActs.length} atividade{selectedActs.length>1?'s':''}</span>
           </div>
           <div className="space-y-2">
-            {selectedActs.map(a=>(
-              <div key={a.id} className="flex items-center gap-2 p-2 rounded-[10px]"
-                style={{ background:'rgba(61,102,65,0.06)', border:'1px solid rgba(61,102,65,0.10)' }}>
-                <span style={{ fontSize:14 }}>{catIcon[a.category]??'📅'}</span>
-                <div className="flex-1 min-w-0">
-                  <p style={{ fontSize:12, fontWeight:600, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{a.title}</p>
-                  {a.child && (
-                    <span style={{ fontSize:10, fontWeight:700, color:'white', background:a.child.avatar_color,
-                      padding:'1px 7px', borderRadius:99, display:'inline-block', marginTop:2 }}>
-                      {a.child.name}
-                    </span>
-                  )}
+            {mergeActivities(selectedActs).map((group, gi)=>{
+              const a = group[0]
+              return (
+                <div key={a.id} className="flex items-center gap-2 p-2 rounded-[10px]"
+                  style={{ background:'rgba(61,102,65,0.06)', border:'1px solid rgba(61,102,65,0.10)' }}>
+                  <span style={{ fontSize:14 }}>{catIcon[a.category]??'📅'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p style={{ fontSize:12, fontWeight:600, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{a.title}</p>
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:2 }}>
+                      {group.map(item => item.child && (
+                        <span key={item.id} style={{ fontSize:10, fontWeight:700, color:'white', background:item.child.avatar_color,
+                          padding:'1px 7px', borderRadius:99, display:'inline-block' }}>
+                          {item.child.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {a.time && <span style={{ fontSize:11, color:'rgba(26,43,28,0.45)', flexShrink:0 }}>{a.time.slice(0,5)}</span>}
                 </div>
-                {a.time && <span style={{ fontSize:11, color:'rgba(26,43,28,0.45)', flexShrink:0 }}>{a.time.slice(0,5)}</span>}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -196,53 +202,6 @@ function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, A
   )
 }
 
-// ── Semantic merge: group activities that likely mean the same thing ────────
-const SYNONYM_MAP: Record<string, string> = {
-  avaliacao: 'PROVA', prova: 'PROVA', teste: 'PROVA', exame: 'PROVA',
-  atividade: 'TAREFA', licao: 'TAREFA', tarefa: 'TAREFA', exercicio: 'TAREFA',
-  consulta: 'CONSULTA', retorno: 'CONSULTA', sessao: 'CONSULTA',
-}
-const STOP_WORDS = new Set(['de', 'da', 'do', 'dos', 'das', 'a', 'o', 'e', 'em', 'um', 'uma'])
-
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // strip accents
-    .replace(/[^a-z0-9\s]/g, ' ')                        // punctuation → space
-    .replace(/\s+/g, ' ').trim()
-    .split(' ')
-    .filter(w => !STOP_WORDS.has(w))
-    .map(w => SYNONYM_MAP[w] ?? w)
-    .join(' ')
-}
-
-function titlesSimilar(a: string, b: string): boolean {
-  const na = normalizeTitle(a)
-  const nb = normalizeTitle(b)
-  if (na === nb) return true
-  // Containment: one is a prefix/suffix of the other (handles extra words like "liberada")
-  const [shorter, longer] = na.length <= nb.length ? [na, nb] : [nb, na]
-  if (longer.startsWith(shorter) || longer.endsWith(shorter) || longer.includes(shorter)) return true
-  // Word-overlap ratio: if ≥80% of the shorter title's words appear in the longer one
-  const wordsA = na.split(' ')
-  const wordsB = new Set(nb.split(' '))
-  const overlap = wordsA.filter(w => wordsB.has(w)).length
-  return overlap / wordsA.length >= 0.80
-}
-
-function mergeActivities(acts: ActWithChild[]): ActWithChild[][] {
-  const groups: ActWithChild[][] = []
-  for (const a of acts) {
-    const existing = groups.find(g =>
-      g[0].date === a.date &&
-      g[0].category === a.category &&
-      titlesSimilar(g[0].title, a.title)
-    )
-    if (existing) existing.push(a)
-    else groups.push([a])
-  }
-  return groups
-}
 
 // ── Activity Row ───────────────────────────────────────────────────────────
 function ActivityRow({ activities }: { activities: ActWithChild[] }) {

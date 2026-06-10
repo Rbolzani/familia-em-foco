@@ -195,7 +195,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
               <NavItem href="/dashboard"  label="Dashboard"     icon={LayoutDashboard} />
-              <NavItem href="/calendario" label="Calendário"    icon={CalendarDays}    badge={5} />
+              <NavItem href="/calendario" label="Calendário"    icon={CalendarDays} />
               <NavItem href="/ia"         label="Assistente IA" icon={Sparkles} />
             </div>
             <div>
@@ -204,7 +204,7 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
                 Módulos
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/escola"     label="Escola"     icon={BookOpen}   badge={3} />
+              <NavItem href="/escola"     label="Escola"     icon={BookOpen} />
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />

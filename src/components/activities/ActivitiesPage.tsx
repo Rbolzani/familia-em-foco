@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { DeadlineBadge, StatusBadge } from '@/components/ui/Badge'
 import { Plus, Check, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
+import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -218,15 +219,15 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
         </div>
       ) : (
         <div className="space-y-2.5 stagger">
-          {filtered.map((a, i) => (
+          {mergeActivities(filtered).map((group, gi) => (
             <ActivityCard
-              key={a.id}
-              activity={a}
+              key={group[0].id}
+              group={group}
               accent={accent}
-              index={i}
-              onToggle={() => toggleStatus(a)}
-              onEdit={() => openEdit(a)}
-              onDelete={() => handleDelete(a.id)}
+              index={gi}
+              onToggle={(a) => toggleStatus(a)}
+              onEdit={(a) => openEdit(a)}
+              onDelete={(id) => handleDelete(id)}
             />
           ))}
         </div>
@@ -343,90 +344,127 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   )
 }
 
+type ActivityWithChild = Activity & { child?: { name: string; avatar_color: string } }
+
 function ActivityCard({
-  activity, accent, index, onToggle, onEdit, onDelete,
+  group, accent, index, onToggle, onEdit, onDelete,
 }: {
-  activity: Activity & { child?: { name: string; avatar_color: string } }
+  group: ActivityWithChild[]
   accent: string
   index: number
-  onToggle: () => void
-  onEdit: () => void
-  onDelete: () => void
+  onToggle: (a: ActivityWithChild) => void
+  onEdit: (a: ActivityWithChild) => void
+  onDelete: (id: string) => void
 }) {
-  const done = activity.status === 'concluido'
+  const first   = group[0]
+  const merged  = group.length > 1
+  const allDone = group.every(a => a.status === 'concluido')
+  const anyDone = group.some(a => a.status === 'concluido')
   const fmtDate = (d: string) => format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })
+
+  function handleToggleAll() { group.forEach(a => onToggle(a)) }
 
   return (
     <div
-      className="card card-lift animate-fade-up flex items-start gap-3 p-4"
-      style={{ animationDelay: `${index * 0.04}s`, opacity: done ? .65 : 1 }}
+      className="card card-lift animate-fade-up p-4"
+      style={{ animationDelay: `${index * 0.04}s`, opacity: allDone ? .65 : 1 }}
     >
-      {/* Toggle */}
-      <button
-        onClick={onToggle}
-        className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110"
-        style={done
-          ? { background: '#00C48C', borderColor: '#00C48C', color: '#fff' }
-          : { borderColor: '#EDE4D6', background: 'transparent' }
-        }
-      >
-        {done && <Check size={12} strokeWidth={3} />}
-      </button>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div
-          className="font-semibold text-sm"
-          style={{ color: done ? '#8B7A68' : '#0F1F3D', textDecoration: done ? 'line-through' : 'none' }}
-        >
-          {activity.title}
-        </div>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {activity.child && (
-            <span
-              className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-              style={{ background: activity.child.avatar_color }}
-            >
-              {activity.child.name}
-            </span>
-          )}
-          <span className="text-xs font-medium" style={{ color: '#8B7A68' }}>
-            📅 {fmtDate(activity.date)}
-          </span>
-          {activity.time && (
-            <span className="text-xs flex items-center gap-1" style={{ color: '#8B7A68' }}>
-              <Clock size={11} /> {activity.time.slice(0,5)}
-            </span>
-          )}
-          <DeadlineBadge date={activity.date} />
-          <StatusBadge status={activity.status} />
-        </div>
-        {activity.location && (
-          <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#8B7A68' }}>
-            <MapPin size={11} /> {activity.location}
-          </p>
-        )}
-        {activity.description && (
-          <p className="text-xs mt-1 line-clamp-2" style={{ color: '#C4B5A5' }}>{activity.description}</p>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-1.5 flex-none">
+      <div className="flex items-start gap-3">
+        {/* Toggle — toggles ALL in the group */}
         <button
-          onClick={onEdit}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-          style={{ background: '#EEF4FF', color: '#2563EB' }}
+          onClick={handleToggleAll}
+          className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110"
+          style={allDone
+            ? { background: '#00C48C', borderColor: '#00C48C', color: '#fff' }
+            : anyDone
+              ? { background: '#00C48C44', borderColor: '#00C48C', color: '#00C48C' }
+              : { borderColor: '#EDE4D6', background: 'transparent' }
+          }
         >
-          <Pencil size={13} />
+          {(allDone || anyDone) && <Check size={12} strokeWidth={3} />}
         </button>
-        <button
-          onClick={onDelete}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-          style={{ background: '#FFF0EB', color: '#F4522D' }}
-        >
-          <Trash2 size={13} />
-        </button>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div
+            className="font-semibold text-sm"
+            style={{ color: allDone ? '#8B7A68' : '#0F1F3D', textDecoration: allDone ? 'line-through' : 'none' }}
+          >
+            {first.title}
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {/* All child badges when merged */}
+            {group.map(a => a.child && (
+              <span key={a.id} className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                style={{ background: a.child.avatar_color }}>
+                {a.child.name}
+              </span>
+            ))}
+            <span className="text-xs font-medium" style={{ color: '#8B7A68' }}>
+              📅 {fmtDate(first.date)}
+            </span>
+            {first.time && (
+              <span className="text-xs flex items-center gap-1" style={{ color: '#8B7A68' }}>
+                <Clock size={11} /> {first.time.slice(0,5)}
+              </span>
+            )}
+            <DeadlineBadge date={first.date} />
+            {!merged && <StatusBadge status={first.status} />}
+          </div>
+          {first.location && (
+            <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#8B7A68' }}>
+              <MapPin size={11} /> {first.location}
+            </p>
+          )}
+          {first.description && (
+            <p className="text-xs mt-1 line-clamp-2" style={{ color: '#C4B5A5' }}>{first.description}</p>
+          )}
+
+          {/* Per-child action rows when merged */}
+          {merged && (
+            <div className="mt-2.5 space-y-1.5 border-t pt-2" style={{ borderColor:'rgba(0,0,0,0.06)' }}>
+              {group.map(a => (
+                <div key={a.id} className="flex items-center gap-2">
+                  {a.child && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0"
+                      style={{ background: a.child.avatar_color }}>
+                      {a.child.name}
+                    </span>
+                  )}
+                  <StatusBadge status={a.status} />
+                  <div className="ml-auto flex gap-1 flex-shrink-0">
+                    <button onClick={() => onEdit(a)}
+                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                      style={{ background: '#EEF4FF', color: '#2563EB' }}>
+                      <Pencil size={11} />
+                    </button>
+                    <button onClick={() => onDelete(a.id)}
+                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                      style={{ background: '#FFF0EB', color: '#F4522D' }}>
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Actions — only shown when NOT merged */}
+        {!merged && (
+          <div className="flex gap-1.5 flex-none">
+            <button onClick={() => onEdit(first)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+              style={{ background: '#EEF4FF', color: '#2563EB' }}>
+              <Pencil size={13} />
+            </button>
+            <button onClick={() => onDelete(first.id)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+              style={{ background: '#FFF0EB', color: '#F4522D' }}>
+              <Trash2 size={13} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
