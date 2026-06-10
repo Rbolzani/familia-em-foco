@@ -23,7 +23,7 @@ interface SidebarChild {
 
 interface Props {
   children: React.ReactNode
-  sidebarChildren: SidebarChild[]
+  sidebarChildren: SidebarChild[]   // server-side initial data
 }
 
 // ── Palettes ───────────────────────────────────────────────────────────
@@ -45,9 +45,19 @@ function calcAge(birthDate: string | null) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────
-export default function AppLayout({ children, sidebarChildren }: Props) {
+export default function AppLayout({ children, sidebarChildren: initial }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+
+  // Re-fetch children from Supabase on every navigation so add/delete is reflected immediately
+  const [liveChildren, setLiveChildren] = useState<SidebarChild[]>(initial)
+  useEffect(() => {
+    createClient()
+      .from('children')
+      .select('id,name,avatar_color,avatar_url,birth_date,school_name')
+      .order('sort_order')
+      .then(({ data }) => { if (data) setLiveChildren(data) })
+  }, [pathname])
 
   const [palIdx,         setPalIdx]         = useState(0)
   const [sepia,          setSepia]          = useState(0)
@@ -213,11 +223,11 @@ export default function AppLayout({ children, sidebarChildren }: Props) {
 
           {/* Children pinned at bottom */}
           <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:240 }}>
-            {sidebarChildren.length > 0 && (
+            {liveChildren.length > 0 && (
               <>
                 <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase',
                   padding:'0 8px 9px', color:'rgba(26,43,28,0.36)' }}>Filhos</div>
-                {sidebarChildren.map(child => {
+                {liveChildren.map(child => {
                   const age = calcAge(child.birth_date)
                   return (
                     <Link key={child.id} href="/children">
