@@ -93,11 +93,40 @@ function SectionH({ children }: { children: React.ReactNode }) {
 }
 
 // ── Mini Calendar ──────────────────────────────────────────────────────────
-function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, ActWithChild[]> }) {
+function MiniCalendar({ activitiesByDate: initialByDate }: { activitiesByDate: Record<string, ActWithChild[]> }) {
+  const supabase = createClient()
   const today=new Date()
   const [yr,setYr]=useState(today.getFullYear())
   const [mo,setMo]=useState(today.getMonth())
   const [selected,setSelected]=useState<string|null>(null)
+  // Cache of fetched months — key = "yyyy-MM", value = activitiesByDate for that month
+  const [cache, setCache]=useState<Record<string, Record<string, ActWithChild[]>>>({
+    [`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`]: initialByDate,
+  })
+
+  const monthKey=`${yr}-${String(mo+1).padStart(2,'0')}`
+  const activitiesByDate = cache[monthKey] ?? {}
+
+  // Fetch when navigating to an uncached month
+  useEffect(() => {
+    if (cache[monthKey]) return
+    const moStart=`${yr}-${String(mo+1).padStart(2,'0')}-01`
+    const moEnd=`${yr}-${String(mo+1).padStart(2,'0')}-${new Date(yr,mo+1,0).getDate()}`
+    supabase.from('activities')
+      .select('*, child:children(name, avatar_color)')
+      .gte('date', moStart).lte('date', moEnd)
+      .neq('status', 'cancelado')
+      .order('date').order('time', { nullsFirst: false })
+      .then(({ data }) => {
+        const byDate = (data ?? []).reduce<Record<string, ActWithChild[]>>((acc, a) => {
+          if (!a.date) return acc
+          if (!acc[a.date]) acc[a.date] = []
+          acc[a.date].push(a as ActWithChild)
+          return acc
+        }, {})
+        setCache(prev => ({ ...prev, [monthKey]: byDate }))
+      })
+  }, [yr, mo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function prev() { if(mo===0){setMo(11);setYr(y=>y-1)}else setMo(m=>m-1); setSelected(null) }
   function next() { if(mo===11){setMo(0);setYr(y=>y+1)}else setMo(m=>m+1); setSelected(null) }
