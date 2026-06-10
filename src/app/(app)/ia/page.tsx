@@ -372,7 +372,7 @@ export default function IAPage() {
                       <div className="flex gap-3 flex-wrap">
                         {a.date && (
                           <span className="text-xs flex items-center gap-1 italic" style={{ color:'rgba(26,43,28,0.50)' }}>
-                            📅 {a.date}
+                            📅 {a.date.split('-').reverse().join('/')}
                           </span>
                         )}
                         {a.time && (

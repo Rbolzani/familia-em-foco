@@ -354,7 +354,7 @@ function ActivityCard({
   onDelete: () => void
 }) {
   const done = activity.status === 'concluido'
-  const fmtDate = (d: string) => format(new Date(d + 'T00:00:00'), "dd/MM (EEE)", { locale: ptBR })
+  const fmtDate = (d: string) => format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })
 
   return (
     <div

@@ -12,13 +12,15 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 // ── Types ──────────────────────────────────────────────────────────────────
+type ActWithChild = Activity & { child: { name: string; avatar_color: string } }
+
 interface Props {
   userName: string
   children: Child[]
-  todayActivities:    (Activity & { child: { name: string; avatar_color: string } })[]
-  upcomingActivities: (Activity & { child: { name: string; avatar_color: string } })[]
-  monthEventDates: string[]   // all dates with events in current month
-  totalPending: number        // total pending across all time (matches module count)
+  todayActivities:    ActWithChild[]
+  upcomingActivities: ActWithChild[]
+  monthActivities:    ActWithChild[]   // full month — for mini-calendar dots + click detail
+  totalPending: number
 }
 
 // ── Textures ───────────────────────────────────────────────────────────────
@@ -88,28 +90,32 @@ function SectionH({ children }: { children: React.ReactNode }) {
 }
 
 // ── Mini Calendar ──────────────────────────────────────────────────────────
-function MiniCalendar({ eventDates }: { eventDates: Set<string> }) {
+function MiniCalendar({ activitiesByDate }: { activitiesByDate: Record<string, ActWithChild[]> }) {
   const today=new Date()
   const [yr,setYr]=useState(today.getFullYear())
   const [mo,setMo]=useState(today.getMonth())
+  const [selected,setSelected]=useState<string|null>(null)
 
-  function prev() { if(mo===0){setMo(11);setYr(y=>y-1)}else setMo(m=>m-1) }
-  function next() { if(mo===11){setMo(0);setYr(y=>y+1)}else setMo(m=>m+1) }
+  function prev() { if(mo===0){setMo(11);setYr(y=>y-1)}else setMo(m=>m-1); setSelected(null) }
+  function next() { if(mo===11){setMo(0);setYr(y=>y+1)}else setMo(m=>m+1); setSelected(null) }
 
   const monthLabel=format(new Date(yr,mo,1),'MMMM yyyy',{locale:ptBR}).replace(/^\w/,c=>c.toUpperCase())
   const firstDow=new Date(yr,mo,1).getDay()
   const lastDay=new Date(yr,mo+1,0).getDate()
   const prevLast=new Date(yr,mo,0).getDate()
 
-  type Cell={d:number;type:'prev'|'curr'|'next';isToday:boolean;hasEvent:boolean}
+  type Cell={d:number;ds:string;type:'prev'|'curr'|'next';isToday:boolean;hasEvent:boolean}
   const cells:Cell[]=[]
-  for(let i=firstDow-1;i>=0;i--) cells.push({d:prevLast-i,type:'prev',isToday:false,hasEvent:false})
+  for(let i=firstDow-1;i>=0;i--) cells.push({d:prevLast-i,ds:'',type:'prev',isToday:false,hasEvent:false})
   for(let d=1;d<=lastDay;d++){
     const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
     const isT=today.getFullYear()===yr&&today.getMonth()===mo&&today.getDate()===d
-    cells.push({d,type:'curr',isToday:isT,hasEvent:eventDates.has(ds)})
+    cells.push({d,ds,type:'curr',isToday:isT,hasEvent:!!activitiesByDate[ds]?.length})
   }
-  while(cells.length<42) cells.push({d:cells.filter(c=>c.type==='next').length+1,type:'next',isToday:false,hasEvent:false})
+  while(cells.length<42) cells.push({d:cells.filter(c=>c.type==='next').length+1,ds:'',type:'next',isToday:false,hasEvent:false})
+
+  const selectedActs = selected ? (activitiesByDate[selected] ?? []) : []
+  const catIcon: Record<string,string> = { escola:'📚', saude:'🩺', extracurricular:'🏆' }
 
   return (
     <div style={MINI_CAL}>
@@ -130,21 +136,62 @@ function MiniCalendar({ eventDates }: { eventDates: Set<string> }) {
         ))}
       </div>
       <div className="grid grid-cols-7 gap-[2px]">
-        {cells.map((cell,i)=>(
-          <div key={i} className="relative flex items-center justify-center rounded-[10px] cursor-pointer transition-all hover:bg-[rgba(61,102,65,0.10)]"
-            style={{ aspectRatio:'1', fontSize:12.5,
-              fontWeight:cell.isToday?800:500,
-              color:cell.isToday?'white':cell.type!=='curr'?'rgba(26,43,28,0.25)':'rgba(26,43,28,0.58)',
-              background:cell.isToday?'linear-gradient(140deg,#3D6641,#2C4A2E)':undefined,
-              boxShadow:cell.isToday?'0 3px 10px rgba(44,74,46,0.35),0 -1px 0 rgba(255,255,255,0.18) inset':undefined,
-            }}>
-            {cell.d}
-            {cell.hasEvent&&!cell.isToday&&(
-              <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ background:'#C49A6C' }}/>
-            )}
-          </div>
-        ))}
+        {cells.map((cell,i)=>{
+          const isSelected=selected===cell.ds&&cell.type==='curr'
+          return (
+            <div key={i}
+              onClick={()=>{
+                if(cell.type!=='curr'||!cell.hasEvent) return
+                setSelected(s=>s===cell.ds?null:cell.ds)
+              }}
+              className="relative flex items-center justify-center rounded-[10px] transition-all"
+              style={{ aspectRatio:'1', fontSize:12.5,
+                fontWeight:cell.isToday?800:500,
+                cursor:cell.hasEvent&&cell.type==='curr'?'pointer':'default',
+                color:cell.isToday?'white':isSelected?'#3D6641':cell.type!=='curr'?'rgba(26,43,28,0.25)':'rgba(26,43,28,0.58)',
+                background:cell.isToday?'linear-gradient(140deg,#3D6641,#2C4A2E)':isSelected?'rgba(61,102,65,0.12)':undefined,
+                boxShadow:cell.isToday?'0 3px 10px rgba(44,74,46,0.35),0 -1px 0 rgba(255,255,255,0.18) inset':undefined,
+                outline:isSelected?'2px solid rgba(61,102,65,0.40)':'none',
+              }}>
+              {cell.d}
+              {cell.hasEvent&&!cell.isToday&&(
+                <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                  style={{ background:isSelected?'#3D6641':'#C49A6C' }}/>
+              )}
+            </div>
+          )
+        })}
       </div>
+
+      {/* Day detail panel */}
+      {selected && selectedActs.length > 0 && (
+        <div className="mt-4 pt-4" style={{ borderTop:'1px solid rgba(61,102,65,0.12)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p style={{ fontSize:12, fontWeight:700, color:'#1A2B1C' }}>
+              {format(new Date(selected+'T00:00:00'),"d 'de' MMMM",{locale:ptBR}).replace(/^\w/,c=>c.toUpperCase())}
+            </p>
+            <span style={{ fontSize:11, color:'rgba(26,43,28,0.40)' }}>{selectedActs.length} atividade{selectedActs.length>1?'s':''}</span>
+          </div>
+          <div className="space-y-2">
+            {selectedActs.map(a=>(
+              <div key={a.id} className="flex items-center gap-2 p-2 rounded-[10px]"
+                style={{ background:'rgba(61,102,65,0.06)', border:'1px solid rgba(61,102,65,0.10)' }}>
+                <span style={{ fontSize:14 }}>{catIcon[a.category]??'📅'}</span>
+                <div className="flex-1 min-w-0">
+                  <p style={{ fontSize:12, fontWeight:600, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{a.title}</p>
+                  {a.child && (
+                    <span style={{ fontSize:10, fontWeight:700, color:'white', background:a.child.avatar_color,
+                      padding:'1px 7px', borderRadius:99, display:'inline-block', marginTop:2 }}>
+                      {a.child.name}
+                    </span>
+                  )}
+                </div>
+                {a.time && <span style={{ fontSize:11, color:'rgba(26,43,28,0.45)', flexShrink:0 }}>{a.time.slice(0,5)}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -176,16 +223,27 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="font-bold truncate" style={{ fontSize:14, color:'#1A2B1C', lineHeight:1.3 }}>{activity.title}</div>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {/* Child badge — prominent colored pill */}
+          {/* Title — full width, no truncation constrained by right chip */}
+          <div className="font-bold" style={{ fontSize:14, color:'#1A2B1C', lineHeight:1.3 }}>{activity.title}</div>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {/* Child badge */}
             {activity.child && (
               <span className="text-[11px] font-extrabold px-2.5 py-[3px] rounded-full text-white flex-shrink-0"
                 style={{ background:activity.child.avatar_color, boxShadow:`0 2px 6px ${activity.child.avatar_color}55` }}>
                 {activity.child.name}
               </span>
             )}
-            {/* Location — only when available */}
+            {/* Date/time chip — now inline below the title */}
+            <span className="text-[11px] font-bold px-2.5 py-[3px] rounded-full flex-shrink-0"
+              style={{
+                background:'rgba(255,255,255,0.75)',
+                color:overdue?'#DC2626':'rgba(26,43,28,0.52)',
+                border:`1px solid ${overdue?'rgba(220,38,38,0.22)':'rgba(61,102,65,0.18)'}`,
+                boxShadow:'0 1px 4px rgba(44,74,46,0.08)',
+              }}>
+              {overdue ? '⚠ Atrasado' : activity.time ? `${activity.time.slice(0,5)} · ${dateLabel}` : dateLabel}
+            </span>
+            {/* Location */}
             {activity.location && (
               <span className="text-[11px] italic flex items-center gap-1 truncate" style={{ color:'rgba(26,43,28,0.38)' }}>
                 <MapPin size={10}/> {activity.location}
@@ -193,27 +251,19 @@ function ActivityRow({ activity }: { activity: Activity & { child:{name:string;a
             )}
           </div>
         </div>
-
-        {/* Date/time badge — shows weekday+date, or hour if available, or overdue warning */}
-        <div className="flex-none text-xs font-bold px-3 py-[5px] rounded-full"
-          style={{
-            background:'rgba(255,255,255,0.75)',
-            color:overdue?'#DC2626':'rgba(26,43,28,0.58)',
-            border:`1px solid ${overdue?'rgba(220,38,38,0.22)':'rgba(61,102,65,0.22)'}`,
-            boxShadow:'0 2px 8px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset',
-            whiteSpace:'nowrap',
-          }}>
-          {overdue ? '⚠ Atrasado' : activity.time ? `${activity.time.slice(0,5)} · ${dateLabel}` : dateLabel}
-        </div>
       </div>
     </Link>
   )
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
-export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthEventDates, totalPending }: Props) {
-  // Mini-calendar uses ALL month events (not just 7 days)
-  const eventDates = new Set<string>(monthEventDates)
+export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthActivities, totalPending }: Props) {
+  // Group month activities by date for mini-calendar
+  const activitiesByDate = monthActivities.reduce<Record<string, ActWithChild[]>>((acc, a) => {
+    if (!acc[a.date]) acc[a.date] = []
+    acc[a.date].push(a)
+    return acc
+  }, {})
 
   // 3 stats: removed "filhos cadastrados"
   const stats = [
@@ -311,7 +361,7 @@ export default function DashboardClient({ userName, children, todayActivities, u
         {/* Right */}
         <div>
           <SectionH>Calendário</SectionH>
-          <MiniCalendar eventDates={eventDates}/>
+          <MiniCalendar activitiesByDate={activitiesByDate}/>
         </div>
       </div>
 

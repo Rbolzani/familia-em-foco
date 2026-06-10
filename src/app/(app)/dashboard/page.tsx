@@ -37,11 +37,12 @@ export default async function DashboardPage() {
       .order('date').order('time', { nullsFirst: false })
       .limit(10),
 
-    // Full current month — used for mini-calendar dots
+    // Full current month — used for mini-calendar dots + click detail
     supabase.from('activities')
-      .select('date')
+      .select('*, child:children(name, avatar_color)')
       .gte('date', moStart).lte('date', moEnd)
-      .neq('status', 'cancelado'),
+      .neq('status', 'cancelado')
+      .order('date').order('time', { nullsFirst: false }),
 
     // Total pending across ALL time (matches what modules show)
     supabase.from('activities')
@@ -50,7 +51,6 @@ export default async function DashboardPage() {
   ])
 
   const userName = user.user_metadata?.full_name?.split(' ')[0] || 'Olá'
-  const monthEventDates = (monthActivities ?? []).map(a => a.date as string)
 
   return (
     <DashboardClient
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       children={children ?? []}
       todayActivities={todayActivities ?? []}
       upcomingActivities={upcomingActivities ?? []}
-      monthEventDates={monthEventDates}
+      monthActivities={(monthActivities ?? []) as Parameters<typeof DashboardClient>[0]['monthActivities']}
       totalPending={totalPending ?? 0}
     />
   )
