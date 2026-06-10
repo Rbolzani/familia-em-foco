@@ -250,8 +250,8 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
         {/* Row 2: view toggle */}
         <div className="flex px-4 pb-2 gap-2">
           {([
-            { key:'child',    label:'Por filho',    icon:'👶' },
-            { key:'category', label:'Por natureza', icon:'📂' },
+            { key:'child',    label:'Por natureza', icon:'📂' },
+            { key:'category', label:'Por filho',    icon:'👶' },
           ] as const).map(v=>(
             <button key={v.key}
               onClick={()=>{ setViewMode(v.key); setFilterChild(''); setFilterCat(''); setSelectedDay(null) }}
