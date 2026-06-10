@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     { data: todayActivities },
     { data: upcomingActivities },
     { data: monthActivities },
-    { count: totalPending },
+    { data: reminders },
   ] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
 
@@ -49,10 +49,12 @@ export default async function DashboardPage() {
       .neq('status', 'cancelado')
       .order('date').order('time', { nullsFirst: false }),
 
-    // Total pending across ALL time (matches what modules show)
+    // Reminders: activities with no date
     supabase.from('activities')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'pendente'),
+      .select('*, child:children(name, avatar_color)')
+      .is('date', null)
+      .neq('status', 'cancelado')
+      .order('created_at', { ascending: false }),
   ])
 
   const userName = user.user_metadata?.full_name?.split(' ')[0] || 'Olá'
@@ -64,7 +66,7 @@ export default async function DashboardPage() {
       todayActivities={todayActivities ?? []}
       upcomingActivities={upcomingActivities ?? []}
       monthActivities={(monthActivities ?? []) as Parameters<typeof DashboardClient>[0]['monthActivities']}
-      totalPending={totalPending ?? 0}
+      reminders={(reminders ?? []) as Parameters<typeof DashboardClient>[0]['reminders']}
     />
   )
 }

@@ -1,16 +1,18 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import {
   BookOpen, HeartPulse, Trophy, Sparkles,
   Bell, SunMedium, MapPin,
   ChevronLeft, ChevronRight,
-  CalendarCheck, CalendarRange, AlertTriangle, Stethoscope,
+  CalendarCheck, CalendarRange, Stethoscope,
+  StickyNote, Plus, Trash2, Check,
 } from 'lucide-react'
 import { Activity, Child } from '@/lib/types'
 import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ActWithChild = Activity & { child: { name: string; avatar_color: string } }
@@ -21,7 +23,7 @@ interface Props {
   todayActivities:    ActWithChild[]
   upcomingActivities: ActWithChild[]
   monthActivities:    ActWithChild[]   // full month — for mini-calendar dots + click detail
-  totalPending: number
+  reminders:          ActWithChild[]  // activities with no date
 }
 
 // ── Textures ───────────────────────────────────────────────────────────────
@@ -208,10 +210,11 @@ function ActivityRow({ activities }: { activities: ActWithChild[] }) {
   const activity = activities[0]
   const cat    = CAT[activity.category as CatKey]??CAT.escola
   const todayDs= format(new Date(), 'yyyy-MM-dd')
-  const overdue= activity.status==='pendente'&&activity.date<todayDs
+  const overdue= activity.status==='pendente'&&!!activity.date&&activity.date<todayDs
 
-  const dateLabel = format(new Date(activity.date+'T00:00:00'), "EEE, dd/MM", {locale:ptBR})
-    .replace(/^\w/,c=>c.toUpperCase())
+  const dateLabel = activity.date
+    ? format(new Date(activity.date+'T00:00:00'), "EEE, dd/MM", {locale:ptBR}).replace(/^\w/,c=>c.toUpperCase())
+    : 'Sem data'
 
   return (
     <Link href={`/${activity.category==='escola'?'escola':activity.category==='saude'?'saude':'atividades'}`}>
@@ -258,25 +261,178 @@ function ActivityRow({ activities }: { activities: ActWithChild[] }) {
   )
 }
 
+// ── Reminders Panel ────────────────────────────────────────────────────────
+const REMINDER_CAT: Record<string,{icon:string;color:string}> = {
+  escola:          { icon:'📚', color:'#2563EB' },
+  saude:           { icon:'🩺', color:'#065F46' },
+  extracurricular: { icon:'🏆', color:'#92400E' },
+}
+
+function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; allChildren: Child[] }) {
+  const supabase = createClient()
+  const [items, setItems] = useState<ActWithChild[]>(initial)
+  const [adding, setAdding] = useState(false)
+  const [text, setText] = useState('')
+  const [childId, setChildId] = useState(allChildren[0]?.id ?? '')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+
+  async function handleAdd() {
+    if (!text.trim() || !childId) return
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data } = await supabase.from('activities').insert({
+      user_id: user!.id, child_id: childId,
+      category: 'escola', title: text.trim(),
+      date: null, alert_days: 0, ai_generated: false,
+    }).select('*, child:children(name, avatar_color)').single()
+    if (data) setItems(prev => [data as ActWithChild, ...prev])
+    setText(''); setSaving(false); setAdding(false)
+  }
+
+  async function handleDone(id: string) {
+    await supabase.from('activities').delete().eq('id', id)
+    setItems(prev => prev.filter(x => x.id !== id))
+  }
+
+  const PANEL: React.CSSProperties = {
+    borderRadius: '20px 13px 18px 15px',
+    border: '1px solid rgba(61,102,65,0.20)',
+    background: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"), linear-gradient(155deg,#FFFDF7 0%,#F9F4E8 100%)`,
+    backgroundSize: '200px 200px, 100% 100%',
+    boxShadow: '0 4px 18px rgba(44,74,46,0.09),0 1px 4px rgba(44,74,46,0.06),0 -1px 0 rgba(255,255,255,0.85) inset',
+    padding: '18px 16px',
+    // subtle "pinboard" feel with a warm tint
+  }
+
+  return (
+    <div style={PANEL}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-[9px] flex items-center justify-center"
+            style={{ background:'linear-gradient(140deg,#FEF3C7,#FDE68A)', border:'1px solid rgba(146,64,14,0.12)' }}>
+            <StickyNote size={14} color="#92400E"/>
+          </div>
+          <span style={{ fontFamily:'var(--font-lora)', fontSize:15, fontWeight:600, color:'#1A2B1C' }}>
+            Lembretes
+          </span>
+          {items.length > 0 && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background:'rgba(146,64,14,0.10)', color:'#92400E' }}>
+              {items.length}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setAdding(a => !a)}
+          className="w-7 h-7 rounded-[9px] flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: adding ? 'rgba(220,38,38,0.10)' : 'rgba(61,102,65,0.10)', color: adding ? '#DC2626' : '#3D6641', border:'1px solid rgba(0,0,0,0.06)' }}>
+          <Plus size={14} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition:'transform .2s' }}/>
+        </button>
+      </div>
+
+      {/* Quick-add form */}
+      {adding && (
+        <div className="mb-3 p-2.5 rounded-[13px] space-y-2"
+          style={{ background:'rgba(61,102,65,0.05)', border:'1px solid rgba(61,102,65,0.14)' }}>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key==='Enter') handleAdd(); if (e.key==='Escape') setAdding(false) }}
+            placeholder="Ex: Agendar consulta, levar documento..."
+            className="w-full text-[13px] outline-none bg-transparent"
+            style={{ color:'#1A2B1C' }}
+          />
+          {allChildren.length > 1 && (
+            <select value={childId} onChange={e => setChildId(e.target.value)}
+              className="text-[11px] font-semibold border rounded-[9px] px-2 py-1 outline-none w-full"
+              style={{ borderColor:'rgba(61,102,65,0.22)', background:'white', color:'#1A2B1C' }}>
+              {allChildren.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+          <button onClick={handleAdd} disabled={saving || !text.trim()}
+            className="w-full py-1.5 rounded-[9px] text-[12px] font-bold transition-all disabled:opacity-50"
+            style={{ background:'linear-gradient(140deg,#3D6641,#2C4A2E)', color:'#D4E8D5' }}>
+            {saving ? 'Salvando...' : 'Adicionar'}
+          </button>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {items.length === 0 && !adding && (
+        <div className="text-center py-5">
+          <div className="text-2xl mb-1">✅</div>
+          <p className="text-[12px] italic" style={{ color:'rgba(26,43,28,0.40)' }}>
+            Nenhum lembrete pendente.<br/>Tudo organizado!
+          </p>
+        </div>
+      )}
+
+      {/* List */}
+      <div className="space-y-2">
+        {items.map(item => {
+          const cat = REMINDER_CAT[item.category] ?? REMINDER_CAT.escola
+          return (
+            <div key={item.id} className="flex items-start gap-2.5 group p-2 rounded-[11px] transition-colors"
+              style={{ background:'rgba(255,255,255,0.70)', border:'1px solid rgba(61,102,65,0.10)' }}>
+              {/* Done button */}
+              <button onClick={() => handleDone(item.id)}
+                className="mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110 group-hover:border-[#3D6641]"
+                style={{ borderColor:'rgba(61,102,65,0.28)', background:'transparent' }}
+                title="Marcar como concluído">
+                <Check size={10} color="#3D6641" style={{ opacity:0 }} className="group-hover:opacity-100 transition-opacity"/>
+              </button>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[12.5px] font-semibold leading-snug" style={{ color:'#1A2B1C' }}>
+                  {cat.icon} {item.title}
+                </p>
+                {item.child && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white mt-1 inline-block"
+                    style={{ background: item.child.avatar_color }}>
+                    {item.child.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Delete */}
+              <button onClick={() => handleDone(item.id)}
+                className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-[7px] flex items-center justify-center flex-none transition-all"
+                style={{ background:'rgba(220,38,38,0.10)', color:'#DC2626' }}>
+                <Trash2 size={11}/>
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer hint */}
+      <p className="text-[10px] italic text-center mt-3" style={{ color:'rgba(26,43,28,0.30)' }}>
+        Atividades sem data ficam aqui automaticamente
+      </p>
+    </div>
+  )
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
-export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthActivities, totalPending }: Props) {
+export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthActivities, reminders }: Props) {
   // Group month activities by date for mini-calendar
   const activitiesByDate = monthActivities.reduce<Record<string, ActWithChild[]>>((acc, a) => {
+    if (!a.date) return acc
     if (!acc[a.date]) acc[a.date] = []
     acc[a.date].push(a)
     return acc
   }, {})
 
-  // 3 stats: removed "filhos cadastrados"
   const stats = [
     { n:todayActivities.length,    label:'Atividades hoje', icon:CalendarCheck, icolor:'#2563EB', ibg:'linear-gradient(140deg,#DBEAFE,#BFDBFE)', corner:'#2563EB' },
     { n:upcomingActivities.length, label:'Próximos 7 dias', icon:CalendarRange, icolor:'#B45309', ibg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', corner:'#C49A6C' },
-    {
-      n:totalPending, label:'Pendentes total', icon:AlertTriangle,
-      icolor: totalPending>0?'#DC2626':'#065F46',
-      ibg:    totalPending>0?'linear-gradient(140deg,#FEE2E2,#FECACA)':'linear-gradient(140deg,#D1FAE5,#A7F3D0)',
-      corner: totalPending>0?'#DC2626':'#3D6641',
-    },
+    { n:reminders.length,          label:'Lembretes',       icon:StickyNote,    icolor:'#92400E', ibg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', corner:'#C49A6C' },
   ]
 
   return (
@@ -361,9 +517,15 @@ export default function DashboardClient({ userName, children, todayActivities, u
         </div>
 
         {/* Right */}
-        <div>
-          <SectionH>Calendário</SectionH>
-          <MiniCalendar activitiesByDate={activitiesByDate}/>
+        <div className="space-y-[18px] md:space-y-[22px]">
+          <div>
+            <SectionH>Calendário</SectionH>
+            <MiniCalendar activitiesByDate={activitiesByDate}/>
+          </div>
+          <div>
+            <SectionH>Lembretes</SectionH>
+            <RemindersPanel initial={reminders} allChildren={children}/>
+          </div>
         </div>
       </div>
 

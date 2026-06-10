@@ -94,18 +94,18 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   }
 
   function openEdit(a: Activity) {
-    setForm({ child_id: a.child_id, title: a.title, description: a.description ?? '', date: a.date, time: a.time ?? '', alert_days: a.alert_days, location: a.location ?? '' })
+    setForm({ child_id: a.child_id, title: a.title, description: a.description ?? '', date: a.date ?? '', time: a.time ?? '', alert_days: a.alert_days, location: a.location ?? '' })
     setModal({ mode: 'edit', activity: a })
   }
 
   async function handleSave() {
-    if (!form.title.trim() || !form.date || !form.child_id) return
+    if (!form.title.trim() || !form.child_id) return
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     const payload = {
       user_id: user!.id, child_id: form.child_id, category,
       title: form.title.trim(), description: form.description.trim() || null,
-      date: form.date, time: form.time || null, alert_days: form.alert_days,
+      date: form.date || null, time: form.time || null, alert_days: form.alert_days,
       location: form.location.trim() || null,
     }
     if (modal?.mode === 'new') await supabase.from('activities').insert(payload)
@@ -123,6 +123,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   const todayDs = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
 
   const filtered = activities.filter(a => {
+    if (!a.date) return false           // no date → reminders, not here
     if (a.date < todayDs) return false
     if (filterChild && a.child_id !== filterChild) return false
     return true
@@ -244,13 +245,18 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#0F1F3D' }}>
-                Data *
+                Data <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0 }}>(opcional)</span>
               </label>
               <input
                 type="date" value={form.date}
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                 className="input-field w-full"
               />
+              {!form.date && (
+                <p className="text-[11px] mt-1 italic" style={{ color:'rgba(146,64,14,0.70)' }}>
+                  Sem data → vai para Lembretes no dashboard
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#0F1F3D' }}>
@@ -306,7 +312,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
             <Button variant="ghost" onClick={() => setModal(null)}>Cancelar</Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !form.title.trim() || !form.date || !form.child_id}
+              disabled={saving || !form.title.trim() || !form.child_id}
               style={{ background: gradient, boxShadow: `0 4px 14px ${accent}44` }}
             >
               {saving ? 'Salvando...' : 'Salvar'}
@@ -331,7 +337,7 @@ function ActivityCard({
 }) {
   const first  = group[0]
   const merged = group.length > 1
-  const fmtDate = (d: string) => format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })
+  const fmtDate = (d: string | null) => d ? format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : '—'
 
   return (
     <div

@@ -20,7 +20,7 @@ export interface Activity {
   category: ActivityCategory
   title: string
   description: string | null
-  date: string
+  date: string | null
   time: string | null
   alert_days: number
   status: ActivityStatus

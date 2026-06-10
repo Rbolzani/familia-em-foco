@@ -137,10 +137,10 @@ export default function IAPage() {
     const { data: { user } } = await supabase.auth.getUser()
     // For each selected activity, create one row per child_id
     const toSave = extracted
-      .filter(a => a.selected && a.date && a.child_ids.length > 0)
+      .filter(a => a.selected && a.child_ids.length > 0)
       .flatMap(a => a.child_ids.map(child_id => ({
         user_id: user!.id, child_id, category: a.category,
-        title: a.title, description: a.description, date: a.date!,
+        title: a.title, description: a.description, date: a.date ?? null,
         time: a.time, location: a.location, ai_generated: true, alert_days: 3,
       })))
     if (toSave.length === 0) { setSaving(false); return }
@@ -164,7 +164,7 @@ export default function IAPage() {
   }
 
   // Total rows that will be saved (1 per activity × number of selected children)
-  const selectedCount = extracted?.filter(a => a.selected && a.date)
+  const selectedCount = extracted?.filter(a => a.selected)
     .reduce((sum, a) => sum + a.child_ids.length, 0) ?? 0
 
   // ── Success screen ─────────────────────────────────────────────────────

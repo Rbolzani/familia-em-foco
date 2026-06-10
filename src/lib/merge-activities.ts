@@ -31,7 +31,7 @@ export function titlesSimilar(a: string, b: string): boolean {
   return overlap / wordsA.length >= 0.80
 }
 
-export function mergeActivities<T extends { title: string; date: string; category: string }>(
+export function mergeActivities<T extends { title: string; date: string | null; category: string }>(
   acts: T[]
 ): T[][] {
   const groups: T[][] = []
