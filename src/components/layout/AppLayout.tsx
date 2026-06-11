@@ -507,16 +507,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
             </p>
           </div>
         </div>
-        {/* Logout */}
-        <div style={{ padding:'12px 20px 20px', borderTop:`1px solid ${panelBorder}` }}>
-          <button onClick={handleLogout}
-            style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
-              padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
-              background:'rgba(220,38,38,0.06)', cursor:'pointer',
-              fontSize:13, fontWeight:700, color:'#DC2626' }}>
-            <LogOut size={15}/> Sair da conta
-          </button>
-        </div>
       </div>
 
       {/* ── Mobile TEMA floating button ── */}
@@ -592,15 +582,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 <span style={{ position:'absolute', top:3, width:20, height:20, borderRadius:'50%', background:'white',
                   boxShadow:'0 2px 5px rgba(0,0,0,0.25)',
                   left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
-              </button>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:16 }}>
-              <button onClick={handleLogout}
-                style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
-                  padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
-                  background:'rgba(220,38,38,0.06)', cursor:'pointer',
-                  fontSize:13, fontWeight:700, color:'#DC2626' }}>
-                <LogOut size={15}/> Sair da conta
               </button>
             </div>
           </div>
