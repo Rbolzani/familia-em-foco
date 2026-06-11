@@ -235,6 +235,14 @@ input[type=range]::-webkit-slider-thumb {
   }
 }
 
+/* ─── Dark mode: fotos e avatares não devem ser invertidos ───── *
+ * O modo escuro usa filter:invert() no .app-wrap; este contra-   *
+ * filtro restaura imagens reais (fotos de avatar, uploads).      */
+.app-wrap[data-dark="1"] img,
+.app-wrap[data-dark="1"] .no-invert {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 /* ─── Polimento: seleção, foco por teclado, motion ──────────── */
 ::selection { background: rgba(90,140,94,0.30); color: #1A2B1C; }
 

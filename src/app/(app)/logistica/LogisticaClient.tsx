@@ -5,6 +5,8 @@ import { Car, Home, Users, LayoutList, AlertTriangle, ChevronRight } from 'lucid
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
+import { toast } from '@/components/ui/Toast'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface Child {
   id: string
@@ -74,10 +76,12 @@ export default function LogisticaClient({ activities: initial, children, familyM
     const newVal = existing === currentUserId ? null : currentUserId
     const { error } = await supabase.from('activities').update({ [field]: newVal }).eq('id', actId)
     if (error) {
-      alert('Não foi possível salvar. Verifique sua conexão e tente novamente.')
+      toast('Não foi possível salvar. Verifique sua conexão.', 'error')
       return
     }
     setActivities(prev => prev.map(a => a.id === actId ? { ...a, [field]: newVal } : a))
+    const what = field === 'takes_user_id' ? 'leva' : 'busca'
+    toast(newVal ? `Você assumiu quem ${what} ✓` : `Você liberou quem ${what}`)
   }
 
   // Period filter
@@ -244,11 +248,10 @@ export default function LogisticaClient({ activities: initial, children, familyM
       {view === 'atividade' && (
         <div className="animate-fade-up">
           {filtered.length === 0 ? (
-            <div style={{ ...cardStyle, padding: '40px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>🎯</div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A2B1C' }}>Nenhuma atividade encontrada</p>
-              <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.45)', marginTop: 4 }}>Ajuste os filtros ou adicione atividades nos módulos.</p>
-            </div>
+            <EmptyState
+              title="Nenhuma atividade encontrada"
+              subtitle="Ajuste os filtros acima ou adicione atividades nos módulos de Escola, Saúde e Atividades."
+            />
           ) : (
             <div style={cardStyle}>
               {/* Table header — desktop */}

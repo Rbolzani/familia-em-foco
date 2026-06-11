@@ -9,6 +9,8 @@ import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-r
 import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toast } from '@/components/ui/Toast'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface FamilyMemberInfo {
   user_id: string
@@ -116,15 +118,21 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
       date: form.date || null, time: form.time || null, alert_days: form.alert_days,
       location: form.location.trim() || null,
     }
-    if (modal?.mode === 'new') await supabase.from('activities').insert(payload)
-    else await supabase.from('activities').update(payload).eq('id', modal!.activity!.id)
-    setSaving(false); setModal(null); load()
+    const { error } = modal?.mode === 'new'
+      ? await supabase.from('activities').insert(payload)
+      : await supabase.from('activities').update(payload).eq('id', modal!.activity!.id)
+    setSaving(false)
+    if (error) { toast('Não foi possível salvar. Tente novamente.', 'error'); return }
+    setModal(null); load()
+    toast(modal?.mode === 'new' ? 'Atividade adicionada ✓' : 'Alterações salvas ✓')
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Excluir esta atividade?')) return
-    await supabase.from('activities').delete().eq('id', id)
+    const { error } = await supabase.from('activities').delete().eq('id', id)
+    if (error) { toast('Não foi possível excluir. Tente novamente.', 'error'); return }
     setActivities(prev => prev.filter(x => x.id !== id))
+    toast('Atividade excluída')
   }
 
   // Today in Brazil timezone — activities before today are automatically hidden
@@ -185,22 +193,12 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
           {[1,2,3].map(i => <div key={i} className="card h-20 shimmer" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-10 text-center animate-fade-up" style={{ border: '2px dashed #EDE4D6' }}>
-          <div className="text-4xl mb-3 animate-float">{emoji}</div>
-          <h3 className="font-fraunces text-lg font-bold mb-1" style={{ color: '#0F1F3D' }}>
-            Nenhuma atividade
-          </h3>
-          <p className="text-sm mb-4" style={{ color: '#8B7A68' }}>
-            Nenhuma atividade futura. Adicione uma nova.
-          </p>
-          <button
-            onClick={openNew}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all hover:brightness-105"
-            style={{ background: gradient }}
-          >
-            <Plus size={14} /> Adicionar
-          </button>
-        </div>
+        <EmptyState
+          title="Tudo tranquilo por aqui"
+          subtitle={`Nenhuma atividade de ${title.toLowerCase()} agendada. Adicione manualmente ou fotografe a agenda — a IA extrai tudo sozinha.`}
+          actionLabel="+ Adicionar"
+          onAction={openNew}
+        />
       ) : (
         <div className="space-y-2.5 stagger">
           {mergeActivities(filtered).map((group, gi) => (

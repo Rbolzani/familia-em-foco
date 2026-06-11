@@ -5,6 +5,7 @@ import { Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle } from 'lucide-react'
+import EmptyState from '@/components/ui/EmptyState'
 
 // Stable singleton — not re-created on every render
 const supabase = createClient()
@@ -421,20 +422,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
 
       {/* Empty state */}
       {children.length === 0 && (
-        <div className="card p-10 text-center animate-fade-up" style={{ border: '2px dashed #EDE4D6' }}>
-          <div className="text-5xl mb-4 animate-float">👶</div>
-          <h3 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', marginBottom: 8 }}>
-            Nenhum filho cadastrado
-          </h3>
-          <p className="text-sm mb-5" style={{ color: 'rgba(26,43,28,0.45)' }}>
-            Adicione seu primeiro filho para começar a organizar a rotina.
-          </p>
-          <button onClick={openNew}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 14px rgba(44,74,46,0.28)' }}>
-            <Plus size={15} /> Adicionar filho
-          </button>
-        </div>
+        <EmptyState
+          title="Comece pela parte boa"
+          subtitle="Cadastre seu primeiro filho para começar a organizar a rotina da família."
+          actionLabel="+ Adicionar filho"
+          onAction={openNew}
+          showIaShortcut={false}
+        />
       )}
 
       {/* List */}

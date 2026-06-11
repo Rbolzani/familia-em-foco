@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
+import { Toaster } from '@/components/ui/Toast'
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface SidebarChild {
@@ -171,7 +172,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
     <div className="min-h-screen relative">
 
       {/* ══ APP WRAP ══ */}
-      <div ref={appRef} className="app-wrap flex min-h-screen">
+      <div ref={appRef} className="app-wrap flex min-h-screen" data-dark={darkMode ? '1' : undefined}>
 
         {/* ══ SIDEBAR (desktop only) ══ */}
         <aside className="hidden md:flex flex-col w-[256px] flex-shrink-0 fixed z-40"
@@ -402,6 +403,9 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
         </div>
 
       </div>
+
+      {/* ── Toasts globais (fora do app-wrap: cores fiéis em qualquer tema) ── */}
+      <Toaster />
 
       {/* ── Mobile TEMA floating button ── */}
       <button
