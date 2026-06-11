@@ -13,6 +13,9 @@ export default async function AlertasPage() {
     .eq('user_id', user.id)
     .single()
 
+  const twilioMode    = !!process.env.TWILIO_ACCOUNT_SID
+  const twilioKeyword = process.env.TWILIO_SANDBOX_KEYWORD ?? ''
+
   return (
     <AlertasClient
       userId={user.id}
@@ -21,6 +24,8 @@ export default async function AlertasPage() {
         number: waSettings?.whatsapp_number ?? '',
         enabled: waSettings?.daily_summary_enabled ?? false,
       }}
+      twilioMode={twilioMode}
+      twilioKeyword={twilioKeyword}
     />
   )
 }

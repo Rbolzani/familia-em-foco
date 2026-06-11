@@ -8,9 +8,11 @@ interface Props {
   userId: string
   userEmail: string
   whatsapp: { number: string; enabled: boolean }
+  twilioMode?: boolean
+  twilioKeyword?: string
 }
 
-export default function AlertasClient({ userId, userEmail, whatsapp }: Props) {
+export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode, twilioKeyword }: Props) {
   const supabase = createClient()
 
   const [waNumber, setWaNumber]   = useState(whatsapp.number)
@@ -100,6 +102,45 @@ export default function AlertasClient({ userId, userEmail, whatsapp }: Props) {
           {userEmail}
         </p>
       </div>
+
+      {/* Banner modo teste Twilio */}
+      {twilioMode && (
+        <div className="animate-fade-up rounded-2xl p-4" style={{
+          background: 'linear-gradient(135deg, #FFF8E7 0%, #FFF3D0 100%)',
+          border: '1.5px solid rgba(196,130,0,0.25)',
+          boxShadow: '0 2px 12px rgba(196,130,0,0.08)',
+        }}>
+          <div className="flex items-start gap-3">
+            <span style={{ fontSize: 20, lineHeight: 1 }}>⚠️</span>
+            <div>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#7A5000', marginBottom: 6 }}>
+                Modo de teste ativo — passo obrigatório antes de receber mensagens
+              </p>
+              <p style={{ fontSize: 13, color: '#7A5000', lineHeight: 1.6, marginBottom: 10 }}>
+                Abra o WhatsApp no seu celular e envie a mensagem abaixo para o número de teste:
+              </p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.6)' }}>Número</span>
+                  <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13.5, fontWeight: 700, color: '#7A5000', letterSpacing: '0.02em' }}>
+                    +1 415 523 8886
+                  </code>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.6)' }}>Mensagem</span>
+                  <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13.5, fontWeight: 700, color: '#7A5000', letterSpacing: '0.02em' }}>
+                    join {twilioKeyword}
+                  </code>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: 'rgba(122,80,0,0.65)', marginTop: 10, lineHeight: 1.5 }}>
+                Após receber a confirmação do WhatsApp, configure seu número abaixo e clique em testar.
+                Este passo é necessário apenas no ambiente de teste.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Resumo matinal no WhatsApp */}
       <div style={cardStyle} className="animate-fade-up">
