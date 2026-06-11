@@ -415,16 +415,16 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
 
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
-          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        />
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        amber />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso" amber />
           <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"            amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
             style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
               gap:3, width:58, height:46, background:'none', border:'none', cursor:'pointer', flexShrink:0 }}>
-            <LogOut size={18} strokeWidth={1.8} color="rgba(220,38,38,0.62)" />
+            <LogOut size={18} strokeWidth={1.8} color="rgba(196,154,108,0.78)" />
             <span style={{ fontSize:8, fontWeight:600, lineHeight:1.2, letterSpacing:'0.01em',
-              textAlign:'center', color:'rgba(220,38,38,0.62)' }}>Sair</span>
+              textAlign:'center', color:'rgba(196,154,108,0.78)' }}>Sair</span>
           </button>
         </div>
 
