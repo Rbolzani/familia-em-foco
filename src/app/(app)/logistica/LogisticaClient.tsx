@@ -286,16 +286,10 @@ export default function LogisticaClient({ activities: initial, children, familyM
                       </div>
                     </div>
                     <div>
-                      {hasPartner
-                        ? <LogChip actId={act.id} field="takes_user_id" value={act.takes_user_id} />
-                        : <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.30)', fontStyle: 'italic' }}>—</span>
-                      }
+                      <LogChip actId={act.id} field="takes_user_id" value={act.takes_user_id} />
                     </div>
                     <div>
-                      {hasPartner
-                        ? <LogChip actId={act.id} field="picks_user_id" value={act.picks_user_id} />
-                        : <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.30)', fontStyle: 'italic' }}>—</span>
-                      }
+                      <LogChip actId={act.id} field="picks_user_id" value={act.picks_user_id} />
                     </div>
                   </div>
 
@@ -313,12 +307,10 @@ export default function LogisticaClient({ activities: initial, children, familyM
                         <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.50)', marginTop: 2 }}>
                           {fmtDate(act.date)}{act.time ? ` · ${act.time.slice(0,5)}` : ''} · {catEmoji[act.category]} {catLabel[act.category]}
                         </div>
-                        {hasPartner && (
-                          <div className="flex gap-2 mt-2.5">
-                            <LogChip actId={act.id} field="takes_user_id" value={act.takes_user_id} />
-                            <LogChip actId={act.id} field="picks_user_id" value={act.picks_user_id} />
-                          </div>
-                        )}
+                        <div className="flex gap-2 mt-2.5">
+                          <LogChip actId={act.id} field="takes_user_id" value={act.takes_user_id} />
+                          <LogChip actId={act.id} field="picks_user_id" value={act.picks_user_id} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -349,12 +341,10 @@ export default function LogisticaClient({ activities: initial, children, familyM
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#1A2B1C' }}>{act.title}</span>
                     <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginLeft: 8 }}>{fmtDate(act.date)}</span>
                   </div>
-                  {hasPartner && (
-                    <div className="flex gap-2">
-                      {!act.takes_user_id && <LogChip actId={act.id} field="takes_user_id" value={null} />}
-                      {!act.picks_user_id && <LogChip actId={act.id} field="picks_user_id" value={null} />}
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    {!act.takes_user_id && <LogChip actId={act.id} field="takes_user_id" value={null} />}
+                    {!act.picks_user_id && <LogChip actId={act.id} field="picks_user_id" value={null} />}
+                  </div>
                 </div>
               ))}
               {missing.length > 3 && (
