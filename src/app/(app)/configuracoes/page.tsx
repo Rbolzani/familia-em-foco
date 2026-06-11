@@ -28,6 +28,9 @@ export default async function ConfiguracoesPage() {
     isOwner = false
   }
 
+  // Usuário sem família alguma (nem como dono nem como membro) → é o futuro dono
+  if (!familyId && !isOwner) isOwner = true
+
   let members: { id: string; user_id: string; display_name: string | null; role: string; joined_at: string }[] = []
   let pendingInvite: { token: string; expires_at: string } | null = null
 
