@@ -68,11 +68,8 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
       const res = await fetch('/api/whatsapp-test', { method: 'POST' })
       const json = await res.json()
       if (res.ok) {
-        // Mostra a resposta da Meta para diagnóstico
-        const metaInfo = json.meta ? ` | Meta: ${json.meta}` : ''
-        toast(`Enviado! Confira seu WhatsApp 📱${metaInfo}`)
+        toast('Mensagem de teste enviada! Confira seu WhatsApp 📱')
       } else {
-        // Mostra o erro exato retornado pela Meta
         toast(json.error ?? 'Falha no envio do teste.', 'error')
       }
     } catch {
