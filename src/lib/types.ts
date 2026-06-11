@@ -34,6 +34,34 @@ export interface Activity {
   child?: Child
 }
 
+export type DocumentCategory = 'saude' | 'identidade' | 'contratos' | 'carteirinhas'
+
+export type ChildRef = Pick<Child, 'id' | 'name' | 'avatar_color'>
+
+export interface AppDocument {
+  id: string
+  user_id: string
+  child_id: string | null
+  category: DocumentCategory
+  title: string
+  description: string | null
+  expires_at: string | null
+  created_at: string
+  child?: ChildRef | null
+  files?: DocumentFile[]
+}
+
+export interface DocumentFile {
+  id: string
+  document_id: string
+  user_id: string
+  file_name: string
+  file_size: number | null
+  mime_type: string | null
+  storage_path: string
+  created_at: string
+}
+
 export interface AiInput {
   id: string
   user_id: string
