@@ -217,8 +217,8 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Principal
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/dashboard"  label="Dashboard"     icon={LayoutDashboard} />
-              <NavItem href="/calendario" label="Calendário"    icon={CalendarDays} />
+              <NavItem href="/dashboard"  label="Início"        icon={LayoutDashboard} />
+              <NavItem href="/calendario" label="Agenda"        icon={CalendarDays} />
               <NavItem href="/ia"         label="Assistente IA" icon={Sparkles} />
             </div>
             <div>
@@ -232,7 +232,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
               <NavItem href="/atividades"     label="Atividades"     icon={Trophy} />
               <NavItem href="/logistica"      label="Logística"      icon={Car} />
               <NavItem href="/vault"          label="Documentos"     icon={FolderLock} />
-              <NavItem href="/configuracoes"  label="Configurações"  icon={Settings} />
+              <NavItem href="/configuracoes"  label="Convide Parceiro(a)" icon={UserPlus} />
             </div>
           </nav>
 

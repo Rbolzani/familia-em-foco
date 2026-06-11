@@ -196,7 +196,7 @@ export default function IAPage() {
           Inteligência Artificial
         </p>
         <h1 style={{ fontFamily:'var(--font-lora)', fontSize:34, fontWeight:700, color:'#1A2B1C', letterSpacing:'-0.02em', lineHeight:1.15 }}>
-          Adicionar com IA
+          Capturar com IA
         </h1>
         <p className="text-sm mt-1 italic" style={{ color:'rgba(26,43,28,0.50)' }}>
           Envie uma foto ou texto — a IA extrai as atividades automaticamente.

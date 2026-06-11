@@ -262,8 +262,8 @@ export default function LogisticaClient({ activities: initial, children, familyM
                   style={{ borderBottom: i < filtered.length - 1 ? '1px solid rgba(61,102,65,0.08)' : 'none' }}>
 
                   {/* Desktop row */}
-                  <div className="hidden md:grid items-center px-4 py-3 hover:bg-black/[0.015] transition-colors"
-                    style={{ gridTemplateColumns: '100px 52px 1fr 140px 140px', gap: 8 }}>
+                  <div className="hidden md:grid items-center px-4 hover:bg-black/[0.015] transition-colors"
+                    style={{ gridTemplateColumns: '100px 52px 1fr 140px 140px', gap: 8, minHeight: 68 }}>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#2D6A35' }}>
                         {fmtDate(act.date)}
@@ -294,7 +294,7 @@ export default function LogisticaClient({ activities: initial, children, familyM
                   </div>
 
                   {/* Mobile card row */}
-                  <div className="md:hidden p-4">
+                  <div className="md:hidden p-4" style={{ minHeight: 88 }}>
                     <div className="flex items-start gap-3">
                       {act.child && (
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5"
@@ -319,41 +319,14 @@ export default function LogisticaClient({ activities: initial, children, familyM
             </div>
           )}
 
-          {/* Missing section */}
+          {/* Missing disclaimer — only counter, no listing */}
           {!filterMissing && missing.length > 0 && (
-            <div className="mt-4" style={{ ...cardStyle, border: '1.5px solid rgba(245,158,11,0.35)' }}>
-              <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(245,158,11,0.20)', background: 'rgba(254,243,199,0.50)', borderRadius: '16px 16px 0 0' }}>
-                <AlertTriangle size={14} style={{ color: '#D97706' }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>
-                  {missing.length} atividade{missing.length !== 1 ? 's' : ''} sem responsável definido
-                </span>
-              </div>
-              {missing.slice(0, 3).map((act, i) => (
-                <div key={act.id} className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderBottom: i < Math.min(missing.length, 3) - 1 ? '1px solid rgba(245,158,11,0.12)' : 'none' }}>
-                  {act.child && (
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                      style={{ background: act.child.avatar_color }}>
-                      {act.child.name.charAt(0)}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#1A2B1C' }}>{act.title}</span>
-                    <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginLeft: 8 }}>{fmtDate(act.date)}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    {!act.takes_user_id && <LogChip actId={act.id} field="takes_user_id" value={null} />}
-                    {!act.picks_user_id && <LogChip actId={act.id} field="picks_user_id" value={null} />}
-                  </div>
-                </div>
-              ))}
-              {missing.length > 3 && (
-                <div className="px-4 py-2 text-center">
-                  <button onClick={() => setFilterMissing(true)} style={{ fontSize: 12, fontWeight: 600, color: '#2D6A35', background: 'none', border: 'none', cursor: 'pointer' }}>
-                    Ver todas ({missing.length}) →
-                  </button>
-                </div>
-              )}
+            <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-2xl animate-fade-up"
+              style={{ background: 'rgba(254,243,199,0.80)', border: '1.5px solid rgba(245,158,11,0.35)' }}>
+              <AlertTriangle size={14} color="#D97706" />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>
+                {missing.length} atividade{missing.length !== 1 ? 's' : ''} sem responsável definido
+              </span>
             </div>
           )}
         </div>

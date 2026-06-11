@@ -38,12 +38,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex" style={{ background: '#F8F3EA' }}>
 
-      {/* Paper grid background */}
-      <div className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(61,102,65,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(61,102,65,0.045) 1px,transparent 1px)',
-          backgroundSize: '44px 44px',
-        }} />
 
       {/* ── Left hero — desktop ── */}
       <div className="hidden lg:flex flex-col justify-between w-[460px] shrink-0 p-12 relative overflow-hidden"
@@ -120,9 +114,13 @@ export default function LoginPage() {
 
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto mb-3 relative"
-            style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 8px 24px rgba(44,74,46,0.30)' }}>
-            <Leaf size={28} color="#D4E8D5" />
+          <div className="relative inline-block mb-3">
+            <div className="w-16 h-16 rounded-[20px] flex items-center justify-center"
+              style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 8px 24px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+              <Leaf size={28} color="#D4E8D5" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-4 h-4"
+              style={{ borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.90 }} />
           </div>
           <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>Família em Foco</div>
           <div className="text-sm italic mt-1" style={{ color: 'rgba(26,43,28,0.45)' }}>sua rotina, com leveza</div>
