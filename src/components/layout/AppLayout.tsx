@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut, Car, Settings,
+  Users, LogOut, Car, Settings, UserPlus,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -23,7 +23,7 @@ interface SidebarChild {
 
 interface Props {
   children: React.ReactNode
-  sidebarChildren: SidebarChild[]   // server-side initial data
+  sidebarChildren: SidebarChild[]
 }
 
 // ── Palettes ───────────────────────────────────────────────────────────
@@ -49,7 +49,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
   const pathname = usePathname()
   const router   = useRouter()
 
-  // Re-fetch children from Supabase on every navigation so add/delete is reflected immediately
   const [liveChildren, setLiveChildren] = useState<SidebarChild[]>(initial)
   useEffect(() => {
     createClient()
@@ -59,39 +58,36 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       .then(({ data }) => { if (data) setLiveChildren(data) })
   }, [pathname])
 
-  const [palIdx,         setPalIdx]         = useState(0)
-  const [sepia,          setSepia]          = useState(0)
-  const [brightness,     setBrightness]     = useState(100)
-  const [contrast,       setContrast]       = useState(100)
-  const [darkMode,       setDarkMode]       = useState(false)
-  const [mobileTemaOpen, setMobileTemaOpen] = useState(false)
+  const [palIdx,           setPalIdx]           = useState(0)
+  const [sepia,            setSepia]            = useState(0)
+  const [brightness,       setBrightness]       = useState(100)
+  const [contrast,         setContrast]         = useState(100)
+  const [darkMode,         setDarkMode]         = useState(false)
+  const [mobileTemaOpen,   setMobileTemaOpen]   = useState(false)
+  const [mobileSidebarOpen,setMobileSidebarOpen]= useState(false)
 
   const appRef = useRef<HTMLDivElement>(null)
-  const navRef = useRef<HTMLDivElement>(null)   // ← bottom nav gets same filter
+  const navRef = useRef<HTMLDivElement>(null)   // mobile sidebar — same filter as app-wrap
 
-  // ── Apply CSS filter to app-wrap AND bottom nav ─────────────────────
+  // ── Apply CSS filter ────────────────────────────────────────────────
   useEffect(() => {
     const el  = appRef.current
     const nav = navRef.current
     if (!el) return
     const { hue, sat } = PALETTES[palIdx]
-
     let filterStr: string
     if (darkMode) {
-      // invert(1)+hue-rotate(180°) trick:
-      // cream bg → deep dark; green accents survive hue flip; text contrast ✓
-      // brightness(0.90) keeps darks rich but NOT pitch-black → sophisticated
-      // saturate(0.95) slightly desaturated = more refined dark palette
       const darkHue = (180 + hue) % 360
       filterStr = `invert(1) hue-rotate(${darkHue}deg) saturate(${(sat * 0.95).toFixed(2)}) brightness(0.90) contrast(1.06)`
     } else {
       filterStr = `hue-rotate(${hue}deg) saturate(${sat}) sepia(${sepia}%) brightness(${brightness}%) contrast(${contrast}%)`
     }
-
     el.style.filter = filterStr
-    // Apply same filter to bottom nav so it follows palette/dark mode
     if (nav) nav.style.filter = filterStr
   }, [palIdx, sepia, brightness, contrast, darkMode])
+
+  // Close sidebar on navigation
+  useEffect(() => { setMobileSidebarOpen(false) }, [pathname])
 
   async function handleLogout() {
     await createClient().auth.signOut()
@@ -102,7 +98,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
     return pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
   }
 
-  // ── Theme-aware panel colours (outside app-wrap, manual dark styles) ─
   const panelBg = darkMode
     ? `linear-gradient(175deg,#111C12 0%,#0C1510 100%)`
     : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),linear-gradient(175deg,#F2EAD8 0%,#E8DEC8 100%)`
@@ -110,7 +105,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
   const panelMuted = darkMode ? 'rgba(200,222,201,0.50)' : 'rgba(26,43,28,0.55)'
   const panelBorder= darkMode ? 'rgba(80,130,84,0.22)' : 'rgba(61,102,65,0.22)'
 
-  // ── NavItem ──────────────────────────────────────────────────────────
+  // ── Desktop NavItem ──────────────────────────────────────────────────
   function NavItem({ href, label, icon: Icon, badge }: {
     href: string; label: string; icon: React.ElementType; badge?: number
   }) {
@@ -119,13 +114,11 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       <Link href={href}
         className={`flex items-center gap-3 px-3 py-[11px] rounded-[13px] text-[15px] font-medium transition-all duration-150 relative mb-[3px] ${active ? 'nav-active' : 'hover:bg-black/[0.04]'}`}
         style={active ? { color:'#2C4A2E', fontWeight:700 } : { color:'rgba(26,43,28,0.50)' }}>
-
         {active && (
           <div className="absolute pointer-events-none"
             style={{ left:-12, top:'50%', transform:'translateY(-50%)', width:4, height:22,
               borderRadius:'0 4px 4px 0', background:'linear-gradient(180deg,#5A8C5E,#2C4A2E)' }} />
         )}
-
         <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-none"
           style={active
             ? { background:'rgba(61,102,65,0.13)', color:'#2C4A2E',
@@ -134,15 +127,37 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
           }>
           <Icon size={16} strokeWidth={active ? 2.5 : 1.8} />
         </div>
-
         <span className="flex-1 leading-none">{label}</span>
-
         {badge !== undefined && badge > 0 && (
           <div className="text-[10.5px] font-extrabold min-w-[20px] h-5 rounded-[7px] flex items-center justify-center px-[5px]"
             style={{ background:'#2C4A2E', color:'#D4E8D5', boxShadow:'0 2px 6px rgba(44,74,46,0.20)' }}>
             {badge}
           </div>
         )}
+      </Link>
+    )
+  }
+
+  // ── Mobile sidebar NavItem — same visual as old bottom nav, now vertical ──
+  function MobileNavItem({ href, icon: Icon, label, amber }: {
+    href: string; icon: React.ElementType; label: string; amber?: boolean
+  }) {
+    const active = isActive(href)
+    const color = amber
+      ? (active ? '#E5B87A'   : 'rgba(196,154,108,0.78)')
+      : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.42)')
+    return (
+      <Link href={href} onClick={() => setMobileSidebarOpen(false)}
+        style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          gap:3, width:58, height:46, position:'relative', textDecoration:'none', flexShrink:0 }}>
+        {active && (
+          <span style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)',
+            width:3, height:22, borderRadius:'0 3px 3px 0',
+            background:'linear-gradient(180deg,#C49A6C,#E5B87A)' }} />
+        )}
+        <Icon size={18} strokeWidth={active ? 2.5 : 1.8} color={color} />
+        <span style={{ fontSize:8, fontWeight:600, lineHeight:1.2, letterSpacing:'0.01em',
+          textAlign:'center', color, maxWidth:52 }}>{label}</span>
       </Link>
     )
   }
@@ -155,20 +170,18 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
   return (
     <div className="min-h-screen relative">
 
-      {/* ══ APP WRAP — receives CSS filter for theming ══ */}
+      {/* ══ APP WRAP ══ */}
       <div ref={appRef} className="app-wrap flex min-h-screen">
 
-        {/* ══ SIDEBAR (desktop) ══ */}
+        {/* ══ SIDEBAR (desktop only) ══ */}
         <aside className="hidden md:flex flex-col w-[256px] flex-shrink-0 fixed z-40"
           style={{
-            height: '100vh', top: 0, left: 0, overflow: 'hidden',
-            // Explicit backgroundColor ensures the sidebar fills to 100vh
-            // even if backgroundImage doesn't cover every pixel
-            backgroundColor: '#EAE1CE',
-            backgroundImage: sidebarBg,
-            backgroundSize: '200px 200px, 100% 100%',
-            borderRight: '1px solid rgba(61,102,65,0.22)',
-            boxShadow: '4px 0 24px rgba(44,74,46,0.07)',
+            height:'100vh', top:0, left:0, overflow:'hidden',
+            backgroundColor:'#EAE1CE',
+            backgroundImage:sidebarBg,
+            backgroundSize:'200px 200px, 100% 100%',
+            borderRight:'1px solid rgba(61,102,65,0.22)',
+            boxShadow:'4px 0 24px rgba(44,74,46,0.07)',
           }}>
 
           <div className="absolute pointer-events-none"
@@ -276,34 +289,45 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
 
         </aside>
 
-        {/* ══ MAIN ══
-            main-container: on mobile → height:100svh + overflow-y:auto
-            so flex children (calendar page) get a bounded height.
-            paddingBottom reserves space above fixed bottom nav.        ══ */}
+        {/* ══ MAIN ══ */}
         <main className="flex-1 md:ml-[256px] musgo-bg relative z-[1] flex flex-col main-container"
-          style={{ paddingBottom: 'calc(58px + env(safe-area-inset-bottom, 0px))' }}>
+          style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
 
-          {/* Mobile topbar */}
-          <div className="md:hidden flex items-center justify-between px-4 py-2.5 sticky top-0 z-30 flex-shrink-0"
-            style={{ background:'rgba(248,243,234,0.94)', backdropFilter:'blur(18px)', borderBottom:'1px solid rgba(61,102,65,0.12)', minHeight: 56 }}>
-            <div className="flex items-center gap-2.5">
-              {/* Logo icon */}
-              <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center flex-none"
-                style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow:'0 3px 10px rgba(44,74,46,0.25)' }}>
-                <Leaf size={16} color="#D4E8D5" />
+          {/* ── Mobile topbar: [hambúrguer] [logo] [IA] ── */}
+          <div className="md:hidden flex items-center justify-between px-3 sticky top-0 z-30 flex-shrink-0"
+            style={{ background:'rgba(248,243,234,0.94)', backdropFilter:'blur(18px)',
+              borderBottom:'1px solid rgba(61,102,65,0.12)', height:56 }}>
+
+            {/* Hambúrguer */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Abrir menu"
+              style={{ width:36, height:36, background:'rgba(61,102,65,0.10)', borderRadius:10,
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
+                border:'none', cursor:'pointer', flexShrink:0 }}>
+              <span style={{ width:15, height:1.8, background:'#2C4A2E', borderRadius:2, display:'block' }} />
+              <span style={{ width:15, height:1.8, background:'#2C4A2E', borderRadius:2, display:'block' }} />
+              <span style={{ width:15, height:1.8, background:'#2C4A2E', borderRadius:2, display:'block' }} />
+            </button>
+
+            {/* Logo + título 2 linhas */}
+            <div className="flex items-center gap-2">
+              <div className="w-[32px] h-[32px] rounded-[10px] flex items-center justify-center flex-none"
+                style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow:'0 3px 10px rgba(44,74,46,0.28)' }}>
+                <Leaf size={15} color="#D4E8D5" />
               </div>
-              {/* App name — 2 lines */}
               <div style={{ fontFamily:'var(--font-lora)', fontWeight:700, color:'#1A2B1C', lineHeight:1.15 }}>
                 <div style={{ fontSize:13 }}>Família em</div>
                 <div style={{ fontSize:13 }}>Foco</div>
               </div>
             </div>
-            {/* "Captura por IA" pill */}
+
+            {/* Captura IA */}
             <Link href="/ia">
-              <div className="flex items-center gap-2 rounded-[14px] px-3.5"
-                style={{ height:38, background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 4px 14px rgba(44,74,46,0.32)' }}>
-                <Sparkles size={15} color="#D4E8D5" />
-                <span style={{ fontSize:12.5, fontWeight:700, color:'#D4E8D5', letterSpacing:'-0.01em', whiteSpace:'nowrap' }}>Captura por IA</span>
+              <div className="flex items-center gap-1.5 rounded-[13px] px-3"
+                style={{ height:36, background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 3px 12px rgba(44,74,46,0.30)' }}>
+                <Sparkles size={13} color="#D4E8D5" />
+                <span style={{ fontSize:12, fontWeight:700, color:'#D4E8D5', whiteSpace:'nowrap' }}>Captura IA</span>
               </div>
             </Link>
           </div>
@@ -314,28 +338,76 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       </div>{/* end app-wrap */}
 
       {/* ══════════════════════════════════════════════════════════════
-          Everything below is a SIBLING of app-wrap.
-          CSS filter on app-wrap does NOT affect these elements.
-          We apply the same filter manually via navRef.
+          Siblings of app-wrap — CSS filter applied manually via refs
           ═══════════════════════════════════════════════════════════ */}
 
+      {/* ── Mobile sidebar overlay ── */}
+      <div
+        className="md:hidden fixed inset-0 z-[70]"
+        onClick={() => setMobileSidebarOpen(false)}
+        style={{
+          background:'rgba(10,20,12,0.50)',
+          opacity: mobileSidebarOpen ? 1 : 0,
+          pointerEvents: mobileSidebarOpen ? 'auto' : 'none',
+          transition:'opacity 0.22s ease',
+        }}
+      />
+
+      {/* ── Mobile sidebar — 58px, same visual as old bottom bar, now vertical ── */}
+      <div
+        ref={navRef}
+        className="md:hidden fixed top-0 left-0 bottom-0 z-[75]"
+        style={{
+          width:58,
+          background:'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
+          borderRight:'1px solid rgba(91,143,94,0.14)',
+          boxShadow:'4px 0 20px rgba(10,20,12,0.30)',
+          transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-58px)',
+          transition:'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+          display:'flex',
+          flexDirection:'column',
+          paddingTop:'env(safe-area-inset-top, 0px)',
+          paddingBottom:'env(safe-area-inset-bottom, 0px)',
+        }}>
+
+        {/* Main nav items */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:0 }}>
+          <MobileNavItem href="/dashboard"  icon={LayoutDashboard} label="Início"     />
+          <MobileNavItem href="/escola"     icon={BookOpen}        label="Escola"     />
+          <MobileNavItem href="/atividades" icon={Trophy}          label="Atividades" />
+          <MobileNavItem href="/saude"      icon={HeartPulse}      label="Saúde"      />
+          <MobileNavItem href="/calendario" icon={CalendarDays}    label="Agenda"     />
+          <MobileNavItem href="/logistica"  icon={Car}             label="Logística"  />
+          <MobileNavItem href="/vault"      icon={FolderLock}      label="Docs"       />
+        </div>
+
+        {/* Divider */}
+        <div style={{ height:0.5, background:'rgba(91,143,94,0.22)', margin:'4px 10px' }} />
+
+        {/* Bottom items */}
+        <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"       />
+          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Convide parceiro(a)" amber />
+        </div>
+
+      </div>
 
       {/* ── Mobile TEMA floating button ── */}
       <button
         className="mobile-tema-btn fixed z-[55]"
         onClick={() => setMobileTemaOpen(true)}
         style={{
-          bottom: 68, right: 16,
-          width: 44, height: 44, borderRadius: '50%',
+          bottom:20, right:16,
+          width:44, height:44, borderRadius:'50%',
           background: darkMode
             ? 'rgba(80,130,84,0.28)'
             : 'linear-gradient(140deg,#2C4A2E,#1E3320)',
-          backdropFilter: 'blur(12px)',
+          backdropFilter:'blur(12px)',
           boxShadow: darkMode
             ? '0 4px 16px rgba(0,0,0,0.40), 0 0 0 1px rgba(90,140,94,0.30)'
             : '0 4px 16px rgba(44,74,46,0.35)',
           border: darkMode ? '1.5px solid rgba(90,140,94,0.35)' : '1.5px solid rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display:'flex', alignItems:'center', justifyContent:'center',
         }}>
         <SlidersHorizontal size={18} color={darkMode ? '#A8D4AB' : '#D4E8D5'} />
       </button>
@@ -348,26 +420,25 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
             onClick={() => setMobileTemaOpen(false)} />
           <div className="md:hidden fixed left-0 right-0 z-[90] animate-slide-up"
             style={{
-              bottom: 58,
-              borderRadius: '20px 20px 0 0',
-              background: panelBg,
+              bottom:0,
+              borderRadius:'20px 20px 0 0',
+              background:panelBg,
               backgroundSize: darkMode ? 'auto' : '200px 200px, 100% 100%',
-              border: `1px solid ${panelBorder}`,
+              border:`1px solid ${panelBorder}`,
               boxShadow: darkMode
                 ? '0 -8px 32px rgba(0,0,0,0.50)'
                 : '0 -8px 32px rgba(44,74,46,0.20)',
-              padding: '16px 24px 28px',
+              padding:'16px 24px 28px',
             }}>
             <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}>
               <div style={{ width:36, height:4, borderRadius:2, background: darkMode ? 'rgba(140,200,145,0.30)' : 'rgba(61,102,65,0.28)' }} />
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20,
-              fontFamily:'var(--font-lora)', fontSize:16, fontWeight:600, color: panelText }}>
+              fontFamily:'var(--font-lora)', fontSize:16, fontWeight:600, color:panelText }}>
               <Palette size={15} color={darkMode ? '#8CC891' : '#3D6641'} /> Personalizar Tema
             </div>
-            {/* Palettes */}
             <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:11, fontWeight:700, marginBottom:10, color: panelMuted }}>Paleta de cor</div>
+              <div style={{ fontSize:11, fontWeight:700, marginBottom:10, color:panelMuted }}>Paleta de cor</div>
               <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
                 {PALETTES.map((p, i) => (
                   <button key={p.name} title={p.name} onClick={() => setPalIdx(i)}
@@ -380,11 +451,10 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                     }} />
                 ))}
               </div>
-              <div style={{ fontSize:11, fontStyle:'italic', marginTop:8, color: panelMuted }}>{PALETTES[palIdx].name}</div>
+              <div style={{ fontSize:11, fontStyle:'italic', marginTop:8, color:panelMuted }}>{PALETTES[palIdx].name}</div>
             </div>
-            {/* Dark mode toggle */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:12, borderTop:`1px solid ${panelBorder}` }}>
-              <div style={{ fontSize:14, fontWeight:700, display:'flex', alignItems:'center', gap:8, color: panelMuted }}>
+              <div style={{ fontSize:14, fontWeight:700, display:'flex', alignItems:'center', gap:8, color:panelMuted }}>
                 {darkMode ? <Moon size={16}/> : <Sun size={16}/>}
                 {darkMode ? 'Modo noturno' : 'Modo claro'}
               </div>
@@ -397,16 +467,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                   left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
               </button>
             </div>
-            {/* Account actions */}
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:16 }}>
-              <Link href="/children" onClick={() => setMobileTemaOpen(false)}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
-                  padding:'10px 14px', borderRadius:12, border:`1px solid ${panelBorder}`,
-                  background: darkMode ? 'rgba(90,140,94,0.12)' : 'rgba(61,102,65,0.07)', cursor:'pointer',
-                  fontSize:13, fontWeight:700, color: darkMode ? '#A8D4AB' : '#3D6641' }}>
-                  <Users size={15}/> Meus Filhos
-                </div>
-              </Link>
               <button onClick={handleLogout}
                 style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
                   padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
@@ -418,52 +479,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
           </div>
         </>
       )}
-
-      {/* ══ BOTTOM NAV ══
-          • Outside app-wrap so position:fixed works correctly
-          • navRef receives the same CSS filter as app-wrap → follows palette
-          • Translucent glass background + backdrop-blur
-          ══════════════════════════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40"
-        style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
-        {/* navRef receives the same CSS filter as app-wrap so palette/dark mode affects nav too */}
-        <div ref={navRef} style={{
-          background: 'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
-          borderTop: '1px solid rgba(91,143,94,0.22)',
-          boxShadow: '0 -4px 20px rgba(10,20,12,0.32)',
-        }}>
-          <div style={{ display:'flex', alignItems:'center', height:58 }}>
-            {([
-              { href:'/dashboard',  label:'Início',    icon:LayoutDashboard },
-              { href:'/escola',     label:'Escola',    icon:BookOpen        },
-              { href:'/atividades', label:'Atividades',icon:Trophy          },
-              { href:'/saude',      label:'Saúde',     icon:HeartPulse      },
-              { href:'/children',   label:'Filhos',    icon:Users           },
-              { href:'/calendario', label:'Agenda',    icon:CalendarDays    },
-            ] as const).map(({ href, label, icon: Icon }) => {
-              const active = isActive(href)
-              return (
-                <Link key={href} href={href}
-                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', position:'relative', padding:'8px 0 6px' }}>
-                  <span style={{ color: active ? '#D4E8D5' : 'rgba(180,220,185,0.42)', transition:'color .15s' }}>
-                    <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
-                  </span>
-                  <span style={{ fontSize:'8.5px', fontWeight:600, lineHeight:1, marginTop:3, letterSpacing:'0.01em',
-                    color: active ? '#D4E8D5' : 'rgba(180,220,185,0.38)' }}>
-                    {label}
-                  </span>
-                  {active && (
-                    <span style={{ position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)',
-                      width:22, height:3, borderRadius:'3px 3px 0 0',
-                      background:'linear-gradient(90deg,#C49A6C,#E5B87A)' }} />
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </nav>
-
 
     </div>
   )
