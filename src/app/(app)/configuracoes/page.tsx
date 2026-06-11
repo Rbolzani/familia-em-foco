@@ -58,12 +58,23 @@ export default async function ConfiguracoesPage() {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
+  // Preferências de notificação (WhatsApp)
+  const { data: waSettings } = await supabase
+    .from('notification_settings')
+    .select('whatsapp_number, daily_summary_enabled')
+    .eq('user_id', user.id)
+    .single()
+
   return (
     <ConfiguracoesClient
       userId={user.id}
       userEmail={user.email ?? ''}
       familyId={familyId}
       isOwner={isOwner}
+      whatsapp={{
+        number: waSettings?.whatsapp_number ?? '',
+        enabled: waSettings?.daily_summary_enabled ?? false,
+      }}
       members={members}
       pendingInvite={pendingInvite ? {
         token: pendingInvite.token,
