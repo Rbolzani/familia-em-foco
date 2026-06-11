@@ -24,18 +24,31 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
 
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME
 
-  const payload = templateName
-    ? {
-        messaging_product: 'whatsapp',
-        to,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: 'pt_BR' },
-          components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }],
-        },
-      }
-    : { messaging_product: 'whatsapp', to, type: 'text', text: { body } }
+  // hello_world: template pré-aprovado da Meta, sem parâmetros, idioma en_US
+  // Outros templates: enviam o resumo como parâmetro body em pt_BR
+  // Sem template: texto livre (só funciona dentro da janela de 24h)
+  let payload: Record<string, unknown>
+  if (templateName === 'hello_world') {
+    payload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: { name: 'hello_world', language: { code: 'en_US' } },
+    }
+  } else if (templateName) {
+    payload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: 'pt_BR' },
+        components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }],
+      },
+    }
+  } else {
+    payload = { messaging_product: 'whatsapp', to, type: 'text', text: { body } }
+  }
 
   const res = await fetch(`${GRAPH_URL}/${phoneId}/messages`, {
     method: 'POST',
@@ -43,11 +56,12 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
     body: JSON.stringify(payload),
   })
 
+  const resText = await res.text()
   if (!res.ok) {
-    const err = await res.text()
-    console.error('WhatsApp send error:', err)
-    return { ok: false, error: `HTTP ${res.status}` }
+    console.error('WhatsApp send error:', res.status, resText)
+    return { ok: false, error: `HTTP ${res.status}: ${resText}` }
   }
+  console.log('WhatsApp send ok:', resText)
   return { ok: true }
 }
 
