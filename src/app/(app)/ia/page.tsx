@@ -196,29 +196,11 @@ export default function IAPage() {
           Inteligência Artificial
         </p>
         <h1 style={{ fontFamily:'var(--font-lora)', fontSize:34, fontWeight:700, color:'#1A2B1C', letterSpacing:'-0.02em', lineHeight:1.15 }}>
-          Capturar com IA
+          Captura com IA
         </h1>
         <p className="text-sm mt-1 italic" style={{ color:'rgba(26,43,28,0.50)' }}>
           Envie uma foto ou texto — a IA extrai as atividades automaticamente.
         </p>
-      </div>
-
-      {/* ── AI Banner ── */}
-      <div className="animate-fade-up overflow-hidden relative"
-        style={{ borderRadius:'20px 13px 18px 15px', padding:'18px 20px', background:'linear-gradient(140deg,#2C4A2E 0%,#1E3320 100%)', border:'1px solid rgba(44,74,46,0.35)', boxShadow:'0 8px 28px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-        <div className="absolute pointer-events-none" style={{ top:-12, right:-8, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
-        <div className="flex items-center gap-4 relative">
-          <div className="w-12 h-12 rounded-[15px] flex items-center justify-center flex-none"
-            style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.18)', boxShadow:'0 4px 14px rgba(0,0,0,0.20)' }}>
-            <Sparkles size={22} color="#D4E8D5" />
-          </div>
-          <div>
-            <div style={{ fontFamily:'var(--font-lora)', fontSize:16, fontWeight:700, color:'#D4E8D5' }}>Claude IA</div>
-            <div style={{ fontSize:'12px', color:'rgba(212,232,213,0.60)', fontStyle:'italic' }}>
-              Foto da agenda escolar, anotações à mão, print ou texto livre
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Child Selector (multi-select) ── */}
