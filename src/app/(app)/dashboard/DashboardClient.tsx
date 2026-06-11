@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import {
   BookOpen, HeartPulse, Trophy, Sparkles,
-  Bell, SunMedium, MapPin,
+  SunMedium, MapPin,
   ChevronLeft, ChevronRight,
   CalendarCheck, CalendarRange, Stethoscope,
   StickyNote, Plus, Trash2, Check,
@@ -496,10 +496,6 @@ export default function DashboardClient({ userName, children, todayActivities, u
           </p>
         </div>
         <div className="topbar-actions flex gap-[10px] pt-1 flex-shrink-0">
-          <button className="flex items-center gap-2 px-5 py-[11px] rounded-full text-[14px] font-bold transition-all"
-            style={{ background:'rgba(255,255,255,0.70)', color:'rgba(26,43,28,0.58)', border:'1px solid rgba(61,102,65,0.22)', boxShadow:'0 2px 8px rgba(44,74,46,0.10),0 -1px 0 rgba(255,255,255,0.70) inset' }}>
-            <Bell size={15}/> Alertas
-          </button>
           <Link href="/ia">
             <button className="flex items-center gap-2 px-5 py-[11px] rounded-full text-[14px] font-bold transition-all hover:-translate-y-[2px]"
               style={{ background:'linear-gradient(140deg,#3D6641 0%,#2C4A2E 100%)', color:'#D4E8D5', boxShadow:'0 4px 18px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
