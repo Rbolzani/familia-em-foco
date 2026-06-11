@@ -323,16 +323,6 @@ export default function LogisticaClient({ activities: initial, children, familyM
             </div>
           )}
 
-          {/* Missing disclaimer — only counter, no listing */}
-          {!filterMissing && missing.length > 0 && (
-            <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-2xl animate-fade-up"
-              style={{ background: 'rgba(254,243,199,0.80)', border: '1.5px solid rgba(245,158,11,0.35)' }}>
-              <AlertTriangle size={14} color="#D97706" />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>
-                {missing.length} atividade{missing.length !== 1 ? 's' : ''} sem responsável definido
-              </span>
-            </div>
-          )}
         </div>
       )}
 
