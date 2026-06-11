@@ -219,9 +219,9 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Principal
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/dashboard"  label="Início"        icon={LayoutDashboard} />
-              <NavItem href="/calendario" label="Agenda"        icon={CalendarDays} />
-              <NavItem href="/ia"         label="Assistente IA" icon={Sparkles} />
+              <NavItem href="/dashboard"  label="Início"    icon={LayoutDashboard} />
+              <NavItem href="/calendario" label="Agenda"    icon={CalendarDays} />
+              <NavItem href="/logistica"  label="Logística" icon={Car} />
             </div>
             <div>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
@@ -232,7 +232,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
               <NavItem href="/escola"     label="Escola"     icon={BookOpen} />
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
-              <NavItem href="/logistica"  label="Logística"  icon={Car} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
             </div>
           </nav>
@@ -293,16 +292,23 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Configurações
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/configuracoes" label="Convide Parceiro(a)" icon={UserPlus} />
+              <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} />
               <NavItem href="/alertas"       label="Alertas"             icon={Bell} />
             </div>
 
-            {/* Sair */}
-            <div style={{ padding:'2px 12px 10px' }}>
+            {/* Sair + Tweaks */}
+            <div style={{ padding:'2px 12px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <button onClick={handleLogout}
-                className="w-full transition-all hover:bg-black/[0.04] rounded-[8px]"
-                style={{ fontSize:11, fontWeight:500, color:'rgba(26,43,28,0.28)', padding:'6px 0' }}>
+                className="transition-all hover:bg-black/[0.04] rounded-[8px]"
+                style={{ fontSize:11, fontWeight:500, color:'rgba(26,43,28,0.28)', padding:'6px 10px', background:'none', border:'none', cursor:'pointer' }}>
                 Sair da conta
+              </button>
+              <button onClick={() => setDesktopTweaksOpen(true)}
+                title="Personalizar tema"
+                className="transition-all hover:bg-black/[0.06] rounded-[9px]"
+                style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center',
+                  background:'rgba(61,102,65,0.08)', border:'none', cursor:'pointer', flexShrink:0 }}>
+                <Palette size={14} color="rgba(61,102,65,0.55)" />
               </button>
             </div>
           </div>
@@ -410,7 +416,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
           <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        />
-          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Convide parceiro(a)" amber />
+          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso" amber />
           <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"            amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
@@ -427,37 +433,16 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       {/* ── Toasts globais (fora do app-wrap: cores fiéis em qualquer tema) ── */}
       <Toaster />
 
-      {/* ── Desktop TWEAKS button (md+ only) ── */}
-      <button
-        className="hidden md:flex fixed z-[55] items-center justify-center"
-        onClick={() => setDesktopTweaksOpen(true)}
-        title="Personalizar tema"
-        style={{
-          bottom:24, right:24,
-          width:44, height:44, borderRadius:'50%',
-          background: darkMode
-            ? 'rgba(80,130,84,0.28)'
-            : 'linear-gradient(140deg,#2C4A2E,#1E3320)',
-          backdropFilter:'blur(12px)',
-          boxShadow: darkMode
-            ? '0 4px 16px rgba(0,0,0,0.40), 0 0 0 1px rgba(90,140,94,0.30)'
-            : '0 4px 16px rgba(44,74,46,0.35)',
-          border: darkMode ? '1.5px solid rgba(90,140,94,0.35)' : '1.5px solid rgba(255,255,255,0.12)',
-          cursor:'pointer',
-        }}>
-        <Palette size={17} color={darkMode ? '#A8D4AB' : '#D4E8D5'} />
-      </button>
-
-      {/* ── Desktop TWEAKS overlay ── */}
+      {/* ── Desktop TWEAKS overlay (conditional render — no Tailwind responsive needed) ── */}
       {desktopTweaksOpen && (
-        <div className="hidden md:block fixed inset-0 z-[58]"
-          style={{ background:'rgba(10,20,12,0.30)', backdropFilter:'blur(2px)' }}
+        <div style={{ position:'fixed', inset:0, zIndex:58, background:'rgba(10,20,12,0.30)', backdropFilter:'blur(2px)' }}
           onClick={() => setDesktopTweaksOpen(false)} />
       )}
 
-      {/* ── Desktop TWEAKS panel (slides from right) ── */}
-      <div className="hidden md:flex fixed z-[59] top-0 right-0 bottom-0 flex-col"
-        style={{
+      {/* ── Desktop TWEAKS panel (always in DOM, slides in/out via transform) ── */}
+      <div style={{
+          position:'fixed', zIndex:59, top:0, right:0, bottom:0,
+          display:'flex', flexDirection:'column',
           width:300,
           transform: desktopTweaksOpen ? 'translateX(0)' : 'translateX(100%)',
           transition:'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
