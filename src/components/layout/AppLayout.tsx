@@ -214,7 +214,6 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Módulos
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/children"       label="Meus Filhos"    icon={Users} />
               <NavItem href="/escola"         label="Escola"         icon={BookOpen} />
               <NavItem href="/saude"          label="Saúde"          icon={HeartPulse} />
               <NavItem href="/atividades"     label="Atividades"     icon={Trophy} />
@@ -224,38 +223,49 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
             </div>
           </nav>
 
-          {/* Children pinned at bottom */}
-          <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:240 }}>
-            {liveChildren.length > 0 && (
-              <>
-                <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase',
-                  padding:'0 8px 9px', color:'rgba(26,43,28,0.36)' }}>Filhos</div>
-                {liveChildren.map(child => {
-                  const age = calcAge(child.birth_date)
-                  return (
-                    <Link key={child.id} href="/children">
-                      <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
-                        style={{ padding:'8px 12px', borderRadius:13, marginBottom:5,
-                          background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
-                          backgroundSize:'200px 200px, 100% 100%',
-                          border:'1px solid rgba(61,102,65,0.18)',
-                          boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
-                        }}>
-                        <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={32} radius={10} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
-                          {(age !== null || child.school_name) && (
-                            <div style={{ fontSize:10.5, fontStyle:'italic', color:'rgba(26,43,28,0.40)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                              {age !== null ? `${age} anos` : ''}{age !== null && child.school_name ? ' · ' : ''}{child.school_name ?? ''}
-                            </div>
-                          )}
-                        </div>
-                        <ChevronRight size={12} color="rgba(26,43,28,0.28)" />
+          {/* Children pinned at bottom — always visible */}
+          <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:260 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 9px' }}>
+              <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
+              <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
+                + Gerenciar
+              </Link>
+            </div>
+            {liveChildren.length === 0 ? (
+              <Link href="/children">
+                <div className="flex items-center gap-2.5 transition-all hover:opacity-80"
+                  style={{ padding:'9px 12px', borderRadius:12, border:'1.5px dashed rgba(61,102,65,0.28)',
+                    color:'rgba(26,43,28,0.40)', fontSize:12.5, fontWeight:600 }}>
+                  <Users size={14} color="rgba(61,102,65,0.55)" />
+                  Cadastrar primeiro filho
+                </div>
+              </Link>
+            ) : (
+              liveChildren.map(child => {
+                const age = calcAge(child.birth_date)
+                return (
+                  <Link key={child.id} href="/children">
+                    <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
+                      style={{ padding:'8px 12px', borderRadius:13, marginBottom:5,
+                        background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
+                        backgroundSize:'200px 200px, 100% 100%',
+                        border:'1px solid rgba(61,102,65,0.18)',
+                        boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
+                      }}>
+                      <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={32} radius={10} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
+                        {(age !== null || child.school_name) && (
+                          <div style={{ fontSize:10.5, fontStyle:'italic', color:'rgba(26,43,28,0.40)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                            {age !== null ? `${age} anos` : ''}{age !== null && child.school_name ? ' · ' : ''}{child.school_name ?? ''}
+                          </div>
+                        )}
                       </div>
-                    </Link>
-                  )
-                })}
-              </>
+                      <ChevronRight size={12} color="rgba(26,43,28,0.28)" />
+                    </div>
+                  </Link>
+                )
+              })
             )}
             <button onClick={handleLogout}
               className="w-full transition-all hover:bg-black/[0.04] rounded-[8px]"
