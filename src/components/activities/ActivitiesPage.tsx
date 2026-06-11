@@ -1,14 +1,20 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, ActivityCategory, Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { DeadlineBadge } from '@/components/ui/Badge'
-import { Plus, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
+import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+
+interface FamilyMemberInfo {
+  user_id: string
+  display_name: string | null
+  role: string
+}
 
 interface Props {
   category: ActivityCategory
@@ -19,6 +25,8 @@ interface Props {
   // Pre-fetched from server → no client-side loading waterfall
   initialActivities?: Activity[]
   initialChildren?: Child[]
+  familyMembers?: FamilyMemberInfo[]
+  currentUserId?: string
 }
 
 const ALERT_OPTIONS = [
@@ -58,7 +66,7 @@ const emptyForm = {
   child_id: '', title: '', description: '', date: '', time: '', alert_days: 3, location: '',
 }
 
-export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren }: Props) {
+export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren, familyMembers = [], currentUserId }: Props) {
   const supabase = createClient()
   // If server pre-fetched data, use it immediately (no loading flash)
   const [activities, setActivities] = useState<Activity[]>(initialActivities ?? [])
@@ -203,6 +211,8 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
               index={gi}
               onEdit={(a) => openEdit(a)}
               onDelete={(id) => handleDelete(id)}
+              familyMembers={familyMembers}
+              currentUserId={currentUserId}
             />
           ))}
         </div>
@@ -324,20 +334,109 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   )
 }
 
-type ActivityWithChild = Activity & { child?: { name: string; avatar_color: string } }
+type ActivityWithChild = Activity & {
+  child?: { name: string; avatar_color: string }
+  takes_user_id?: string | null
+  picks_user_id?: string | null
+}
+
+function LogisticsChip({
+  type,
+  assignedUserId,
+  currentUserId,
+  familyMembers,
+  activityId,
+  onUpdated,
+}: {
+  type: 'takes' | 'picks'
+  assignedUserId: string | null | undefined
+  currentUserId: string | undefined
+  familyMembers: { user_id: string; display_name: string | null }[]
+  activityId: string
+  onUpdated: (field: 'takes_user_id' | 'picks_user_id', value: string | null) => void
+}) {
+  const supabase = createClient()
+  const [saving, setSaving] = useState(false)
+
+  const field: 'takes_user_id' | 'picks_user_id' = type === 'takes' ? 'takes_user_id' : 'picks_user_id'
+  const isMe = assignedUserId === currentUserId
+  const isPartner = assignedUserId && assignedUserId !== currentUserId
+  const assignedMember = familyMembers.find(m => m.user_id === assignedUserId)
+  const assignedName = isMe ? 'Você' : (assignedMember?.display_name ?? 'Parceiro(a)')
+
+  async function handleClick() {
+    if (saving) return
+    // If partner assigned → confirm before reatribuir
+    if (isPartner) {
+      const ok = confirm(`${assignedName} já assumiu essa função. Deseja reatribuir para você?`)
+      if (!ok) return
+    }
+    setSaving(true)
+    const newValue = assignedUserId === currentUserId ? null : (currentUserId ?? null)
+    await supabase.from('activities').update({ [field]: newValue }).eq('id', activityId)
+    onUpdated(field, newValue)
+    setSaving(false)
+  }
+
+  const icon = type === 'takes' ? <Car size={11} /> : <Home size={11} />
+  const label = type === 'takes' ? 'Leva' : 'Busca'
+
+  let chipStyle: React.CSSProperties
+  if (!assignedUserId) {
+    chipStyle = {
+      background: 'rgba(61,102,65,0.05)',
+      border: '1.5px dashed rgba(61,102,65,0.25)',
+      color: 'rgba(26,43,28,0.40)',
+    }
+  } else if (isMe) {
+    chipStyle = {
+      background: 'rgba(61,102,65,0.10)',
+      border: '1.5px solid rgba(61,102,65,0.30)',
+      color: '#2D6A35',
+    }
+  } else {
+    chipStyle = {
+      background: 'rgba(99,102,241,0.07)',
+      border: '1.5px solid rgba(99,102,241,0.25)',
+      color: '#4338CA',
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={saving}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all hover:brightness-95 active:scale-95 disabled:opacity-50 flex-1"
+      style={{ fontSize: 11, fontWeight: 600, cursor: 'pointer', ...chipStyle }}>
+      {icon}
+      <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, marginRight: 2 }}>{label.toUpperCase()}</span>
+      {assignedUserId ? assignedName : 'Definir'}
+    </button>
+  )
+}
 
 function ActivityCard({
-  group, index, onEdit, onDelete,
+  group, index, onEdit, onDelete, familyMembers = [], currentUserId,
 }: {
   group: ActivityWithChild[]
   accent: string
   index: number
   onEdit: (a: ActivityWithChild) => void
   onDelete: (id: string) => void
+  familyMembers?: { user_id: string; display_name: string | null; role: string }[]
+  currentUserId?: string
 }) {
-  const first  = group[0]
-  const merged = group.length > 1
+  const [localGroup, setLocalGroup] = useState<ActivityWithChild[]>(group)
+  const first  = localGroup[0]
+  const merged = localGroup.length > 1
   const fmtDate = (d: string | null) => d ? format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : '—'
+
+  // Only show logistics chips for dated activities when family sharing is active
+  const showLogistics = !!first.date && familyMembers.length > 0
+
+  function handleLogisticsUpdate(actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null) {
+    setLocalGroup(prev => prev.map(a => a.id === actId ? { ...a, [field]: value } : a))
+  }
 
   return (
     <div
@@ -351,7 +450,7 @@ function ActivityCard({
             {first.title}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {group.map(a => a.child && (
+            {localGroup.map(a => a.child && (
               <span key={a.id} className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                 style={{ background: a.child.avatar_color }}>
                 {a.child.name}
@@ -376,10 +475,58 @@ function ActivityCard({
             <p className="text-xs mt-1 line-clamp-2" style={{ color: '#C4B5A5' }}>{first.description}</p>
           )}
 
-          {/* Per-child action rows when merged */}
-          {merged && (
+          {/* Logistics chips — one row per activity in group */}
+          {showLogistics && (
+            <div className="mt-2.5 pt-2 space-y-1.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              {localGroup.map(a => (
+                <div key={a.id} className="flex gap-2">
+                  {merged && a.child && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0 self-center"
+                      style={{ background: a.child.avatar_color }}>
+                      {a.child.name}
+                    </span>
+                  )}
+                  <div className="flex gap-1.5 flex-1">
+                    <LogisticsChip
+                      type="takes"
+                      assignedUserId={a.takes_user_id}
+                      currentUserId={currentUserId}
+                      familyMembers={familyMembers}
+                      activityId={a.id}
+                      onUpdated={(field, val) => handleLogisticsUpdate(a.id, field, val)}
+                    />
+                    <LogisticsChip
+                      type="picks"
+                      assignedUserId={a.picks_user_id}
+                      currentUserId={currentUserId}
+                      familyMembers={familyMembers}
+                      activityId={a.id}
+                      onUpdated={(field, val) => handleLogisticsUpdate(a.id, field, val)}
+                    />
+                  </div>
+                  {merged && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => onEdit(a)}
+                        className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: '#EEF4FF', color: '#2563EB' }}>
+                        <Pencil size={11} />
+                      </button>
+                      <button onClick={() => onDelete(a.id)}
+                        className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: '#FFF0EB', color: '#F4522D' }}>
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Per-child action rows when merged and NO logistics */}
+          {merged && !showLogistics && (
             <div className="mt-2.5 space-y-1.5 border-t pt-2" style={{ borderColor:'rgba(0,0,0,0.06)' }}>
-              {group.map(a => (
+              {localGroup.map(a => (
                 <div key={a.id} className="flex items-center gap-2">
                   {a.child && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0"

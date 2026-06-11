@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut,
+  Users, LogOut, Car, Settings,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -214,10 +214,13 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Módulos
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/escola"     label="Escola"     icon={BookOpen} />
-              <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
-              <NavItem href="/atividades" label="Atividades" icon={Trophy} />
-              <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
+              <NavItem href="/children"       label="Meus Filhos"    icon={Users} />
+              <NavItem href="/escola"         label="Escola"         icon={BookOpen} />
+              <NavItem href="/saude"          label="Saúde"          icon={HeartPulse} />
+              <NavItem href="/atividades"     label="Atividades"     icon={Trophy} />
+              <NavItem href="/logistica"      label="Logística"      icon={Car} />
+              <NavItem href="/vault"          label="Documentos"     icon={FolderLock} />
+              <NavItem href="/configuracoes"  label="Configurações"  icon={Settings} />
             </div>
           </nav>
 
@@ -423,9 +426,9 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
             {([
               { href:'/dashboard',  label:'Início',    icon:LayoutDashboard },
               { href:'/escola',     label:'Escola',    icon:BookOpen        },
-              { href:'/atividades', label:'Atividades', icon:Trophy         },
+              { href:'/atividades', label:'Atividades',icon:Trophy          },
               { href:'/saude',      label:'Saúde',     icon:HeartPulse      },
-              { href:'/vault',      label:'Docs',      icon:FolderLock      },
+              { href:'/children',   label:'Filhos',    icon:Users           },
               { href:'/calendario', label:'Agenda',    icon:CalendarDays    },
             ] as const).map(({ href, label, icon: Icon }) => {
               const active = isActive(href)

@@ -27,6 +27,8 @@ export interface Activity {
   location: string | null
   recurrence: string | null
   ai_generated: boolean
+  takes_user_id: string | null
+  picks_user_id: string | null
   created_at: string
   // join
   child?: Child
