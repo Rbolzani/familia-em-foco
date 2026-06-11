@@ -2,7 +2,7 @@
 // e montagem do resumo matinal da família.
 import { createClient as createAdminClient, SupabaseClient } from '@supabase/supabase-js'
 
-const GRAPH_URL = 'https://graph.facebook.com/v21.0'
+const GRAPH_URL = 'https://graph.facebook.com/v25.0'
 
 // ── Cliente admin (service role — ignora RLS; nunca importar em client components) ──
 export function adminClient(): SupabaseClient {
