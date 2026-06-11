@@ -112,20 +112,20 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
     const active = isActive(href)
     return (
       <Link href={href}
-        className={`flex items-center gap-3 px-3 py-[11px] rounded-[13px] text-[15px] font-medium transition-all duration-150 relative mb-[3px] ${active ? 'nav-active' : 'hover:bg-black/[0.04]'}`}
+        className={`flex items-center gap-3 px-3 py-[6px] rounded-[11px] text-[14px] font-medium transition-all duration-150 relative mb-[1px] ${active ? 'nav-active' : 'hover:bg-black/[0.04]'}`}
         style={active ? { color:'#2C4A2E', fontWeight:700 } : { color:'rgba(26,43,28,0.50)' }}>
         {active && (
           <div className="absolute pointer-events-none"
             style={{ left:-12, top:'50%', transform:'translateY(-50%)', width:4, height:22,
               borderRadius:'0 4px 4px 0', background:'linear-gradient(180deg,#5A8C5E,#2C4A2E)' }} />
         )}
-        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-none"
+        <div className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-none"
           style={active
             ? { background:'rgba(61,102,65,0.13)', color:'#2C4A2E',
                 boxShadow:'0 1px 4px rgba(44,74,46,0.15),0 -1px 0 rgba(255,255,255,0.70) inset' }
             : { background:'rgba(61,102,65,0.07)', color:'rgba(26,43,28,0.30)' }
           }>
-          <Icon size={16} strokeWidth={active ? 2.5 : 1.8} />
+          <Icon size={14} strokeWidth={active ? 2.5 : 1.8} />
         </div>
         <span className="flex-1 leading-none">{label}</span>
         {badge !== undefined && badge > 0 && (
@@ -190,30 +190,30 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
               opacity:0.50 }} />
 
           {/* Logo */}
-          <div style={{ flexShrink:0, padding:'28px 20px 24px', borderBottom:'1px solid rgba(61,102,65,0.14)' }}>
-            <div className="flex items-center gap-[14px]">
-              <div className="w-[46px] h-[46px] rounded-[15px] flex items-center justify-center flex-none relative"
+          <div style={{ flexShrink:0, padding:'14px 20px 12px', borderBottom:'1px solid rgba(61,102,65,0.14)' }}>
+            <div className="flex items-center gap-[12px]">
+              <div className="w-[40px] h-[40px] rounded-[13px] flex items-center justify-center flex-none relative"
                 style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)',
-                  boxShadow:'0 6px 20px rgba(44,74,46,0.18),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-                <Leaf size={22} color="#D4E8D5" />
-                <div className="absolute" style={{ top:-3, right:-3, width:12, height:12, borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.85 }} />
+                  boxShadow:'0 4px 14px rgba(44,74,46,0.18),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+                <Leaf size={19} color="#D4E8D5" />
+                <div className="absolute" style={{ top:-3, right:-3, width:11, height:11, borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.85 }} />
               </div>
               <div>
-                <div style={{ fontFamily:'var(--font-lora)', fontSize:17, fontWeight:700, color:'#1A2B1C', letterSpacing:'-0.01em', lineHeight:1.2 }}>
+                <div style={{ fontFamily:'var(--font-lora)', fontSize:16, fontWeight:700, color:'#1A2B1C', letterSpacing:'-0.01em', lineHeight:1.2 }}>
                   Família em Foco
                 </div>
-                <div style={{ fontSize:'11.5px', marginTop:2, fontStyle:'italic', color:'rgba(26,43,28,0.40)' }}>
+                <div style={{ fontSize:'10.5px', marginTop:1, fontStyle:'italic', color:'rgba(26,43,28,0.40)' }}>
                   sua rotina, com leveza
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Nav */}
-          <nav style={{ flex:1, minHeight:0, padding:'20px 12px', overflowY:'auto' }}>
-            <div style={{ marginBottom:26 }}>
+          {/* Nav — compact, no overflow so all items always visible */}
+          <nav style={{ flex:1, minHeight:0, padding:'10px 12px', overflowY:'hidden' }}>
+            <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
-                display:'flex', alignItems:'center', gap:8, padding:'0 10px 10px', color:'rgba(26,43,28,0.36)' }}>
+                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(26,43,28,0.36)' }}>
                 Principal
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
@@ -223,7 +223,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
             </div>
             <div>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
-                display:'flex', alignItems:'center', gap:8, padding:'0 10px 10px', color:'rgba(26,43,28,0.36)' }}>
+                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(26,43,28,0.36)' }}>
                 Módulos
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
@@ -237,8 +237,8 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
           </nav>
 
           {/* Children pinned at bottom — always visible */}
-          <div style={{ flexShrink:0, padding:'12px 12px 16px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:260 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 9px' }}>
+          <div style={{ flexShrink:0, padding:'8px 12px 10px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:220 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 7px' }}>
               <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
               <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
                 + Gerenciar
@@ -259,7 +259,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 return (
                   <Link key={child.id} href="/children">
                     <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
-                      style={{ padding:'8px 12px', borderRadius:13, marginBottom:5,
+                      style={{ padding:'6px 10px', borderRadius:11, marginBottom:4,
                         background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
                         backgroundSize:'200px 200px, 100% 100%',
                         border:'1px solid rgba(61,102,65,0.18)',
