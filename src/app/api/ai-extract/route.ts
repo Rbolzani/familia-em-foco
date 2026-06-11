@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@/lib/supabase/server'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+
+const MAX_FILE_BYTES = 8 * 1024 * 1024 // 8 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+const MAX_TEXT_CHARS = 12_000
 
 const PROMPT = `Você é um assistente que extrai atividades escolares, médicas e extracurriculares de imagens ou textos enviados por pais.
 
@@ -34,12 +39,30 @@ Regras:
 
 export async function POST(req: NextRequest) {
   try {
+    // Endpoint consome a API da Anthropic — exige usuário autenticado
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
     const formData = await req.formData()
     const text = formData.get('text') as string | null
     const file = formData.get('image') as File | null
 
     if (!text && !file) {
       return NextResponse.json({ error: 'Envie texto ou imagem' }, { status: 400 })
+    }
+    if (text && text.length > MAX_TEXT_CHARS) {
+      return NextResponse.json({ error: 'Texto muito longo (máx. 12 mil caracteres)' }, { status: 400 })
+    }
+    if (file) {
+      if (!ALLOWED_TYPES.includes(file.type as typeof ALLOWED_TYPES[number])) {
+        return NextResponse.json({ error: 'Formato de imagem não suportado (use JPG, PNG, GIF ou WebP)' }, { status: 400 })
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        return NextResponse.json({ error: 'Imagem muito grande (máx. 8 MB)' }, { status: 400 })
+      }
     }
 
     let message
@@ -80,8 +103,9 @@ export async function POST(req: NextRequest) {
     const parsed = JSON.parse(jsonStr)
 
     return NextResponse.json(parsed)
-  } catch (e: any) {
+  } catch (e) {
     console.error('AI extract error:', e)
-    return NextResponse.json({ error: e.message || 'Erro ao processar' }, { status: 500 })
+    // Não vazar detalhes internos do erro para o cliente
+    return NextResponse.json({ error: 'Não foi possível processar. Tente novamente.' }, { status: 500 })
   }
 }

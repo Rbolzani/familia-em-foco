@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, ArrowRight, Leaf, CalendarDays, HeartPulse, BookOpen } from 'lucide-react'
@@ -17,6 +17,13 @@ export default function LoginPage() {
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [signupHref, setSignupHref] = useState('/auth/signup')
+
+  // Propaga ?redirect= (ex.: link de convite) para o fluxo de criação de conta
+  useEffect(() => {
+    const search = window.location.search
+    if (search) setSignupHref(`/auth/signup${search}`)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,7 +34,10 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) { setError(`Erro: ${error.message}`); setLoading(false); return }
       if (!data.session) { setError('Sessão não criada. Tente novamente.'); setLoading(false); return }
-      window.location.href = '/dashboard'
+      const params = new URLSearchParams(window.location.search)
+      const redirect = params.get('redirect')
+      const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
+      window.location.href = dest
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(`Falha na conexão: ${msg}`)
@@ -196,7 +206,7 @@ export default function LoginPage() {
 
           <p className="mt-5 text-center text-sm" style={{ color: 'rgba(26,43,28,0.45)' }}>
             Não tem conta?{' '}
-            <Link href="/auth/signup" className="font-bold transition-opacity hover:opacity-70"
+            <Link href={signupHref} className="font-bold transition-opacity hover:opacity-70"
               style={{ color: '#3D6641' }}>
               Criar conta gratuita
             </Link>

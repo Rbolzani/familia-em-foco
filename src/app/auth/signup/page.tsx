@@ -24,7 +24,7 @@ export default function SignupPage() {
       email, password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback${window.location.search}`,
       },
     })
     if (error) { setError(error.message); setLoading(false); return }
@@ -44,7 +44,7 @@ export default function SignupPage() {
             <br /><br />
             Abra o e-mail e clique no link para ativar sua conta. Depois, volte aqui e faça login.
           </p>
-          <a href="/auth/login"
+          <a href={`/auth/login${typeof window !== 'undefined' ? window.location.search : ''}`}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white"
             style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
             Ir para o login →

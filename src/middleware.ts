@@ -31,11 +31,16 @@ export async function middleware(request: NextRequest) {
   const isPublic = pathname === '/'
 
   if (!user && !isAuthRoute && !isPublic) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    const loginUrl = new URL('/auth/login', request.url)
+    // Preserva o destino (ex.: link de convite) para retornar após o login
+    if (pathname !== '/dashboard') loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirect = request.nextUrl.searchParams.get('redirect')
+    const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
   return supabaseResponse

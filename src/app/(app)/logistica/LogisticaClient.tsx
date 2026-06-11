@@ -72,7 +72,11 @@ export default function LogisticaClient({ activities: initial, children, familyM
       if (!ok) return
     }
     const newVal = existing === currentUserId ? null : currentUserId
-    await supabase.from('activities').update({ [field]: newVal }).eq('id', actId)
+    const { error } = await supabase.from('activities').update({ [field]: newVal }).eq('id', actId)
+    if (error) {
+      alert('Não foi possível salvar. Verifique sua conexão e tente novamente.')
+      return
+    }
     setActivities(prev => prev.map(a => a.id === actId ? { ...a, [field]: newVal } : a))
   }
 
