@@ -18,15 +18,39 @@ export function adminClient(): SupabaseClient {
 // (obrigatório para mensagens iniciadas pelo negócio fora da janela de 24h).
 // Caso contrário envia texto simples (funciona em testes / janela aberta).
 export async function sendWhatsApp(to: string, body: string): Promise<{ ok: boolean; error?: string; metaResponse?: string }> {
-  const token = process.env.WHATSAPP_TOKEN
+  // ── Twilio sandbox (teste) ─────────────────────────────────────────────────
+  // Se TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN estiverem configurados, usa Twilio.
+  // Ideal para validar entrega real antes de ter número de produção na Meta.
+  const twilioSid   = process.env.TWILIO_ACCOUNT_SID
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN
+  if (twilioSid && twilioToken) {
+    const params = new URLSearchParams({
+      From: 'whatsapp:+14155238886',   // número sandbox fixo da Twilio
+      To:   `whatsapp:+${to}`,
+      Body: body,
+    })
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      }
+    )
+    const resText = await res.text()
+    if (!res.ok) return { ok: false, error: `Twilio HTTP ${res.status}: ${resText}` }
+    return { ok: true, metaResponse: resText }
+  }
+
+  // ── Meta WhatsApp Cloud API (produção) ────────────────────────────────────
+  const token   = process.env.WHATSAPP_TOKEN
   const phoneId = process.env.WHATSAPP_PHONE_ID
   if (!token || !phoneId) return { ok: false, error: 'WHATSAPP_TOKEN/WHATSAPP_PHONE_ID não configurados' }
 
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME
-
-  // hello_world: template pré-aprovado da Meta, sem parâmetros, idioma en_US
-  // Outros templates: enviam o resumo como parâmetro body em pt_BR
-  // Sem template: texto livre (só funciona dentro da janela de 24h)
   let payload: Record<string, unknown>
   if (templateName === 'hello_world') {
     payload = {
@@ -55,12 +79,8 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-
   const resText = await res.text()
-  if (!res.ok) {
-    return { ok: false, error: `HTTP ${res.status}: ${resText}` }
-  }
-  // Retorna o body da Meta mesmo em sucesso para diagnóstico
+  if (!res.ok) return { ok: false, error: `Meta HTTP ${res.status}: ${resText}` }
   return { ok: true, metaResponse: resText }
 }
 
