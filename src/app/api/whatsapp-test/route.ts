@@ -24,7 +24,7 @@ export async function POST() {
 
   const result = await sendWhatsApp(settings.whatsapp_number, body)
   if (!result.ok) {
-    return NextResponse.json({ error: `Falha no envio (${result.error}). Verifique a configuração do WhatsApp.` }, { status: 502 })
+    return NextResponse.json({ error: result.error }, { status: 502 })
   }
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, meta: (result as { ok: true; metaResponse?: string }).metaResponse })
 }

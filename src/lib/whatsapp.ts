@@ -58,11 +58,10 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
 
   const resText = await res.text()
   if (!res.ok) {
-    console.error('WhatsApp send error:', res.status, resText)
     return { ok: false, error: `HTTP ${res.status}: ${resText}` }
   }
-  console.log('WhatsApp send ok:', resText)
-  return { ok: true }
+  // Retorna o body da Meta mesmo em sucesso para diagnóstico
+  return { ok: true, metaResponse: resText }
 }
 
 // ── Datas no fuso de São Paulo ───────────────────────────────────────────────

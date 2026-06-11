@@ -64,8 +64,14 @@ export default function AlertasClient({ userId, userEmail, whatsapp }: Props) {
     try {
       const res = await fetch('/api/whatsapp-test', { method: 'POST' })
       const json = await res.json()
-      if (res.ok) toast('Mensagem de teste enviada! Confira seu WhatsApp 📱')
-      else toast(json.error ?? 'Falha no envio do teste.', 'error')
+      if (res.ok) {
+        // Mostra a resposta da Meta para diagnóstico
+        const metaInfo = json.meta ? ` | Meta: ${json.meta}` : ''
+        toast(`Enviado! Confira seu WhatsApp 📱${metaInfo}`)
+      } else {
+        // Mostra o erro exato retornado pela Meta
+        toast(json.error ?? 'Falha no envio do teste.', 'error')
+      }
     } catch {
       toast('Falha de conexão ao enviar o teste.', 'error')
     }
