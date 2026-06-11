@@ -312,13 +312,16 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
 
             {/* Logo + título 2 linhas */}
             <div className="flex items-center gap-2">
-              <div className="w-[32px] h-[32px] rounded-[10px] flex items-center justify-center flex-none"
-                style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow:'0 3px 10px rgba(44,74,46,0.28)' }}>
-                <Leaf size={15} color="#D4E8D5" />
+              <div className="relative flex-none" style={{ width:38, height:38 }}>
+                <div className="w-full h-full rounded-[12px] flex items-center justify-center"
+                  style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow:'0 4px 14px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.10) inset' }}>
+                  <Leaf size={19} color="#D4E8D5" />
+                </div>
+                <div className="absolute" style={{ top:-3, right:-3, width:11, height:11, borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.88 }} />
               </div>
               <div style={{ fontFamily:'var(--font-lora)', fontWeight:700, color:'#1A2B1C', lineHeight:1.15 }}>
-                <div style={{ fontSize:13 }}>Família em</div>
-                <div style={{ fontSize:13 }}>Foco</div>
+                <div style={{ fontSize:13 }}>Família</div>
+                <div style={{ fontSize:13 }}>em Foco</div>
               </div>
             </div>
 
@@ -388,6 +391,14 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
           <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"       />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Convide parceiro(a)" amber />
+          <button
+            onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
+            style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+              gap:3, width:58, height:46, background:'none', border:'none', cursor:'pointer', flexShrink:0 }}>
+            <LogOut size={18} strokeWidth={1.8} color="rgba(220,38,38,0.62)" />
+            <span style={{ fontSize:8, fontWeight:600, lineHeight:1.2, letterSpacing:'0.01em',
+              textAlign:'center', color:'rgba(220,38,38,0.62)' }}>Sair</span>
+          </button>
         </div>
 
       </div>

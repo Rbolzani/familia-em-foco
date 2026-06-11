@@ -47,7 +47,7 @@ export default function LogisticaClient({ activities: initial, children, familyM
   const [activities, setActivities] = useState<Activity[]>(initial)
   const [view, setView] = useState<'atividade' | 'pessoa'>('atividade')
   const [filterChild, setFilterChild] = useState('')
-  const [filterPeriod, setFilterPeriod] = useState<'semana' | 'mes' | 'tudo'>('semana')
+  const [filterPeriod, setFilterPeriod] = useState<'semana' | 'mes' | 'tudo'>('tudo')
   const [filterMissing, setFilterMissing] = useState(false)
 
   const hasPartner = familyMembers.length > 1
