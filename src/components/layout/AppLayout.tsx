@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut, Car, Settings, UserPlus,
+  Users, LogOut, Car, Settings, UserPlus, Bell, X,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -66,6 +66,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
   const [darkMode,         setDarkMode]         = useState(false)
   const [mobileTemaOpen,   setMobileTemaOpen]   = useState(false)
   const [mobileSidebarOpen,setMobileSidebarOpen]= useState(false)
+  const [desktopTweaksOpen,setDesktopTweaksOpen]= useState(false)
 
   const appRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLDivElement>(null)   // mobile sidebar — same filter as app-wrap
@@ -228,64 +229,82 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 Módulos
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/escola"         label="Escola"         icon={BookOpen} />
-              <NavItem href="/saude"          label="Saúde"          icon={HeartPulse} />
-              <NavItem href="/atividades"     label="Atividades"     icon={Trophy} />
-              <NavItem href="/logistica"      label="Logística"      icon={Car} />
-              <NavItem href="/vault"          label="Documentos"     icon={FolderLock} />
-              <NavItem href="/configuracoes"  label="Convide Parceiro(a)" icon={UserPlus} />
+              <NavItem href="/escola"     label="Escola"     icon={BookOpen} />
+              <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
+              <NavItem href="/atividades" label="Atividades" icon={Trophy} />
+              <NavItem href="/logistica"  label="Logística"  icon={Car} />
+              <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
             </div>
           </nav>
 
-          {/* Children pinned at bottom — always visible */}
-          <div style={{ flexShrink:0, padding:'8px 12px 10px', borderTop:'1px solid rgba(61,102,65,0.14)', overflowY:'auto', maxHeight:220 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 7px' }}>
-              <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
-              <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
-                + Gerenciar
-              </Link>
-            </div>
-            {liveChildren.length === 0 ? (
-              <Link href="/children">
-                <div className="flex items-center gap-2.5 transition-all hover:opacity-80"
-                  style={{ padding:'9px 12px', borderRadius:12, border:'1.5px dashed rgba(61,102,65,0.28)',
-                    color:'rgba(26,43,28,0.40)', fontSize:12.5, fontWeight:600 }}>
-                  <Users size={14} color="rgba(61,102,65,0.55)" />
-                  Cadastrar primeiro filho
-                </div>
-              </Link>
-            ) : (
-              liveChildren.map(child => {
-                const age = calcAge(child.birth_date)
-                return (
-                  <Link key={child.id} href="/children">
-                    <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
-                      style={{ padding:'6px 10px', borderRadius:11, marginBottom:4,
-                        background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
-                        backgroundSize:'200px 200px, 100% 100%',
-                        border:'1px solid rgba(61,102,65,0.18)',
-                        boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
-                      }}>
-                      <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={32} radius={10} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
-                        {(age !== null || child.school_name) && (
-                          <div style={{ fontSize:10.5, fontStyle:'italic', color:'rgba(26,43,28,0.40)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                            {age !== null ? `${age} anos` : ''}{age !== null && child.school_name ? ' · ' : ''}{child.school_name ?? ''}
-                          </div>
-                        )}
+          {/* Bottom section: Filhos + Configurações + Sair */}
+          <div style={{ flexShrink:0, borderTop:'1px solid rgba(61,102,65,0.14)', display:'flex', flexDirection:'column' }}>
+
+            {/* Filhos — scrollable */}
+            <div style={{ padding:'8px 12px 4px', overflowY:'auto', maxHeight:160 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 7px' }}>
+                <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
+                <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
+                  + Gerenciar
+                </Link>
+              </div>
+              {liveChildren.length === 0 ? (
+                <Link href="/children">
+                  <div className="flex items-center gap-2.5 transition-all hover:opacity-80"
+                    style={{ padding:'9px 12px', borderRadius:12, border:'1.5px dashed rgba(61,102,65,0.28)',
+                      color:'rgba(26,43,28,0.40)', fontSize:12.5, fontWeight:600 }}>
+                    <Users size={14} color="rgba(61,102,65,0.55)" />
+                    Cadastrar primeiro filho
+                  </div>
+                </Link>
+              ) : (
+                liveChildren.map(child => {
+                  const age = calcAge(child.birth_date)
+                  return (
+                    <Link key={child.id} href="/children">
+                      <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
+                        style={{ padding:'6px 10px', borderRadius:11, marginBottom:4,
+                          background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
+                          backgroundSize:'200px 200px, 100% 100%',
+                          border:'1px solid rgba(61,102,65,0.18)',
+                          boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
+                        }}>
+                        <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={32} radius={10} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
+                          {(age !== null || child.school_name) && (
+                            <div style={{ fontSize:10.5, fontStyle:'italic', color:'rgba(26,43,28,0.40)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                              {age !== null ? `${age} anos` : ''}{age !== null && child.school_name ? ' · ' : ''}{child.school_name ?? ''}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight size={12} color="rgba(26,43,28,0.28)" />
                       </div>
-                      <ChevronRight size={12} color="rgba(26,43,28,0.28)" />
-                    </div>
-                  </Link>
-                )
-              })
-            )}
-            <button onClick={handleLogout}
-              className="w-full transition-all hover:bg-black/[0.04] rounded-[8px]"
-              style={{ fontSize:11, fontWeight:500, color:'rgba(26,43,28,0.28)', padding:'6px 0', marginTop:4 }}>
-              Sair da conta
-            </button>
+                    </Link>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Configurações section */}
+            <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
+              <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
+                display:'flex', alignItems:'center', gap:8, padding:'8px 10px 4px', color:'rgba(26,43,28,0.36)' }}>
+                Configurações
+                <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
+              </div>
+              <NavItem href="/configuracoes" label="Convide Parceiro(a)" icon={UserPlus} />
+              <NavItem href="/alertas"       label="Alertas"             icon={Bell} />
+            </div>
+
+            {/* Sair */}
+            <div style={{ padding:'2px 12px 10px' }}>
+              <button onClick={handleLogout}
+                className="w-full transition-all hover:bg-black/[0.04] rounded-[8px]"
+                style={{ fontSize:11, fontWeight:500, color:'rgba(26,43,28,0.28)', padding:'6px 0' }}>
+                Sair da conta
+              </button>
+            </div>
           </div>
 
         </aside>
@@ -390,8 +409,9 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
 
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
-          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"       />
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Convide parceiro(a)" amber />
+          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"            amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
             style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
@@ -407,9 +427,116 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       {/* ── Toasts globais (fora do app-wrap: cores fiéis em qualquer tema) ── */}
       <Toaster />
 
+      {/* ── Desktop TWEAKS button (md+ only) ── */}
+      <button
+        className="hidden md:flex fixed z-[55] items-center justify-center"
+        onClick={() => setDesktopTweaksOpen(true)}
+        title="Personalizar tema"
+        style={{
+          bottom:24, right:24,
+          width:44, height:44, borderRadius:'50%',
+          background: darkMode
+            ? 'rgba(80,130,84,0.28)'
+            : 'linear-gradient(140deg,#2C4A2E,#1E3320)',
+          backdropFilter:'blur(12px)',
+          boxShadow: darkMode
+            ? '0 4px 16px rgba(0,0,0,0.40), 0 0 0 1px rgba(90,140,94,0.30)'
+            : '0 4px 16px rgba(44,74,46,0.35)',
+          border: darkMode ? '1.5px solid rgba(90,140,94,0.35)' : '1.5px solid rgba(255,255,255,0.12)',
+          cursor:'pointer',
+        }}>
+        <Palette size={17} color={darkMode ? '#A8D4AB' : '#D4E8D5'} />
+      </button>
+
+      {/* ── Desktop TWEAKS overlay ── */}
+      {desktopTweaksOpen && (
+        <div className="hidden md:block fixed inset-0 z-[58]"
+          style={{ background:'rgba(10,20,12,0.30)', backdropFilter:'blur(2px)' }}
+          onClick={() => setDesktopTweaksOpen(false)} />
+      )}
+
+      {/* ── Desktop TWEAKS panel (slides from right) ── */}
+      <div className="hidden md:flex fixed z-[59] top-0 right-0 bottom-0 flex-col"
+        style={{
+          width:300,
+          transform: desktopTweaksOpen ? 'translateX(0)' : 'translateX(100%)',
+          transition:'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+          background: panelBg,
+          backgroundSize: darkMode ? 'auto' : '200px 200px, 100% 100%',
+          borderLeft:`1px solid ${panelBorder}`,
+          boxShadow: darkMode ? '-8px 0 32px rgba(0,0,0,0.50)' : '-8px 0 32px rgba(44,74,46,0.20)',
+        }}>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 20px 16px',
+          borderBottom:`1px solid ${panelBorder}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8,
+            fontFamily:'var(--font-lora)', fontSize:16, fontWeight:600, color:panelText }}>
+            <Palette size={15} color={darkMode ? '#8CC891' : '#3D6641'} />
+            Personalizar Tema
+          </div>
+          <button onClick={() => setDesktopTweaksOpen(false)}
+            style={{ width:28, height:28, borderRadius:8, border:'none', background:'rgba(61,102,65,0.09)',
+              display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+            <X size={14} color={panelMuted} />
+          </button>
+        </div>
+        {/* Content */}
+        <div style={{ flex:1, overflowY:'auto', padding:'20px' }}>
+          {/* Paleta */}
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:11, fontWeight:700, marginBottom:12, color:panelMuted, textTransform:'uppercase', letterSpacing:'0.10em' }}>
+              Paleta de cor
+            </div>
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:8 }}>
+              {PALETTES.map((p, i) => (
+                <button key={p.name} title={p.name} onClick={() => setPalIdx(i)}
+                  style={{
+                    width:40, height:40, borderRadius:13, background:p.dot, cursor:'pointer',
+                    boxShadow: palIdx===i ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(44,74,46,0.12)',
+                    border: palIdx===i ? '2.5px solid rgba(255,255,255,0.50)' : '2px solid transparent',
+                    transform: palIdx===i ? 'scale(1.18)' : undefined,
+                    transition:'all .2s',
+                  }} />
+              ))}
+            </div>
+            <div style={{ fontSize:12, fontStyle:'italic', color:panelMuted }}>{PALETTES[palIdx].name}</div>
+          </div>
+          {/* Dark mode */}
+          <div style={{ paddingTop:18, borderTop:`1px solid ${panelBorder}` }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ fontSize:14, fontWeight:700, display:'flex', alignItems:'center', gap:8, color:panelText }}>
+                {darkMode ? <Moon size={16}/> : <Sun size={16}/>}
+                {darkMode ? 'Modo noturno' : 'Modo claro'}
+              </div>
+              <button onClick={() => setDarkMode(d => !d)}
+                style={{ position:'relative', width:48, height:26, borderRadius:13, border:'none', cursor:'pointer',
+                  background: darkMode ? 'linear-gradient(135deg,#3D6641,#2C4A2E)' : 'rgba(61,102,65,0.22)',
+                  boxShadow:'0 1px 4px rgba(0,0,0,0.15)', flexShrink:0, transition:'background .25s' }}>
+                <span style={{ position:'absolute', top:3, width:20, height:20, borderRadius:'50%', background:'white',
+                  boxShadow:'0 2px 5px rgba(0,0,0,0.25)',
+                  left: darkMode ? 25 : 3, transition:'left .3s cubic-bezier(.4,0,.2,1)' }} />
+              </button>
+            </div>
+            <p style={{ fontSize:11.5, color:panelMuted, marginTop:6 }}>
+              {darkMode ? 'Cores invertidas para uso noturno' : 'Cores naturais do aplicativo'}
+            </p>
+          </div>
+        </div>
+        {/* Logout */}
+        <div style={{ padding:'12px 20px 20px', borderTop:`1px solid ${panelBorder}` }}>
+          <button onClick={handleLogout}
+            style={{ display:'flex', alignItems:'center', gap:8, width:'100%',
+              padding:'10px 14px', borderRadius:12, border:`1px solid rgba(220,38,38,0.20)`,
+              background:'rgba(220,38,38,0.06)', cursor:'pointer',
+              fontSize:13, fontWeight:700, color:'#DC2626' }}>
+            <LogOut size={15}/> Sair da conta
+          </button>
+        </div>
+      </div>
+
       {/* ── Mobile TEMA floating button ── */}
       <button
-        className="mobile-tema-btn fixed z-[55]"
+        className="mobile-tema-btn fixed z-[55] md:hidden"
         onClick={() => setMobileTemaOpen(true)}
         style={{
           bottom:20, right:16,

@@ -301,7 +301,7 @@ export default function LogisticaClient({ activities: initial, children, familyM
                   </div>
 
                   {/* Mobile card row — height fixo para garantir linhas uniformes */}
-                  <div className="md:hidden px-4" style={{ height: 106, display: 'flex', alignItems: 'center' }}>
+                  <div className="md:hidden flex items-center px-4" style={{ height: 106 }}>
                     <div className="flex items-center gap-3 w-full">
                       {act.child && (
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
