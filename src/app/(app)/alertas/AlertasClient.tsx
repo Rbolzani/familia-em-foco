@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MessageCircle, Send } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface Props {
   userId: string
@@ -104,43 +105,65 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
       </div>
 
       {/* Banner modo teste Twilio */}
-      {twilioMode && (
-        <div className="animate-fade-up rounded-2xl p-4" style={{
-          background: 'linear-gradient(135deg, #FFF8E7 0%, #FFF3D0 100%)',
-          border: '1.5px solid rgba(196,130,0,0.25)',
-          boxShadow: '0 2px 12px rgba(196,130,0,0.08)',
-        }}>
-          <div className="flex items-start gap-3">
-            <span style={{ fontSize: 20, lineHeight: 1 }}>⚠️</span>
-            <div>
-              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#7A5000', marginBottom: 6 }}>
+      {twilioMode && (() => {
+        const waUrl = `https://wa.me/14155238886?text=join%20${encodeURIComponent(twilioKeyword ?? '')}`
+        return (
+          <div className="animate-fade-up rounded-2xl p-4" style={{
+            background: 'linear-gradient(135deg, #FFF8E7 0%, #FFF3D0 100%)',
+            border: '1.5px solid rgba(196,130,0,0.25)',
+            boxShadow: '0 2px 12px rgba(196,130,0,0.08)',
+          }}>
+            <div className="flex items-start gap-3 mb-3">
+              <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
+              <p style={{ fontSize: 13.5, fontWeight: 700, color: '#7A5000' }}>
                 Modo de teste ativo — passo obrigatório antes de receber mensagens
               </p>
-              <p style={{ fontSize: 13, color: '#7A5000', lineHeight: 1.6, marginBottom: 10 }}>
-                Abra o WhatsApp no seu celular e envie a mensagem abaixo para o número de teste:
-              </p>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.6)' }}>Número</span>
-                  <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13.5, fontWeight: 700, color: '#7A5000', letterSpacing: '0.02em' }}>
-                    +1 415 523 8886
-                  </code>
+            </div>
+
+            <div className="flex gap-4 items-start">
+              {/* QR Code */}
+              <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
+                <div className="rounded-xl overflow-hidden p-2" style={{ background: '#fff', border: '1.5px solid rgba(196,130,0,0.20)' }}>
+                  <QRCodeSVG
+                    value={waUrl}
+                    size={110}
+                    bgColor="#ffffff"
+                    fgColor="#7A5000"
+                    level="M"
+                  />
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.6)' }}>Mensagem</span>
-                  <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13.5, fontWeight: 700, color: '#7A5000', letterSpacing: '0.02em' }}>
-                    join {twilioKeyword}
-                  </code>
-                </div>
+                <span style={{ fontSize: 10.5, color: 'rgba(122,80,0,0.65)', fontWeight: 600, textAlign: 'center' }}>
+                  Escaneie com o celular
+                </span>
               </div>
-              <p style={{ fontSize: 12, color: 'rgba(122,80,0,0.65)', marginTop: 10, lineHeight: 1.5 }}>
-                Após receber a confirmação do WhatsApp, configure seu número abaixo e clique em testar.
-                Este passo é necessário apenas no ambiente de teste.
-              </p>
+
+              {/* Instruções */}
+              <div className="flex-1 min-w-0">
+                <p style={{ fontSize: 13, color: '#7A5000', lineHeight: 1.6, marginBottom: 10 }}>
+                  Escaneie o QR Code ou envie manualmente a mensagem abaixo pelo WhatsApp:
+                </p>
+                <div className="flex flex-col gap-2 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.55)', minWidth: 52 }}>Número</span>
+                    <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13, fontWeight: 700, color: '#7A5000' }}>
+                      +1 415 523 8886
+                    </code>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(122,80,0,0.55)', minWidth: 52 }}>Mensagem</span>
+                    <code style={{ background: 'rgba(196,130,0,0.12)', borderRadius: 6, padding: '3px 8px', fontSize: 13, fontWeight: 700, color: '#7A5000' }}>
+                      join {twilioKeyword}
+                    </code>
+                  </div>
+                </div>
+                <p style={{ fontSize: 11.5, color: 'rgba(122,80,0,0.60)', lineHeight: 1.5 }}>
+                  Após receber a confirmação no WhatsApp, configure seu número abaixo e clique em testar.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Resumo matinal no WhatsApp */}
       <div style={cardStyle} className="animate-fade-up">
