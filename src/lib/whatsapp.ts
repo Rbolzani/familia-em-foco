@@ -17,7 +17,7 @@ export function adminClient(): SupabaseClient {
 // Se WHATSAPP_TEMPLATE_NAME estiver configurado, envia via template aprovado
 // (obrigatório para mensagens iniciadas pelo negócio fora da janela de 24h).
 // Caso contrário envia texto simples (funciona em testes / janela aberta).
-export async function sendWhatsApp(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendWhatsApp(to: string, body: string): Promise<{ ok: boolean; error?: string; metaResponse?: string }> {
   const token = process.env.WHATSAPP_TOKEN
   const phoneId = process.env.WHATSAPP_PHONE_ID
   if (!token || !phoneId) return { ok: false, error: 'WHATSAPP_TOKEN/WHATSAPP_PHONE_ID não configurados' }
