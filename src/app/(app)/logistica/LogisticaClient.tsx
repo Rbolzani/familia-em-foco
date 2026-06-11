@@ -293,21 +293,25 @@ export default function LogisticaClient({ activities: initial, children, familyM
                     </div>
                   </div>
 
-                  {/* Mobile card row */}
-                  <div className="md:hidden p-4" style={{ minHeight: 88 }}>
-                    <div className="flex items-start gap-3">
+                  {/* Mobile card row — height fixo para garantir linhas uniformes */}
+                  <div className="md:hidden px-4" style={{ height: 106, display: 'flex', alignItems: 'center' }}>
+                    <div className="flex items-center gap-3 w-full">
                       {act.child && (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5"
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                           style={{ background: act.child.avatar_color }}>
                           {act.child.name.charAt(0)}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C' }}>{act.title}</div>
-                        <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.50)', marginTop: 2 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {act.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.50)', marginTop: 2,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {fmtDate(act.date)}{act.time ? ` · ${act.time.slice(0,5)}` : ''} · {catEmoji[act.category]} {catLabel[act.category]}
                         </div>
-                        <div className="flex gap-2 mt-2.5">
+                        <div className="flex gap-2 mt-2">
                           <LogChip actId={act.id} field="takes_user_id" value={act.takes_user_id} />
                           <LogChip actId={act.id} field="picks_user_id" value={act.picks_user_id} />
                         </div>
