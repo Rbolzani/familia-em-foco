@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentFile, DocumentCategory } from '@/lib/types'
+import { useAccess } from '@/components/access/AccessContext'
 
 const META: Record<DocumentCategory, { label: string; accent: string }> = {
   saude:        { label: 'Saúde',        accent: '#10B981' },
@@ -45,6 +46,7 @@ interface Props {
 
 export default function DocumentDetailClient({ document: doc, category, children }: Props) {
   const router = useRouter()
+  const { canEdit } = useAccess()
   const meta = META[category]
   const [files, setFiles] = useState<DocumentFile[]>(doc.files ?? [])
   const [downloading, setDownloading] = useState<string | null>(null)
@@ -193,12 +195,14 @@ export default function DocumentDetailClient({ document: doc, category, children
       <div className="animate-fade-up" style={CARD}>
         <div className="flex items-center justify-between p-4 pb-0 mb-3">
           <h2 className="font-bold text-sm" style={{ color: '#1A2B1C' }}>Arquivos ({files.length})</h2>
-          <button onClick={() => setShowAddFiles(true)}
-            className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95"
-            style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
-            <Plus size={13} />
-            Adicionar
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowAddFiles(true)}
+              className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95"
+              style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+              <Plus size={13} />
+              Adicionar
+            </button>
+          )}
         </div>
 
         {files.length === 0 ? (
@@ -228,12 +232,14 @@ export default function DocumentDetailClient({ document: doc, category, children
                     title="Download">
                     {downloading === file.id ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} color="#3D6641" />}
                   </button>
-                  <button onClick={() => deleteFile(file)}
-                    disabled={deletingFile === file.id}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-red-50 disabled:opacity-50"
-                    title="Remover">
-                    {deletingFile === file.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} color="#EF4444" />}
-                  </button>
+                  {canEdit && (
+                    <button onClick={() => deleteFile(file)}
+                      disabled={deletingFile === file.id}
+                      className="p-1.5 rounded-lg transition-colors hover:bg-red-50 disabled:opacity-50"
+                      title="Remover">
+                      {deletingFile === file.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} color="#EF4444" />}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -242,6 +248,7 @@ export default function DocumentDetailClient({ document: doc, category, children
       </div>
 
       {/* Zona de perigo */}
+      {canEdit && (
       <div className="animate-fade-up p-4 rounded-2xl" style={{ border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}>
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle size={14} color="#EF4444" />
@@ -271,6 +278,7 @@ export default function DocumentDetailClient({ document: doc, category, children
           </div>
         )}
       </div>
+      )}
 
       {/* Modal adicionar arquivos */}
       {showAddFiles && (

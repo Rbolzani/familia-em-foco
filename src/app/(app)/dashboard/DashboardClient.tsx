@@ -13,6 +13,7 @@ import { mergeActivities } from '@/lib/merge-activities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
+import { useAccess } from '@/components/access/AccessContext'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ActWithChild = Activity & { child: { name: string; avatar_color: string } }
@@ -299,6 +300,7 @@ const REMINDER_CAT: Record<string,{icon:string;color:string}> = {
 
 function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; allChildren: Child[] }) {
   const supabase = createClient()
+  const { canEdit } = useAccess()
   const [items, setItems] = useState<ActWithChild[]>(initial)
   const [adding, setAdding] = useState(false)
   const [text, setText] = useState('')
@@ -356,12 +358,14 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
             </span>
           )}
         </div>
-        <button
-          onClick={() => setAdding(a => !a)}
-          className="w-7 h-7 rounded-[9px] flex items-center justify-center transition-all hover:scale-110"
-          style={{ background: adding ? 'rgba(220,38,38,0.10)' : 'rgba(61,102,65,0.10)', color: adding ? '#DC2626' : '#3D6641', border:'1px solid rgba(0,0,0,0.06)' }}>
-          <Plus size={14} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition:'transform .2s' }}/>
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setAdding(a => !a)}
+            className="w-7 h-7 rounded-[9px] flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: adding ? 'rgba(220,38,38,0.10)' : 'rgba(61,102,65,0.10)', color: adding ? '#DC2626' : '#3D6641', border:'1px solid rgba(0,0,0,0.06)' }}>
+            <Plus size={14} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition:'transform .2s' }}/>
+          </button>
+        )}
       </div>
 
       {/* Quick-add form */}
@@ -417,12 +421,14 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
             <div key={item.id} className="flex items-start gap-2.5 group p-2 rounded-[11px] transition-colors"
               style={{ background:'rgba(255,255,255,0.70)', border:'1px solid rgba(61,102,65,0.10)' }}>
               {/* Done button */}
-              <button onClick={() => handleDone(item.id)}
-                className="mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110 group-hover:border-[#3D6641]"
-                style={{ borderColor:'rgba(61,102,65,0.28)', background:'transparent' }}
-                title="Marcar como concluído">
-                <Check size={10} color="#3D6641" style={{ opacity:0 }} className="group-hover:opacity-100 transition-opacity"/>
-              </button>
+              {canEdit && (
+                <button onClick={() => handleDone(item.id)}
+                  className="mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-none transition-all hover:scale-110 group-hover:border-[#3D6641]"
+                  style={{ borderColor:'rgba(61,102,65,0.28)', background:'transparent' }}
+                  title="Marcar como concluído">
+                  <Check size={10} color="#3D6641" style={{ opacity:0 }} className="group-hover:opacity-100 transition-opacity"/>
+                </button>
+              )}
 
               {/* Content */}
               <div className="flex-1 min-w-0">

@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
+import { useAccess } from '@/components/access/AccessContext'
 
 // Stable singleton — not re-created on every render
 const supabase = createClient()
@@ -151,6 +152,7 @@ function PhotoPicker({ preview, onFile, onClear }: {
 interface Props { initialChildren: Child[] }
 
 export default function ChildrenClient({ initialChildren }: Props) {
+  const { canEdit } = useAccess()
   const [children,     setChildren]     = useState<Child[]>(initialChildren)
   const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
   const [saving,       setSaving]       = useState(false)
@@ -396,11 +398,13 @@ export default function ChildrenClient({ initialChildren }: Props) {
               : 'Adicione os perfis dos seus filhos'}
           </p>
         </div>
-        <button onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
-          <Plus size={16} /> Adicionar
-        </button>
+        {canEdit && (
+          <button onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
+            <Plus size={16} /> Adicionar
+          </button>
+        )}
       </div>
 
       {/* Delete error banner */}
@@ -425,8 +429,8 @@ export default function ChildrenClient({ initialChildren }: Props) {
         <EmptyState
           title="Comece pela parte boa"
           subtitle="Cadastre seu primeiro filho para começar a organizar a rotina da família."
-          actionLabel="+ Adicionar filho"
-          onAction={openNew}
+          actionLabel={canEdit ? '+ Adicionar filho' : undefined}
+          onAction={canEdit ? openNew : undefined}
           showIaShortcut={false}
         />
       )}
@@ -460,23 +464,25 @@ export default function ChildrenClient({ initialChildren }: Props) {
                 </div>
               </div>
 
-              <div className="flex gap-1.5 flex-none">
-                <button onClick={() => openEdit(child)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
-                  <Pencil size={15} />
-                </button>
-                <button onClick={() => handleDelete(child.id, child.name)}
-                  disabled={deleting === child.id}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{
-                    background: 'rgba(220,38,38,0.08)', color: '#DC2626',
-                    opacity: deleting === child.id ? 0.5 : 1,
-                    cursor: deleting === child.id ? 'wait' : 'pointer',
-                  }}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
+              {canEdit && (
+                <div className="flex gap-1.5 flex-none">
+                  <button onClick={() => openEdit(child)}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                    style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+                    <Pencil size={15} />
+                  </button>
+                  <button onClick={() => handleDelete(child.id, child.name)}
+                    disabled={deleting === child.id}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                    style={{
+                      background: 'rgba(220,38,38,0.08)', color: '#DC2626',
+                      opacity: deleting === child.id ? 0.5 : 1,
+                      cursor: deleting === child.id ? 'wait' : 'pointer',
+                    }}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

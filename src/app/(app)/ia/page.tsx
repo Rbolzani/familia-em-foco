@@ -5,8 +5,9 @@ import { Child } from '@/lib/types'
 import {
   Sparkles, Upload, FileText, Camera, Check, X, Loader2,
   Clock, MapPin, BookOpen, HeartPulse, Trophy, Plus,
-  Bell, FolderLock, AlertCircle,
+  Bell, FolderLock, AlertCircle, Lock,
 } from 'lucide-react'
+import { useAccess } from '@/components/access/AccessContext'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const NOISE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`
@@ -50,6 +51,7 @@ interface ExtDocument {
 }
 
 export default function IAPage() {
+  const access = useAccess()
   const supabase = createClient()
   const fileRef  = useRef<HTMLInputElement>(null)
   const pasteZoneRef = useRef<HTMLDivElement>(null)
@@ -221,6 +223,27 @@ export default function IAPage() {
     (activities?.filter(a => a.selected).reduce((s, a) => s + a.child_ids.length, 0) ?? 0) +
     (reminders?.filter(r => r.selected).length ?? 0) +
     (documents?.filter(d => d.selected).length ?? 0)
+
+  // ── Sem permissão (partner read_only / logística) ───────────────────────────
+  if (!access.canEdit) {
+    return (
+      <div className="max-w-2xl mx-auto px-5 py-16">
+        <div className="text-center" style={{ ...CARD, padding: '40px 28px' }}>
+          <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto mb-5"
+            style={{ background: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.20)' }}>
+            <Lock size={26} style={{ color: '#4338CA' }} />
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 24, fontWeight: 700, color: '#1A2B1C', marginBottom: 8 }}>
+            Captura por IA indisponível
+          </h2>
+          <p className="text-sm" style={{ color: 'rgba(26,43,28,0.55)', lineHeight: 1.6 }}>
+            Seu acesso compartilhado é de visualização. A criação de atividades e documentos
+            por IA está disponível apenas com acesso completo. Fale com {access.ownerName ?? 'o proprietário'} para ajustar.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // ── Success ─────────────────────────────────────────────────────────────────
   if (saved) {

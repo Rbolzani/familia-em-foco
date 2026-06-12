@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 import { toast } from '@/components/ui/Toast'
 import EmptyState from '@/components/ui/EmptyState'
+import { useAccess } from '@/components/access/AccessContext'
 
 interface Child {
   id: string
@@ -46,6 +47,7 @@ const catLabel: Record<string, string> = { escola: 'Escola', saude: 'Saúde', ex
 
 export default function LogisticaClient({ activities: initial, children, familyMembers, currentUserId }: Props) {
   const supabase = createClient()
+  const { canLogistics } = useAccess()
   const [activities, setActivities] = useState<Activity[]>(initial)
   // Realtime: quando o RealtimeSync dá router.refresh(), os dados frescos do
   // servidor chegam por `initial` — re-sincroniza o estado local (leva/busca).
@@ -123,6 +125,17 @@ export default function LogisticaClient({ activities: initial, children, familyM
       style = { background: 'rgba(61,102,65,0.10)', border: '1.5px solid rgba(61,102,65,0.30)', color: '#2D6A35' }
     } else {
       style = { background: 'rgba(99,102,241,0.08)', border: '1.5px solid rgba(99,102,241,0.25)', color: '#4338CA' }
+    }
+
+    // read_only não edita logística — chip vira apenas leitura
+    if (!canLogistics) {
+      return (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+          style={{ fontSize: 11, fontWeight: 600, minWidth: 90, ...style, cursor: 'default' }}>
+          {field === 'takes_user_id' ? <Car size={11} /> : <Home size={11} />}
+          {value ? memberName(value) : '—'}
+        </div>
+      )
     }
 
     return (

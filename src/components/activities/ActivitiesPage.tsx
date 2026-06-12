@@ -8,6 +8,7 @@ import { DeadlineBadge } from '@/components/ui/Badge'
 import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
 import { useRealtime } from '@/lib/useRealtime'
+import { useAccess } from '@/components/access/AccessContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from '@/components/ui/Toast'
@@ -71,6 +72,7 @@ const emptyForm = {
 
 export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren, familyMembers = [], currentUserId }: Props) {
   const supabase = createClient()
+  const { canEdit } = useAccess()
   // If server pre-fetched data, use it immediately (no loading flash)
   const [activities, setActivities] = useState<Activity[]>(initialActivities ?? [])
   const [children, setChildren] = useState<Child[]>(initialChildren ?? [])
@@ -163,13 +165,15 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
             {filtered.length} próxima{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95 flex-shrink-0"
-          style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
-        >
-          <Plus size={16} /> Nova
-        </button>
+        {canEdit && (
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95 flex-shrink-0"
+            style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
+          >
+            <Plus size={16} /> Nova
+          </button>
+        )}
       </div>
 
       {/* Filter bar — child selector only */}
@@ -199,9 +203,10 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Tudo tranquilo por aqui"
-          subtitle={`Nenhuma atividade de ${title.toLowerCase()} agendada. Adicione manualmente ou fotografe a agenda — a IA extrai tudo sozinha.`}
-          actionLabel="+ Adicionar"
-          onAction={openNew}
+          subtitle={`Nenhuma atividade de ${title.toLowerCase()} agendada.${canEdit ? ' Adicione manualmente ou fotografe a agenda — a IA extrai tudo sozinha.' : ''}`}
+          actionLabel={canEdit ? '+ Adicionar' : undefined}
+          onAction={canEdit ? openNew : undefined}
+          showIaShortcut={canEdit}
         />
       ) : (
         <div className="space-y-2.5 stagger">
@@ -358,6 +363,7 @@ function LogisticsChip({
   onUpdated: (field: 'takes_user_id' | 'picks_user_id', value: string | null) => void
 }) {
   const supabase = createClient()
+  const { canLogistics } = useAccess()
   const [saving, setSaving] = useState(false)
 
   const field: 'takes_user_id' | 'picks_user_id' = type === 'takes' ? 'takes_user_id' : 'picks_user_id'
@@ -404,6 +410,19 @@ function LogisticsChip({
     }
   }
 
+  // read_only não edita logística — chip vira apenas leitura
+  if (!canLogistics) {
+    return (
+      <div
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg flex-1"
+        style={{ fontSize: 11, fontWeight: 600, cursor: 'default', ...chipStyle }}>
+        {icon}
+        <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, marginRight: 2 }}>{label.toUpperCase()}</span>
+        {assignedUserId ? assignedName : '—'}
+      </div>
+    )
+  }
+
   return (
     <button
       onClick={handleClick}
@@ -428,6 +447,7 @@ function ActivityCard({
   familyMembers?: { user_id: string; display_name: string | null; role: string }[]
   currentUserId?: string
 }) {
+  const { canEdit } = useAccess()
   const [localGroup, setLocalGroup] = useState<ActivityWithChild[]>(group)
   const first  = localGroup[0]
   const merged = localGroup.length > 1
@@ -506,7 +526,7 @@ function ActivityCard({
                       onUpdated={(field, val) => handleLogisticsUpdate(a.id, field, val)}
                     />
                   </div>
-                  {merged && (
+                  {merged && canEdit && (
                     <div className="flex gap-1 flex-shrink-0">
                       <button onClick={() => onEdit(a)}
                         className="w-7 h-7 rounded-xl flex items-center justify-center transition-all hover:scale-110"
@@ -526,7 +546,7 @@ function ActivityCard({
           )}
 
           {/* Per-child action rows when merged and NO logistics */}
-          {merged && !showLogistics && (
+          {merged && !showLogistics && canEdit && (
             <div className="mt-2.5 space-y-1.5 border-t pt-2" style={{ borderColor:'rgba(0,0,0,0.06)' }}>
               {localGroup.map(a => (
                 <div key={a.id} className="flex items-center gap-2">
@@ -555,7 +575,7 @@ function ActivityCard({
         </div>
 
         {/* Actions — only shown when NOT merged */}
-        {!merged && (
+        {!merged && canEdit && (
           <div className="flex gap-1.5 flex-none">
             <button onClick={() => onEdit(first)}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"

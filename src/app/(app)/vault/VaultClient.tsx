@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link'
 import { HeartPulse, BadgeCheck, FileText, CreditCard, Shield, ChevronRight, Sparkles } from 'lucide-react'
 import { Child, DocumentCategory } from '@/lib/types'
+import { useAccess } from '@/components/access/AccessContext'
 
 interface DocSummary {
   id: string
@@ -36,6 +37,7 @@ function isExpiringSoon(date: string | null) {
 }
 
 export default function VaultClient({ children, documents }: Props) {
+  const { canEdit } = useAccess()
   const countByCategory = (cat: DocumentCategory) =>
     documents.filter(d => d.category === cat).length
 
@@ -64,11 +66,13 @@ export default function VaultClient({ children, documents }: Props) {
         <p className="text-sm mt-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>
           Cofre digital para documentos importantes dos seus filhos.
         </p>
-        <Link href="/ia" className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
-          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 4px 14px rgba(44,74,46,0.25)', textDecoration: 'none' }}>
-          <Sparkles size={14} />
-          Captura com IA
-        </Link>
+        {canEdit && (
+          <Link href="/ia" className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 4px 14px rgba(44,74,46,0.25)', textDecoration: 'none' }}>
+            <Sparkles size={14} />
+            Captura com IA
+          </Link>
+        )}
       </div>
 
       {/* Alerta de vencimento */}

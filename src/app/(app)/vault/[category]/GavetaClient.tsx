@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Plus, FileText, ChevronRight, X, Upload, Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentCategory } from '@/lib/types'
+import { useAccess } from '@/components/access/AccessContext'
 
 const META: Record<DocumentCategory, { label: string; accent: string; desc: string }> = {
   saude:        { label: 'Saúde',        accent: '#10B981', desc: 'Exames, receitas, histórico' },
@@ -37,6 +38,7 @@ interface Props {
 
 export default function GavetaClient({ category, children, documents: initialDocs }: Props) {
   const router = useRouter()
+  const { canEdit } = useAccess()
   const meta = META[category]
   const [docs, setDocs] = useState<AppDocument[]>(initialDocs)
   const [childFilter, setChildFilter] = useState<string | null>(null)
@@ -111,12 +113,14 @@ export default function GavetaClient({ category, children, documents: initialDoc
           </h1>
           <p className="text-sm mt-0.5 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>{meta.desc}</p>
         </div>
-        <button onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-white text-sm transition-all hover:brightness-105 active:scale-95"
-          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
-          <Plus size={15} />
-          Novo
-        </button>
+        {canEdit && (
+          <button onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-white text-sm transition-all hover:brightness-105 active:scale-95"
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+            <Plus size={15} />
+            Novo
+          </button>
+        )}
       </div>
 
       {/* Filtro filho */}
@@ -154,11 +158,13 @@ export default function GavetaClient({ category, children, documents: initialDoc
         <div className="animate-fade-up flex flex-col items-center py-16 gap-3" style={{ color: 'rgba(26,43,28,0.35)' }}>
           <FileText size={40} strokeWidth={1.2} />
           <p className="text-sm italic">Nenhum documento nesta gaveta</p>
-          <button onClick={() => setShowUpload(true)}
-            className="text-sm font-bold px-4 py-2 rounded-2xl transition-all hover:brightness-105"
-            style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
-            Adicionar primeiro documento
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowUpload(true)}
+              className="text-sm font-bold px-4 py-2 rounded-2xl transition-all hover:brightness-105"
+              style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+              Adicionar primeiro documento
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2 animate-fade-up">
