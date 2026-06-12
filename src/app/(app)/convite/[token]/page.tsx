@@ -6,6 +6,17 @@ interface Props {
   params: Promise<{ token: string }>
 }
 
+interface InviteDetails {
+  invite_id: string
+  family_id: string
+  family_name: string
+  inviter_name: string
+  access_role: 'read_only' | 'logistics_editor' | 'full_editor'
+  status: 'pending' | 'accepted' | 'expired'
+  expires_at: string
+  children_names: string[]
+}
+
 export default async function ConvitePage({ params }: Props) {
   const { token } = await params
   const supabase = await createClient()
@@ -14,29 +25,15 @@ export default async function ConvitePage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/auth/login?redirect=/convite/${token}`)
 
-  // Load invite info
-  const { data: invite } = await supabase
-    .from('family_invites')
-    .select('id, family_id, status, expires_at, invited_by, family:families(name)')
-    .eq('token', token)
-    .single()
+  // Invite preview via SECURITY DEFINER function (invitee is not a member yet)
+  const { data: rows } = await supabase.rpc('get_invite_details', { p_token: token })
+  const invite = (rows?.[0] ?? null) as InviteDetails | null
 
-  // Load inviter name from family_members
-  let inviterName = 'Um familiar'
-  if (invite?.invited_by) {
-    const { data: mem } = await supabase
-      .from('family_members')
-      .select('display_name')
-      .eq('user_id', invite.invited_by)
-      .single()
-    if (mem?.display_name) inviterName = mem.display_name
-  }
-
-  const isValid = invite &&
+  const isValid = !!invite &&
     invite.status === 'pending' &&
     new Date(invite.expires_at) > new Date()
 
-  // Already a member of this family?
+  // Already a member of this family? (invitee can read their own membership)
   let alreadyMember = false
   if (invite?.family_id) {
     const { data: existing } = await supabase
@@ -44,20 +41,19 @@ export default async function ConvitePage({ params }: Props) {
       .select('id')
       .eq('family_id', invite.family_id)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
     alreadyMember = !!existing
   }
 
   return (
     <ConviteClient
       token={token}
-      isValid={isValid ?? false}
+      isValid={isValid}
       alreadyMember={alreadyMember}
-      familyName={(invite?.family as { name?: string } | null)?.name ?? 'Família'}
-      inviterName={inviterName}
-      inviteId={invite?.id ?? null}
-      familyId={invite?.family_id ?? null}
-      userId={user.id}
+      familyName={invite?.family_name ?? 'Família'}
+      inviterName={invite?.inviter_name ?? 'Um familiar'}
+      accessRole={invite?.access_role ?? 'logistics_editor'}
+      childrenNames={invite?.children_names ?? []}
     />
   )
 }

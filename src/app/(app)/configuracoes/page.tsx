@@ -7,52 +7,51 @@ export default async function ConfiguracoesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  // Ensure family exists and get members
+  // Family owned by this user
   const { data: familyData } = await supabase
     .from('families')
     .select('id, name, created_by')
     .eq('created_by', user.id)
-    .single()
+    .maybeSingle()
 
-  // If no family yet, also check if user is a member somewhere
   let familyId = familyData?.id ?? null
   let isOwner = !!familyData
 
+  // If not an owner, maybe a partner in someone else's family
   if (!familyId) {
     const { data: memberData } = await supabase
       .from('family_members')
       .select('family_id')
       .eq('user_id', user.id)
-      .single()
+      .order('joined_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
     familyId = memberData?.family_id ?? null
     isOwner = false
   }
 
-  // Usuário sem família alguma (nem como dono nem como membro) → é o futuro dono
   if (!familyId && !isOwner) isOwner = true
 
-  let members: { id: string; user_id: string; display_name: string | null; role: string; joined_at: string }[] = []
-  let pendingInvite: { token: string; expires_at: string } | null = null
+  let members: { id: string; user_id: string; display_name: string | null; role: string; access_role: string | null; joined_at: string }[] = []
+  let pendingInvites: { id: string; token: string; invited_email: string | null; access_role: string; expires_at: string }[] = []
 
   if (familyId) {
     const { data: mems } = await supabase
       .from('family_members')
-      .select('id, user_id, display_name, role, joined_at')
+      .select('id, user_id, display_name, role, access_role, joined_at')
       .eq('family_id', familyId)
       .order('joined_at')
     members = mems ?? []
 
     if (isOwner) {
-      const { data: inv } = await supabase
+      const { data: invs } = await supabase
         .from('family_invites')
-        .select('token, expires_at')
+        .select('id, token, invited_email, access_role, expires_at')
         .eq('family_id', familyId)
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      pendingInvite = inv ?? null
+      pendingInvites = invs ?? []
     }
   }
 
@@ -64,12 +63,9 @@ export default async function ConfiguracoesPage() {
       userEmail={user.email ?? ''}
       familyId={familyId}
       isOwner={isOwner}
+      baseUrl={baseUrl}
       members={members}
-      pendingInvite={pendingInvite ? {
-        token: pendingInvite.token,
-        url: `${baseUrl}/convite/${pendingInvite.token}`,
-        expires_at: pendingInvite.expires_at,
-      } : null}
+      pendingInvites={pendingInvites}
     />
   )
 }

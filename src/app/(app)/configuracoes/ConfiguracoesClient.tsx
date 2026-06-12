@@ -1,79 +1,118 @@
 'use client'
 import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Link2, Copy, Check, Trash2, Crown, UserPlus, RefreshCw } from 'lucide-react'
-import { toast } from '@/components/ui/Toast'
+import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle } from 'lucide-react'
+
+type AccessRole = 'read_only' | 'logistics_editor' | 'full_editor'
 
 interface Member {
   id: string
   user_id: string
   display_name: string | null
   role: string
+  access_role: string | null
   joined_at: string
 }
-
+interface PendingInvite {
+  id: string
+  token: string
+  invited_email: string | null
+  access_role: string
+  expires_at: string
+}
 interface Props {
   userId: string
   userEmail: string
   familyId: string | null
   isOwner: boolean
+  baseUrl: string
   members: Member[]
-  pendingInvite: { token: string; url: string; expires_at: string } | null
+  pendingInvites: PendingInvite[]
 }
 
-export default function ConfiguracoesClient({ userId, userEmail, familyId, isOwner, members: initialMembers, pendingInvite: initialInvite }: Props) {
+const ROLES: { key: AccessRole; label: string; short: string; desc: string; icon: React.ElementType }[] = [
+  { key: 'read_only',        label: 'Apenas leitura',     short: 'Só leitura',  desc: 'Vê tudo, sem editar nada.', icon: Eye },
+  { key: 'logistics_editor', label: 'Leitura + logística', short: 'Logística',  desc: 'Vê tudo e marca quem leva/busca. Não edita atividades nem documentos.', icon: Truck },
+  { key: 'full_editor',      label: 'Acesso completo',    short: 'Completo',    desc: 'Cria, edita e exclui tudo — igual ao proprietário.', icon: Pencil },
+]
+const roleMeta = (r: string) => ROLES.find(x => x.key === r) ?? ROLES[1]
+
+export default function ConfiguracoesClient({
+  userId, userEmail, familyId, isOwner, baseUrl,
+  members: initialMembers, pendingInvites: initialInvites,
+}: Props) {
   const supabase = createClient()
-  const [members, setMembers]       = useState<Member[]>(initialMembers)
-  const [invite, setInvite]         = useState(initialInvite)
+  const [members, setMembers]   = useState<Member[]>(initialMembers)
+  const [invites, setInvites]   = useState<PendingInvite[]>(initialInvites)
+  const [email, setEmail]       = useState('')
+  const [role, setRole]         = useState<AccessRole>('logistics_editor')
   const [generating, setGenerating] = useState(false)
-  const [copied, setCopied]         = useState(false)
-  const [revoking, setRevoking]     = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [error, setError]       = useState('')
+
+  const inviteUrl = (token: string) => `${baseUrl}/convite/${token}`
 
   async function generateInvite() {
+    setError('')
+    const mail = email.trim().toLowerCase()
+    if (!mail || !mail.includes('@')) { setError('Informe um email válido.'); return }
     setGenerating(true)
 
-    // Ensure family exists
+    // Ensure family exists (owner bootstrap)
     let fid = familyId
     if (!fid) {
       const { data: { user } } = await supabase.auth.getUser()
-      const { data: fam } = await supabase
-        .from('families')
-        .insert({ created_by: user!.id })
-        .select('id')
-        .single()
+      const { data: fam } = await supabase.from('families').insert({ created_by: user!.id }).select('id').single()
       fid = fam?.id ?? null
-      if (fid) {
-        await supabase.from('family_members').insert({ family_id: fid, user_id: user!.id, role: 'owner' })
-      }
+      if (fid) await supabase.from('family_members').insert({ family_id: fid, user_id: user!.id, role: 'owner' })
     }
+    if (!fid) { setError('Não foi possível criar a família.'); setGenerating(false); return }
 
-    if (!fid) { setGenerating(false); return }
+    // Expire prior pending invites for the same email
+    await supabase.from('family_invites')
+      .update({ status: 'expired' })
+      .eq('family_id', fid).eq('status', 'pending').eq('invited_email', mail)
 
-    // Expire existing
-    await supabase.from('family_invites').update({ status: 'expired' }).eq('family_id', fid).eq('status', 'pending')
+    const { data, error: insErr } = await supabase.from('family_invites')
+      .insert({ family_id: fid, invited_by: userId, invited_email: mail, access_role: role })
+      .select('id, token, invited_email, access_role, expires_at')
+      .single()
 
-    // Create new
-    const { data } = await supabase.from('family_invites').insert({ family_id: fid, invited_by: userId }).select('token, expires_at').single()
-    if (data) {
-      const baseUrl = window.location.origin
-      setInvite({ token: data.token, url: `${baseUrl}/convite/${data.token}`, expires_at: data.expires_at })
-    }
+    if (insErr || !data) { setError('Erro ao gerar o convite.'); setGenerating(false); return }
+
+    setInvites(prev => [data as PendingInvite, ...prev.filter(i => i.invited_email !== mail)])
+    setEmail('')
     setGenerating(false)
   }
 
-  async function copyLink() {
-    if (!invite?.url) return
-    await navigator.clipboard.writeText(invite.url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  async function copyLink(inv: PendingInvite) {
+    await navigator.clipboard.writeText(inviteUrl(inv.token))
+    setCopiedId(inv.id)
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
-  async function revokePartner(memberId: string, memberUserId: string) {
-    if (!confirm('Revogar acesso deste parceiro?')) return
-    setRevoking(memberId)
+  function whatsappLink(inv: PendingInvite) {
+    const url = inviteUrl(inv.token)
+    const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Foco. É só acessar e aceitar: ${url}`
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`
+  }
+
+  async function revokeInvite(id: string) {
+    await supabase.from('family_invites').update({ status: 'expired' }).eq('id', id)
+    setInvites(prev => prev.filter(i => i.id !== id))
+  }
+
+  async function changeRole(memberId: string, newRole: AccessRole) {
+    const prev = members
+    setMembers(ms => ms.map(m => m.id === memberId ? { ...m, access_role: newRole } : m))
+    const { error: upErr } = await supabase.from('family_members').update({ access_role: newRole }).eq('id', memberId)
+    if (upErr) setMembers(prev)
+  }
+
+  async function revokePartner(memberId: string) {
+    if (!confirm('Revogar o acesso deste parceiro?')) return
     await supabase.from('family_members').delete().eq('id', memberId)
     setMembers(prev => prev.filter(m => m.id !== memberId))
-    setRevoking(null)
   }
 
   const partners = members.filter(m => m.role === 'partner')
@@ -87,37 +126,27 @@ export default function ConfiguracoesClient({ userId, userEmail, familyId, isOwn
     padding: '20px 20px',
   }
 
-  const sectionHeader = (icon: React.ReactNode, title: string) => (
-    <div className="flex items-center gap-2 mb-4">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(61,102,65,0.10)' }}>
-        {icon}
-      </div>
-      <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A2B1C' }}>{title}</h2>
-    </div>
-  )
-
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-5 space-y-5">
       {/* Header */}
       <div className="animate-fade-up">
-        <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#2D6A35' }}>
-          ⚙️ Sistema
-        </p>
-        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 24, fontWeight: 700, color: '#1A2B1C' }}>
-          Configurações
-        </h1>
-        <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.45)', marginTop: 2 }}>
-          {userEmail}
-        </p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#2D6A35' }}>⚙️ Sistema</p>
+        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 24, fontWeight: 700, color: '#1A2B1C' }}>Configurações</h1>
+        <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.45)', marginTop: 2 }}>{userEmail}</p>
       </div>
 
-      {/* Compartilhamento */}
+      {/* Compartilhar acesso */}
       <div style={cardStyle} className="animate-fade-up">
-        {sectionHeader(<Users size={14} color="#2D6A35" />, 'Compartilhar acesso')}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(61,102,65,0.10)' }}>
+            <Users size={14} color="#2D6A35" />
+          </div>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A2B1C' }}>Compartilhar acesso</h2>
+        </div>
 
-        {/* Current members */}
+        {/* Members */}
         <div className="space-y-2 mb-5">
-          {/* Owner row */}
+          {/* Owner */}
           <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(61,102,65,0.06)', border: '1px solid rgba(61,102,65,0.12)' }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-none"
               style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
@@ -132,33 +161,42 @@ export default function ConfiguracoesClient({ userId, userEmail, familyId, isOwn
             <Crown size={15} style={{ color: '#C49A6C', flexShrink: 0 }} />
           </div>
 
-          {/* Partner rows */}
-          {partners.map(p => (
-            <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)' }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-none"
-                style={{ background: 'linear-gradient(140deg,#6366f1,#4338CA)' }}>
-                {(p.display_name ?? 'P').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C' }}>
-                  {p.display_name ?? 'Parceiro(a)'}
+          {/* Partners */}
+          {partners.map(p => {
+            const rm = roleMeta(p.access_role ?? 'logistics_editor')
+            return (
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-none"
+                  style={{ background: 'linear-gradient(140deg,#6366f1,#4338CA)' }}>
+                  {(p.display_name ?? 'P').charAt(0).toUpperCase()}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)' }}>
-                  Parceiro · desde {new Date(p.joined_at).toLocaleDateString('pt-BR')}
+                <div className="flex-1 min-w-0">
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C' }}>{p.display_name ?? 'Parceiro(a)'}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)' }}>
+                    Parceiro · desde {new Date(p.joined_at).toLocaleDateString('pt-BR')}
+                  </div>
                 </div>
+                {isOwner ? (
+                  <>
+                    <select
+                      value={p.access_role ?? 'logistics_editor'}
+                      onChange={e => changeRole(p.id, e.target.value as AccessRole)}
+                      style={{ fontSize: 11, padding: '5px 7px', borderRadius: 8, border: '1px solid rgba(61,102,65,0.25)', background: '#fff', color: '#1A2B1C', cursor: 'pointer', flexShrink: 0 }}
+                      title="Tipo de acesso">
+                      {ROLES.map(r => <option key={r.key} value={r.key}>{r.short}</option>)}
+                    </select>
+                    <button onClick={() => revokePartner(p.id)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                      style={{ background: '#FFF0EB', color: '#F4522D', flexShrink: 0 }} title="Revogar acesso">
+                      <Trash2 size={13} />
+                    </button>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#4338CA', flexShrink: 0 }}>{rm.short}</span>
+                )}
               </div>
-              {isOwner && (
-                <button
-                  onClick={() => revokePartner(p.id, p.user_id)}
-                  disabled={revoking === p.id}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 disabled:opacity-50"
-                  style={{ background: '#FFF0EB', color: '#F4522D', flexShrink: 0 }}
-                  title="Revogar acesso">
-                  <Trash2 size={13} />
-                </button>
-              )}
-            </div>
-          ))}
+            )
+          })}
 
           {partners.length === 0 && (
             <div style={{ fontSize: 13, color: 'rgba(26,43,28,0.40)', textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>
@@ -167,55 +205,99 @@ export default function ConfiguracoesClient({ userId, userEmail, familyId, isOwn
           )}
         </div>
 
-        {/* Generate invite — only for owner */}
-        {isOwner && (
-          <div>
-            <div style={{ height: 1, background: 'rgba(61,102,65,0.12)', marginBottom: 16 }} />
-
-            {invite ? (
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#2D6A35', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Link2 size={13} /> Link de convite ativo
+        {/* Pending invites */}
+        {isOwner && invites.length > 0 && (
+          <div className="space-y-2 mb-5">
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(26,43,28,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Convites pendentes
+            </div>
+            {invites.map(inv => {
+              const rm = roleMeta(inv.access_role)
+              return (
+                <div key={inv.id} className="p-3 rounded-xl" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.22)' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock size={13} style={{ color: '#92400E', flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {inv.invited_email ?? 'Convite'}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: '#92400E' }}>
+                        {rm.short} · expira {new Date(inv.expires_at).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <button onClick={() => revokeInvite(inv.id)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                      style={{ background: '#FFF0EB', color: '#F4522D', flexShrink: 0 }} title="Cancelar convite">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => copyLink(inv)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all hover:brightness-105"
+                      style={{ background: copiedId === inv.id ? '#2D6A35' : 'rgba(61,102,65,0.10)', color: copiedId === inv.id ? '#fff' : '#2D6A35', fontSize: 12 }}>
+                      {copiedId === inv.id ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar link</>}
+                    </button>
+                    <a href={whatsappLink(inv)} target="_blank" rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all hover:brightness-105"
+                      style={{ background: '#25D366', color: '#fff', fontSize: 12, textDecoration: 'none' }}>
+                      <MessageCircle size={12} /> WhatsApp
+                    </a>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: 'rgba(61,102,65,0.06)', border: '1px solid rgba(61,102,65,0.18)' }}>
-                  <span style={{ flex: 1, fontSize: 12, color: 'rgba(26,43,28,0.60)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {invite.url}
-                  </span>
-                  <button onClick={copyLink}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-white transition-all hover:brightness-105 flex-shrink-0"
-                    style={{ background: copied ? '#2D6A35' : 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 12 }}>
-                    {copied ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar</>}
-                  </button>
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.40)', marginTop: 6, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Expira em: {new Date(invite.expires_at).toLocaleDateString('pt-BR')}</span>
-                  <button onClick={generateInvite} disabled={generating}
-                    className="flex items-center gap-1 hover:text-green-800 transition-colors"
-                    style={{ color: 'rgba(26,43,28,0.45)', fontSize: 11, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    <RefreshCw size={11} /> Gerar novo
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={generateInvite}
-                disabled={generating}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
-                <UserPlus size={16} />
-                {generating ? 'Gerando link...' : 'Convidar parceiro(a)'}
-              </button>
-            )}
+              )
+            })}
           </div>
         )}
 
-        {!isOwner && (
+        {/* Invite form — owner only */}
+        {isOwner ? (
+          <div>
+            <div style={{ height: 1, background: 'rgba(61,102,65,0.12)', marginBottom: 16 }} />
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2D6A35', marginBottom: 10 }}>Convidar parceiro(a)</div>
+
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="email@exemplo.com"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 10, outline: 'none', background: '#fff' }}
+            />
+
+            <div className="space-y-2 mb-3">
+              {ROLES.map(r => {
+                const sel = role === r.key
+                return (
+                  <button key={r.key} onClick={() => setRole(r.key)}
+                    className="w-full text-left flex items-start gap-2.5 p-2.5 rounded-xl transition-all"
+                    style={{ background: sel ? 'rgba(61,102,65,0.10)' : '#fff', border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.15)'}`, cursor: 'pointer' }}>
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-none" style={{ marginTop: 1, border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.35)'}`, background: sel ? '#3D6641' : '#fff' }}>
+                      {sel && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <r.icon size={13} style={{ color: '#2D6A35' }} />
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C' }}>{r.label}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.55)', marginTop: 2, lineHeight: 1.4 }}>{r.desc}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {error && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 10 }}>{error}</p>}
+
+            <button onClick={generateInvite} disabled={generating}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
+              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
+              <UserPlus size={16} />
+              {generating ? 'Gerando convite...' : 'Gerar convite'}
+            </button>
+          </div>
+        ) : (
           <div style={{ fontSize: 13, color: 'rgba(26,43,28,0.50)', padding: '8px 12px', background: 'rgba(61,102,65,0.05)', borderRadius: 10, fontStyle: 'italic' }}>
             Você está no ambiente de outro usuário. Apenas o proprietário pode convidar novos parceiros.
           </div>
         )}
       </div>
-
     </div>
   )
 }

@@ -10,22 +10,21 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  // Fetch all files to delete from storage
+  // Fetch all files to delete from storage (RLS escopa por família)
   const { data: files } = await supabase
     .from('document_files')
     .select('storage_path')
     .eq('document_id', id)
-    .eq('user_id', user.id)
 
   if (files?.length) {
     await supabase.storage.from('documents').remove(files.map(f => f.storage_path))
   }
 
+  // RLS permite delete apenas a owner/full_editor da mesma família
   const { error } = await supabase
     .from('documents')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

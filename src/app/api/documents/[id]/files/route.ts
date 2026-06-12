@@ -10,11 +10,11 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+  // RLS escopa por família — full_editor pode anexar a docs do owner
   const { data: doc } = await supabase
     .from('documents')
     .select('id')
     .eq('id', id)
-    .eq('user_id', user.id)
     .single()
   if (!doc) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
 
@@ -71,13 +71,12 @@ export async function DELETE(
     .select('storage_path')
     .eq('id', fileId)
     .eq('document_id', id)
-    .eq('user_id', user.id)
     .single()
 
   if (!file) return NextResponse.json({ error: 'Arquivo não encontrado' }, { status: 404 })
 
   await supabase.storage.from('documents').remove([file.storage_path])
-  await supabase.from('document_files').delete().eq('id', fileId).eq('user_id', user.id)
+  await supabase.from('document_files').delete().eq('id', fileId)
 
   return NextResponse.json({ ok: true })
 }

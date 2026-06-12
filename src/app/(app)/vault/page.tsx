@@ -9,10 +9,10 @@ export default async function VaultPage() {
 
   const [{ data: children }, { data: documents }] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
+    // RLS escopa por família (family_id) — owner e partners veem os mesmos docs
     supabase
       .from('documents')
-      .select('id, category, child_id, expires_at')
-      .eq('user_id', user.id),
+      .select('id, category, child_id, expires_at'),
   ])
 
   return (

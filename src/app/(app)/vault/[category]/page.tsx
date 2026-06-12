@@ -19,10 +19,10 @@ export default async function GavetaPage({
 
   const [{ data: children }, { data: documents }] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
+    // RLS escopa por família — owner e partners veem os mesmos docs
     supabase
       .from('documents')
       .select('*, child:children(id,name,avatar_color), files:document_files(id,file_name,file_size,mime_type,created_at)')
-      .eq('user_id', user.id)
       .eq('category', category)
       .order('created_at', { ascending: false }),
   ])

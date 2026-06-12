@@ -18,11 +18,11 @@ export default async function DocumentDetailPage({
   if (!user) redirect('/auth/login')
 
   const [{ data: doc }, { data: children }] = await Promise.all([
+    // RLS escopa por família — owner e partners acessam o mesmo documento
     supabase
       .from('documents')
       .select('*, child:children(id,name,avatar_color), files:document_files(*)')
       .eq('id', id)
-      .eq('user_id', user.id)
       .single(),
     supabase.from('children').select('*').order('sort_order'),
   ])

@@ -13,12 +13,12 @@ export async function GET(
   const fileId = req.nextUrl.searchParams.get('fileId')
   if (!fileId) return NextResponse.json({ error: 'fileId obrigatório' }, { status: 400 })
 
+  // RLS escopa por família — partner pode baixar arquivos do owner
   const { data: file } = await supabase
     .from('document_files')
     .select('storage_path')
     .eq('id', fileId)
     .eq('document_id', id)
-    .eq('user_id', user.id)
     .single()
 
   if (!file) return NextResponse.json({ error: 'Arquivo não encontrado' }, { status: 404 })
