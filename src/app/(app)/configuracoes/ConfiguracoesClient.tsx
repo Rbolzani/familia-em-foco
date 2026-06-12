@@ -50,7 +50,8 @@ export default function ConfiguracoesClient({
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError]       = useState('')
 
-  const inviteUrl = (token: string) => `${baseUrl}/convite/${token}`
+  const origin = typeof window !== 'undefined' ? window.location.origin : baseUrl
+  const inviteUrl = (token: string) => `${origin}/convite/${token}`
 
   async function generateInvite() {
     setError('')
