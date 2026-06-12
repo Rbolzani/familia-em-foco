@@ -7,6 +7,7 @@ import Modal from '@/components/ui/Modal'
 import { DeadlineBadge } from '@/components/ui/Badge'
 import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
+import { useRealtime } from '@/lib/useRealtime'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from '@/components/ui/Toast'
@@ -97,6 +98,9 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   }, [category])
 
   useEffect(() => { load() }, [load])
+  // Realtime: recarrega a lista quando o parceiro cria/edita atividades
+  // ou muda marcadores de leva/busca (escopo de família via RLS).
+  useRealtime(['activities'], load)
 
   function openNew() {
     setForm({ ...emptyForm, date: new Date().toISOString().split('T')[0], child_id: children[0]?.id ?? '' })

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import AppLayout from '@/components/layout/AppLayout'
+import RealtimeSync from '@/components/layout/RealtimeSync'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -10,6 +11,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <AppLayout sidebarChildren={sidebarChildren ?? []}>
+      <RealtimeSync />
       {children}
     </AppLayout>
   )

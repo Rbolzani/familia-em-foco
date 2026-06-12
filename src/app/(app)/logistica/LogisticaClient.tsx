@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Car, Home, Users, LayoutList, AlertTriangle, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
@@ -47,6 +47,9 @@ const catLabel: Record<string, string> = { escola: 'Escola', saude: 'Saúde', ex
 export default function LogisticaClient({ activities: initial, children, familyMembers, currentUserId }: Props) {
   const supabase = createClient()
   const [activities, setActivities] = useState<Activity[]>(initial)
+  // Realtime: quando o RealtimeSync dá router.refresh(), os dados frescos do
+  // servidor chegam por `initial` — re-sincroniza o estado local (leva/busca).
+  useEffect(() => { setActivities(initial) }, [initial])
   const [view, setView] = useState<'atividade' | 'pessoa'>('atividade')
   const [filterChild, setFilterChild] = useState('')
   const [filterPeriod, setFilterPeriod] = useState<'semana' | 'mes' | 'tudo'>('tudo')

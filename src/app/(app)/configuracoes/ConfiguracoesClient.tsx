@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle } from 'lucide-react'
 
@@ -44,6 +44,9 @@ export default function ConfiguracoesClient({
   const supabase = createClient()
   const [members, setMembers]   = useState<Member[]>(initialMembers)
   const [invites, setInvites]   = useState<PendingInvite[]>(initialInvites)
+  // Realtime: reflete partner entrando / mudança de acesso ao vivo
+  useEffect(() => { setMembers(initialMembers) }, [initialMembers])
+  useEffect(() => { setInvites(initialInvites) }, [initialInvites])
   const [email, setEmail]       = useState('')
   const [role, setRole]         = useState<AccessRole>('logistics_editor')
   const [generating, setGenerating] = useState(false)
