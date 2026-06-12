@@ -85,9 +85,10 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
 }
 
 // ── Datas no fuso de São Paulo ───────────────────────────────────────────────
+// Usa aritmética em milissegundos para evitar bugs de "dia errado" ao cruzar
+// a meia-noite UTC com o fuso America/Sao_Paulo (UTC-3).
 function spDate(offsetDays = 0): string {
-  const d = new Date()
-  d.setDate(d.getDate() + offsetDays)
+  const d = new Date(Date.now() + offsetDays * 86_400_000)
   return new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(d)
 }
 
