@@ -52,10 +52,7 @@ export default function ConfiguracoesClient({
   const [generating, setGenerating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError]       = useState('')
-  const [origin, setOrigin]     = useState(baseUrl)
-  useEffect(() => { setOrigin(window.location.origin) }, [])
-
-  const inviteUrl = (token: string) => `${origin}/convite/${token}`
+  const inviteUrl = (token: string) => `${window.location.origin}/convite/${token}`
 
   async function generateInvite() {
     setError('')
@@ -244,11 +241,11 @@ export default function ConfiguracoesClient({
                       style={{ background: copiedId === inv.id ? '#2D6A35' : 'rgba(61,102,65,0.10)', color: copiedId === inv.id ? '#fff' : '#2D6A35', fontSize: 12 }}>
                       {copiedId === inv.id ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar link</>}
                     </button>
-                    <a href={whatsappLink(inv)} target="_blank" rel="noopener noreferrer"
+                    <button onClick={() => window.open(whatsappLink(inv), '_blank')}
                       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all hover:brightness-105"
-                      style={{ background: '#25D366', color: '#fff', fontSize: 12, textDecoration: 'none' }}>
+                      style={{ background: '#25D366', color: '#fff', fontSize: 12, border: 'none', cursor: 'pointer' }}>
                       <MessageCircle size={12} /> WhatsApp
-                    </a>
+                    </button>
                   </div>
                 </div>
               )
