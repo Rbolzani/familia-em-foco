@@ -9,9 +9,9 @@ const ALLOWED_AUDIO_TYPES = [
 ]
 
 export async function POST(request: NextRequest) {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     return NextResponse.json(
-      { error: 'OPENAI_API_KEY não configurada no servidor.' },
+      { error: 'GROQ_API_KEY não configurada no servidor.' },
       { status: 500 }
     )
   }
@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const groq = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: 'https://api.groq.com/openai/v1',
+  })
 
   let formData: FormData
   try {
@@ -53,9 +56,9 @@ export async function POST(request: NextRequest) {
   const file = new File([audio], `audio.${ext}`, { type: audio.type })
 
   try {
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await groq.audio.transcriptions.create({
       file,
-      model: 'whisper-1',
+      model: 'whisper-large-v3-turbo',
       language: 'pt',
     })
 

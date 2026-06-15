@@ -22,7 +22,7 @@ Plataforma de gestão familiar para pais brasileiros. Centraliza agenda escolar,
 | Ícones | Lucide React |
 | Banco / Auth | Supabase (PostgreSQL + RLS) |
 | IA (extração) | Claude Haiku via @anthropic-ai/sdk |
-| IA (voz) | OpenAI Whisper via openai SDK |
+| IA (voz) | Groq Whisper via openai SDK (baseURL Groq) |
 | Notificações | WhatsApp Cloud API (Twilio fallback) |
 | PWA | manifest.json — standalone, portrait-primary |
 
@@ -160,7 +160,7 @@ Usuária clica "Voz" → MediaRecorder captura áudio
 
 ### Variável de ambiente necessária
 ```
-OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
 ```
 
 ### Formatos de áudio suportados
@@ -181,8 +181,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 # IA — extração de texto/imagem
 ANTHROPIC_API_KEY=
 
-# IA — transcrição de voz
-OPENAI_API_KEY=
+# IA — transcrição de voz (Groq Whisper)
+GROQ_API_KEY=
 
 # WhatsApp
 WHATSAPP_PHONE_NUMBER_ID=
