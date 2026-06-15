@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ConfiguracoesClient from './ConfiguracoesClient'
 
@@ -41,7 +41,26 @@ export default async function ConfiguracoesPage() {
       .select('id, user_id, display_name, role, access_role, joined_at')
       .eq('family_id', familyId)
       .order('joined_at')
-    members = mems ?? []
+    const rawMembers = mems ?? []
+
+    // Enrich partners whose display_name is null with their auth email
+    const missingIds = rawMembers
+      .filter(m => !m.display_name)
+      .map(m => m.user_id)
+
+    let emailMap: Record<string, string> = {}
+    if (missingIds.length > 0) {
+      const admin = createAdminClient()
+      const { data: usersRes } = await admin.auth.admin.listUsers({ perPage: 1000 })
+      if (usersRes?.users) {
+        usersRes.users.forEach(u => { emailMap[u.id] = u.email ?? '' })
+      }
+    }
+
+    members = rawMembers.map(m => ({
+      ...m,
+      display_name: m.display_name ?? emailMap[m.user_id] ?? null,
+    }))
 
     if (isOwner) {
       const { data: invs } = await supabase
