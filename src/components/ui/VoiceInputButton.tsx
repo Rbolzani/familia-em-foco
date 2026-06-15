@@ -1,6 +1,6 @@
 'use client'
-import { Mic, MicOff, Loader2 } from 'lucide-react'
-import { useVoiceInput, VoiceInputState } from '@/hooks/useVoiceInput'
+import { Mic, Loader2 } from 'lucide-react'
+import { useVoiceInput } from '@/hooks/useVoiceInput'
 
 interface VoiceInputButtonProps {
   onTranscript: (text: string) => void
@@ -8,67 +8,71 @@ interface VoiceInputButtonProps {
   disabled?: boolean
 }
 
-const LABEL: Record<VoiceInputState, string> = {
-  idle:         'Falar',
-  recording:    'Ouvindo…',
-  transcribing: 'Transcrevendo…',
-  error:        'Erro',
-}
-
 export function VoiceInputButton({ onTranscript, onError, disabled }: VoiceInputButtonProps) {
-  const { state, start } = useVoiceInput({ onTranscript, onError })
+  const { state, start, stop } = useVoiceInput({ onTranscript, onError })
 
   const isRecording    = state === 'recording'
   const isTranscribing = state === 'transcribing'
-  const isBusy         = isRecording || isTranscribing
+
+  function handlePointerDown(e: React.PointerEvent) {
+    e.preventDefault()
+    if (!disabled && !isTranscribing) start()
+  }
+
+  function handlePointerUp() {
+    if (isRecording) stop()
+  }
 
   return (
-    <button
-      type="button"
-      onClick={start}
-      disabled={disabled || isTranscribing}
-      title={LABEL[state]}
-      aria-label={LABEL[state]}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        padding: '4px 10px 4px 7px',
-        borderRadius: 10,
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <button
+        type="button"
+        aria-label={isRecording ? 'Gravando — solte para transcrever' : isTranscribing ? 'Transcrevendo…' : 'Segure para gravar'}
+        disabled={disabled || isTranscribing}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          border: 'none',
+          cursor: disabled || isTranscribing ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          userSelect: 'none',
+          touchAction: 'none',
+          transition: 'transform .12s, box-shadow .12s, background .18s',
+          background: isRecording
+            ? 'linear-gradient(140deg,#EF4444,#DC2626)'
+            : 'linear-gradient(140deg,#4A7C4E,#3D6641)',
+          boxShadow: isRecording
+            ? '0 0 0 8px rgba(220,38,38,0.18), 0 8px 24px rgba(220,38,38,0.35)'
+            : '0 0 0 6px rgba(61,102,65,0.12), 0 8px 24px rgba(44,74,46,0.30)',
+          transform: isRecording ? 'scale(1.08)' : 'scale(1)',
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        {isTranscribing
+          ? <Loader2 size={32} color="white" className="animate-spin" />
+          : <Mic size={32} color="white" strokeWidth={1.8} />
+        }
+      </button>
+
+      <span style={{
         fontSize: 12,
-        fontWeight: 700,
-        cursor: disabled || isTranscribing ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
-        transition: 'all .18s',
-        border: isRecording
-          ? '1.5px solid rgba(220,38,38,0.40)'
-          : '1.5px solid rgba(61,102,65,0.28)',
-        background: isRecording
-          ? 'rgba(220,38,38,0.08)'
-          : 'rgba(61,102,65,0.07)',
-        color: isRecording ? '#DC2626' : '#3D6641',
-        boxShadow: isRecording
-          ? '0 0 0 3px rgba(220,38,38,0.12)'
-          : undefined,
-      }}
-    >
-      {isTranscribing ? (
-        <Loader2 size={13} className="animate-spin" />
-      ) : isRecording ? (
-        <MicOff size={13} />
-      ) : (
-        <Mic size={13} />
-      )}
-      <span style={{ lineHeight: 1 }}>
-        {isBusy ? LABEL[state] : 'Voz'}
+        fontWeight: 600,
+        color: isRecording ? '#DC2626' : isTranscribing ? '#3D6641' : 'rgba(26,43,28,0.45)',
+        letterSpacing: '0.02em',
+        transition: 'color .18s',
+      }}>
+        {isRecording
+          ? '● Gravando… solte para enviar'
+          : isTranscribing
+          ? 'Transcrevendo com IA…'
+          : 'Segure para gravar'}
       </span>
-      {isRecording && (
-        <span style={{
-          width: 6, height: 6, borderRadius: '50%',
-          background: '#DC2626',
-          animation: 'pulse 1s ease-in-out infinite',
-        }} />
-      )}
-    </button>
+    </div>
   )
 }
