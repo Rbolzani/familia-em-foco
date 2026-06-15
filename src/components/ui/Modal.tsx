@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -25,9 +26,9 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!open || typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       style={{ background: 'rgba(14,22,15,0.50)', backdropFilter: 'blur(8px)' }}
@@ -66,6 +67,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
         {/* Body — scrollable so content + save button always reachable on mobile */}
         <div className="px-6 py-5 overflow-y-auto flex-1">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
