@@ -9,7 +9,7 @@ export default async function AlertasPage() {
 
   const { data: waSettings } = await supabase
     .from('notification_settings')
-    .select('whatsapp_number, daily_summary_enabled')
+    .select('whatsapp_number, daily_summary_enabled, summary_time')
     .eq('user_id', user.id)
     .single()
 
@@ -23,6 +23,7 @@ export default async function AlertasPage() {
       whatsapp={{
         number: waSettings?.whatsapp_number ?? '',
         enabled: waSettings?.daily_summary_enabled ?? false,
+        time: (waSettings?.summary_time ?? '07:00').slice(0, 5),
       }}
       twilioMode={twilioMode}
       twilioKeyword={twilioKeyword}

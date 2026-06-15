@@ -8,7 +8,7 @@ import { QRCodeSVG } from 'qrcode.react'
 interface Props {
   userId: string
   userEmail: string
-  whatsapp: { number: string; enabled: boolean }
+  whatsapp: { number: string; enabled: boolean; time: string }
   twilioMode?: boolean
   twilioKeyword?: string
 }
@@ -18,6 +18,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
 
   const [waNumber, setWaNumber]   = useState(whatsapp.number)
   const [waEnabled, setWaEnabled] = useState(whatsapp.enabled)
+  const [waTime, setWaTime]       = useState(whatsapp.time)
   const [waSaving, setWaSaving]   = useState(false)
   const [waTesting, setWaTesting] = useState(false)
 
@@ -39,6 +40,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
         user_id: userId,
         whatsapp_number: digits || null,
         daily_summary_enabled: enabled,
+        summary_time: waTime,
         updated_at: new Date().toISOString(),
       })
     setWaSaving(false)
@@ -172,7 +174,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
         </div>
 
         <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.55)', lineHeight: 1.5, marginBottom: 16 }}>
-          Todo dia às <strong style={{ color: '#1A2B1C' }}>7h da manhã</strong>, receba no WhatsApp o resumo
+          Todo dia no horário escolhido, receba no WhatsApp o resumo
           das atividades do dia e da semana — provas, consultas, quem leva e quem busca.
         </p>
 
@@ -200,12 +202,12 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
         </div>
 
         {/* Toggle */}
-        <div className="flex items-center justify-between p-3 rounded-xl mb-4"
+        <div className="flex items-center justify-between p-3 rounded-xl mb-3"
           style={{ background: waEnabled ? 'rgba(61,102,65,0.07)' : 'rgba(26,43,28,0.03)', border: `1px solid ${waEnabled ? 'rgba(61,102,65,0.22)' : 'rgba(26,43,28,0.08)'}` }}>
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1A2B1C' }}>Resumo diário ativo</div>
             <div style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
-              {waEnabled ? 'Você receberá a mensagem todas as manhãs às 7h' : 'Ative para começar a receber'}
+              {waEnabled ? `Você receberá a mensagem todo dia às ${waTime}` : 'Ative para começar a receber'}
             </div>
           </div>
           <button onClick={toggleWa}
@@ -216,6 +218,26 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
             <span style={{ position: 'absolute', top: 3, width: 20, height: 20, borderRadius: '50%', background: 'white',
               boxShadow: '0 2px 5px rgba(0,0,0,0.25)', left: waEnabled ? 25 : 3, transition: 'left .3s cubic-bezier(.4,0,.2,1)' }} />
           </button>
+        </div>
+
+        {/* Horário de envio */}
+        <div className="flex items-center justify-between p-3 rounded-xl mb-4"
+          style={{ background: 'rgba(26,43,28,0.03)', border: '1px solid rgba(26,43,28,0.08)' }}>
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1A2B1C' }}>Horário do envio</div>
+            <div style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
+              Fuso de Brasília · enviado a cada 15 min mais próximos
+            </div>
+          </div>
+          <input
+            type="time"
+            value={waTime}
+            step={900}
+            onChange={e => { setWaTime(e.target.value); }}
+            onBlur={() => saveWhatsApp()}
+            className="input-field"
+            style={{ width: 110, flexShrink: 0, textAlign: 'center', fontWeight: 700 }}
+          />
         </div>
 
         {/* Teste */}

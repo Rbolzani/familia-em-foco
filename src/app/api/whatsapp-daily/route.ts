@@ -5,9 +5,21 @@ import { adminClient, buildDailySummary, sendWhatsApp } from '@/lib/whatsapp'
 
 export const maxDuration = 60
 
+// Arredonda "HH:MM" para o slot de 15 min (cadência do cron).
+function slot15(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  const fm = Math.floor((m || 0) / 15) * 15
+  return `${String(h).padStart(2, '0')}:${String(fm).padStart(2, '0')}`
+}
+
 export async function GET(req: NextRequest) {
   const now = new Date().toISOString()
-  console.log(`[whatsapp-daily] iniciando às ${now}`)
+  // Hora atual no fuso de Brasília (HH:MM, 24h)
+  const nowSP = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(new Date())
+  const currentSlot = slot15(nowSP)
+  console.log(`[whatsapp-daily] iniciando às ${now} (SP ${nowSP}, slot ${currentSlot})`)
 
   // Vercel Cron envia Authorization: Bearer ${CRON_SECRET} automaticamente
   const auth = req.headers.get('authorization')
@@ -27,9 +39,9 @@ export async function GET(req: NextRequest) {
 
   const admin = adminClient()
 
-  const { data: settings, error: settingsError } = await admin
+  const { data: allSettings, error: settingsError } = await admin
     .from('notification_settings')
-    .select('user_id, whatsapp_number')
+    .select('user_id, whatsapp_number, summary_time')
     .eq('daily_summary_enabled', true)
     .not('whatsapp_number', 'is', null)
 
@@ -38,14 +50,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'DB error', detail: settingsError.message }, { status: 500 })
   }
 
-  const total = settings?.length ?? 0
-  console.log(`[whatsapp-daily] ${total} usuário(s) com resumo habilitado`)
+  // Só envia para quem escolheu um horário que cai no slot atual (15 min)
+  const settings = (allSettings ?? []).filter(s => {
+    const t = (s.summary_time ?? '07:00').slice(0, 5)
+    return slot15(t) === currentSlot
+  })
+
+  const total = settings.length
+  console.log(`[whatsapp-daily] ${allSettings?.length ?? 0} habilitado(s), ${total} no slot ${currentSlot}`)
 
   let sent = 0
   let skipped = 0
   let failed = 0
 
-  for (const s of settings ?? []) {
+  for (const s of settings) {
     try {
       const summary = await buildDailySummary(admin, s.user_id)
       if (!summary) {
