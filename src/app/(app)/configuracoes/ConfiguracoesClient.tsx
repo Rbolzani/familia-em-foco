@@ -52,8 +52,9 @@ export default function ConfiguracoesClient({
   const [generating, setGenerating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError]       = useState('')
+  const [origin, setOrigin]     = useState(baseUrl)
+  useEffect(() => { setOrigin(window.location.origin) }, [])
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : baseUrl
   const inviteUrl = (token: string) => `${origin}/convite/${token}`
 
   async function generateInvite() {
