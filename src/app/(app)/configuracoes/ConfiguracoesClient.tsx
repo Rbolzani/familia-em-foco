@@ -58,8 +58,8 @@ export default function ConfiguracoesClient({
 
   async function generateInvite() {
     setError('')
-    const mail = email.trim().toLowerCase()
-    if (!mail || !mail.includes('@')) { setError('Informe um email válido.'); return }
+    const mail = email.trim().toLowerCase() || null
+    if (mail && !mail.includes('@')) { setError('Email inválido.'); return }
     setGenerating(true)
 
     // Ensure family exists (owner bootstrap)
@@ -72,10 +72,12 @@ export default function ConfiguracoesClient({
     }
     if (!fid) { setError('Não foi possível criar a família.'); setGenerating(false); return }
 
-    // Expire prior pending invites for the same email
-    await supabase.from('family_invites')
-      .update({ status: 'expired' })
-      .eq('family_id', fid).eq('status', 'pending').eq('invited_email', mail)
+    // Expire prior pending invites for the same email (only if email given)
+    if (mail) {
+      await supabase.from('family_invites')
+        .update({ status: 'expired' })
+        .eq('family_id', fid).eq('status', 'pending').eq('invited_email', mail)
+    }
 
     const { data, error: insErr } = await supabase.from('family_invites')
       .insert({ family_id: fid, invited_by: userId, invited_email: mail, access_role: role })
@@ -84,7 +86,7 @@ export default function ConfiguracoesClient({
 
     if (insErr || !data) { setError('Erro ao gerar o convite.'); setGenerating(false); return }
 
-    setInvites(prev => [data as PendingInvite, ...prev.filter(i => i.invited_email !== mail)])
+    setInvites(prev => [data as PendingInvite, ...prev])
     setEmail('')
     setGenerating(false)
   }
@@ -223,7 +225,7 @@ export default function ConfiguracoesClient({
                     <Clock size={13} style={{ color: '#92400E', flexShrink: 0 }} />
                     <div className="flex-1 min-w-0">
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {inv.invited_email ?? 'Convite'}
+                        {inv.invited_email ?? '🔗 Link aberto (sem email)'}
                       </div>
                       <div style={{ fontSize: 10.5, color: '#92400E' }}>
                         {rm.short} · expira {new Date(inv.expires_at).toLocaleDateString('pt-BR')}
@@ -261,9 +263,12 @@ export default function ConfiguracoesClient({
 
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="email@exemplo.com"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 10, outline: 'none', background: '#fff' }}
+              placeholder="email@exemplo.com (opcional)"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 4, outline: 'none', background: '#fff' }}
             />
+            <p style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginBottom: 10 }}>
+              Deixe em branco para gerar um link sem email — qualquer pessoa com o link pode aceitar.
+            </p>
 
             <div className="space-y-2 mb-3">
               {ROLES.map(r => {
@@ -293,7 +298,7 @@ export default function ConfiguracoesClient({
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
               style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
               <UserPlus size={16} />
-              {generating ? 'Gerando convite...' : 'Gerar convite'}
+              {generating ? 'Gerando...' : 'Gerar link de convite'}
             </button>
           </div>
         ) : (
