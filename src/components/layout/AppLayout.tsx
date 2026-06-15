@@ -430,11 +430,14 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
         {/* Main nav items */}
         <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:0, padding:'4px 0' }}>
           <MobileNavItem href="/dashboard"  icon={LayoutDashboard} label="Início"     />
-          <MobileNavItem href="/escola"     icon={BookOpen}        label="Escola"     />
-          <MobileNavItem href="/atividades" icon={Trophy}          label="Atividades" />
-          <MobileNavItem href="/saude"      icon={HeartPulse}      label="Saúde"      />
           <MobileNavItem href="/calendario" icon={CalendarDays}    label="Agenda"     />
           <MobileNavItem href="/logistica"  icon={Car}             label="Logística"  />
+
+          <div style={{ height:1, background:'rgba(91,143,94,0.18)', margin:'6px 16px' }} />
+
+          <MobileNavItem href="/escola"     icon={BookOpen}        label="Escola"     />
+          <MobileNavItem href="/saude"      icon={HeartPulse}      label="Saúde"      />
+          <MobileNavItem href="/atividades" icon={Trophy}          label="Atividades" />
           <MobileNavItem href="/vault"      icon={FolderLock}      label="Documentos" />
         </div>
 
