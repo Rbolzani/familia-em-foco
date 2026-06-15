@@ -30,7 +30,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-      style={{ background: 'rgba(14,22,15,0.50)', backdropFilter: 'blur(8px)', overflowY: 'auto' }}
+      style={{ background: 'rgba(14,22,15,0.50)', backdropFilter: 'blur(8px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className={`w-full ${sizes[size]} animate-scale-in flex flex-col`}
