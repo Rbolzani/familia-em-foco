@@ -29,8 +29,12 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth')
   const isPublic = pathname === '/'
+  // Rotas de API fazem a própria autenticação (sessão ou CRON_SECRET).
+  // Nunca redirecionar API para a página de login — isso quebrava o cron
+  // do resumo diário (Vercel Cron não tem sessão → levava 307 → não rodava).
+  const isApi = pathname.startsWith('/api')
 
-  if (!user && !isAuthRoute && !isPublic) {
+  if (!user && !isAuthRoute && !isPublic && !isApi) {
     const loginUrl = new URL('/auth/login', request.url)
     // Preserva o destino (ex.: link de convite) para retornar após o login
     if (pathname !== '/dashboard') loginUrl.searchParams.set('redirect', pathname)
