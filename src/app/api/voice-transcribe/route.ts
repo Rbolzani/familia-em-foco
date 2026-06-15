@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
-
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 const ALLOWED_AUDIO_TYPES = [
   'audio/webm', 'audio/webm;codecs=opus',
@@ -11,9 +9,18 @@ const ALLOWED_AUDIO_TYPES = [
 ]
 
 export async function POST(request: NextRequest) {
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: 'OPENAI_API_KEY não configurada no servidor.' },
+      { status: 500 }
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   let formData: FormData
   try {
