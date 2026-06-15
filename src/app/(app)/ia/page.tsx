@@ -8,6 +8,7 @@ import {
   Bell, FolderLock, AlertCircle, Lock,
 } from 'lucide-react'
 import { useAccess } from '@/components/access/AccessContext'
+import { VoiceInputButton } from '@/components/ui/VoiceInputButton'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const NOISE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`
@@ -398,9 +399,15 @@ export default function IAPage() {
       {/* Text input */}
       {mode === 'text' && (
         <div className="animate-fade-up" style={{ ...CARD, padding: 16 }}>
-          <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]" style={{ color: 'rgba(26,43,28,0.50)' }}>
-            Digite ou cole o texto
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold uppercase tracking-[0.08em]" style={{ color: 'rgba(26,43,28,0.50)' }}>
+              Digite, cole ou fale
+            </label>
+            <VoiceInputButton
+              onTranscript={t => setText(prev => prev ? `${prev} ${t}` : t)}
+              onError={msg => setError(msg)}
+            />
+          </div>
           <textarea value={text} onChange={e => setText(e.target.value)} rows={6}
             placeholder="Ex: Prova de matemática dia 15/06, consulta pediatra 20/06 às 14h, renovar carteirinha do plano de saúde, RG do João..."
             className="w-full resize-none outline-none text-sm" style={{ background: 'transparent', color: '#1A2B1C' }} />
