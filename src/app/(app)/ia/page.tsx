@@ -8,6 +8,7 @@ import {
   Bell, FolderLock, AlertCircle, Lock,
 } from 'lucide-react'
 import { useAccess } from '@/components/access/AccessContext'
+import { VoiceInputButton } from '@/components/ui/VoiceInputButton'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const NOISE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`
@@ -276,7 +277,7 @@ export default function IAPage() {
           Captura com IA
         </h1>
         <p className="text-sm mt-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>
-          Envie foto ou texto — a IA classifica e organiza automaticamente em atividades, lembretes e documentos.
+          Envie áudio, prints de tela, fotos, documentos ou texto corrido — a IA classifica e organiza tudo automaticamente na agenda e inclui lembretes.
         </p>
       </div>
 
@@ -324,7 +325,7 @@ export default function IAPage() {
 
       {/* Mode tabs */}
       <div className="animate-fade-up p-[6px] flex gap-1.5" style={{ ...CARD, padding: 6 }}>
-        {[{ key: 'image', label: 'Foto / Imagem', icon: Camera }, { key: 'text', label: 'Texto livre', icon: FileText }].map(({ key, label, icon: Icon }) => (
+        {[{ key: 'image', label: 'Foto / Imagem', icon: Camera }, { key: 'text', label: 'Texto livre ou áudio', icon: FileText }].map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => { setMode(key as 'image' | 'text'); setActivities(null); setReminders(null); setDocuments(null); setError('') }}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[12px] text-sm font-bold transition-all"
             style={mode === key
@@ -395,15 +396,27 @@ export default function IAPage() {
         </div>
       )}
 
-      {/* Text input */}
+      {/* Text + voice input */}
       {mode === 'text' && (
-        <div className="animate-fade-up" style={{ ...CARD, padding: 16 }}>
-          <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]" style={{ color: 'rgba(26,43,28,0.50)' }}>
-            Digite ou cole o texto
-          </label>
-          <textarea value={text} onChange={e => setText(e.target.value)} rows={6}
-            placeholder="Ex: Prova de matemática dia 15/06, consulta pediatra 20/06 às 14h, renovar carteirinha do plano de saúde, RG do João..."
-            className="w-full resize-none outline-none text-sm" style={{ background: 'transparent', color: '#1A2B1C' }} />
+        <div className="animate-fade-up space-y-3">
+          <div style={{ ...CARD, padding: 16 }}>
+            <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]" style={{ color: 'rgba(26,43,28,0.50)' }}>
+              Digite ou cole o texto
+            </label>
+            <textarea value={text} onChange={e => setText(e.target.value)} rows={5}
+              placeholder="Ex: Prova de matemática dia 15/06, consulta pediatra 20/06 às 14h, renovar carteirinha do plano de saúde, RG do João..."
+              className="w-full resize-none outline-none text-sm" style={{ background: 'transparent', color: '#1A2B1C' }} />
+          </div>
+
+          <div className="animate-fade-up flex flex-col items-center py-4" style={{ ...CARD, padding: '24px 16px' }}>
+            <p className="text-xs font-bold uppercase tracking-[0.10em] mb-5" style={{ color: 'rgba(26,43,28,0.40)' }}>
+              ou grave um áudio
+            </p>
+            <VoiceInputButton
+              onTranscript={t => setText(prev => prev ? `${prev} ${t}` : t)}
+              onError={msg => setError(msg)}
+            />
+          </div>
         </div>
       )}
 
