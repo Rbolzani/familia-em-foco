@@ -140,26 +140,33 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
     )
   }
 
-  // ── Mobile sidebar NavItem — same visual as old bottom nav, now vertical ──
+  // ── Mobile sidebar NavItem ──
   function MobileNavItem({ href, icon: Icon, label, amber }: {
     href: string; icon: React.ElementType; label: string; amber?: boolean
   }) {
     const active = isActive(href)
     const color = amber
-      ? (active ? '#E5B87A'   : 'rgba(196,154,108,0.78)')
-      : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.42)')
+      ? (active ? '#E5B87A'   : 'rgba(196,154,108,0.72)')
+      : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.55)')
     return (
       <Link href={href} onClick={() => setMobileSidebarOpen(false)}
-        style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-          gap:3, width:58, height:46, position:'relative', textDecoration:'none', flexShrink:0 }}>
+        style={{ display:'flex', flexDirection:'row', alignItems:'center',
+          gap:12, height:48, padding:'0 16px', position:'relative',
+          textDecoration:'none', flexShrink:0 }}>
         {active && (
           <span style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)',
-            width:3, height:22, borderRadius:'0 3px 3px 0',
-            background:'linear-gradient(180deg,#C49A6C,#E5B87A)' }} />
+            width:4, height:28, borderRadius:'0 4px 4px 0',
+            background: amber
+              ? 'linear-gradient(180deg,#C49A6C,#E5B87A)'
+              : 'linear-gradient(180deg,#7AB87E,#D4E8D5)' }} />
         )}
-        <Icon size={18} strokeWidth={active ? 2.5 : 1.8} color={color} />
-        <span style={{ fontSize:8, fontWeight:600, lineHeight:1.2, letterSpacing:'0.01em',
-          textAlign:'center', color, maxWidth:52 }}>{label}</span>
+        <span style={{ width:32, height:32, borderRadius:10, flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          background: active ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)' }}>
+          <Icon size={17} strokeWidth={active ? 2.5 : 1.8} color={color} />
+        </span>
+        <span style={{ fontSize:14, fontWeight: active ? 700 : 500,
+          color, letterSpacing:'0.01em', lineHeight:1 }}>{label}</span>
       </Link>
     )
   }
@@ -382,16 +389,16 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
         }}
       />
 
-      {/* ── Mobile sidebar — 58px, same visual as old bottom bar, now vertical ── */}
+      {/* ── Mobile sidebar — 230px, slide-in via hambúrguer ── */}
       <div
         ref={navRef}
         className="md:hidden fixed top-0 left-0 bottom-0 z-[75]"
         style={{
-          width:58,
+          width:230,
           background:'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
-          borderRight:'1px solid rgba(91,143,94,0.14)',
-          boxShadow:'4px 0 20px rgba(10,20,12,0.30)',
-          transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-58px)',
+          borderRight:'1px solid rgba(91,143,94,0.18)',
+          boxShadow:'6px 0 28px rgba(10,20,12,0.38)',
+          transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-230px)',
           transition:'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
           display:'flex',
           flexDirection:'column',
@@ -399,32 +406,57 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
           paddingBottom:'env(safe-area-inset-bottom, 0px)',
         }}>
 
+        {/* Logo + fechar */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'14px 16px 12px', borderBottom:'1px solid rgba(91,143,94,0.14)', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(140deg,#3D6641,#2C4A2E)',
+              display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+              boxShadow:'0 3px 10px rgba(44,74,46,0.30)' }}>
+              <Leaf size={17} color="#D4E8D5" />
+            </div>
+            <div style={{ fontFamily:'var(--font-lora)', fontSize:14, fontWeight:700,
+              color:'rgba(212,232,213,0.92)', lineHeight:1.2 }}>
+              Família<br/>em Foco
+            </div>
+          </div>
+          <button onClick={() => setMobileSidebarOpen(false)}
+            style={{ width:30, height:30, borderRadius:8, border:'none', cursor:'pointer',
+              background:'rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <X size={15} color="rgba(180,220,185,0.60)" />
+          </button>
+        </div>
+
         {/* Main nav items */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:0 }}>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:0, padding:'4px 0' }}>
           <MobileNavItem href="/dashboard"  icon={LayoutDashboard} label="Início"     />
           <MobileNavItem href="/escola"     icon={BookOpen}        label="Escola"     />
           <MobileNavItem href="/atividades" icon={Trophy}          label="Atividades" />
           <MobileNavItem href="/saude"      icon={HeartPulse}      label="Saúde"      />
           <MobileNavItem href="/calendario" icon={CalendarDays}    label="Agenda"     />
           <MobileNavItem href="/logistica"  icon={Car}             label="Logística"  />
-          <MobileNavItem href="/vault"      icon={FolderLock}      label="Docs"       />
+          <MobileNavItem href="/vault"      icon={FolderLock}      label="Documentos" />
         </div>
 
         {/* Divider */}
-        <div style={{ height:0.5, background:'rgba(91,143,94,0.22)', margin:'4px 10px' }} />
+        <div style={{ height:1, background:'rgba(91,143,94,0.18)', margin:'2px 16px' }} />
 
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
-          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        amber />
-          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso" amber />
-          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"            amber />
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber />
+          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber />
+          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
-            style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-              gap:3, width:58, height:46, background:'none', border:'none', cursor:'pointer', flexShrink:0 }}>
-            <LogOut size={18} strokeWidth={1.8} color="rgba(196,154,108,0.78)" />
-            <span style={{ fontSize:8, fontWeight:600, lineHeight:1.2, letterSpacing:'0.01em',
-              textAlign:'center', color:'rgba(196,154,108,0.78)' }}>Sair</span>
+            style={{ display:'flex', flexDirection:'row', alignItems:'center',
+              gap:12, height:48, padding:'0 16px',
+              background:'none', border:'none', cursor:'pointer', flexShrink:0 }}>
+            <span style={{ width:32, height:32, borderRadius:10, flexShrink:0,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              background:'rgba(255,255,255,0.05)' }}>
+              <LogOut size={17} strokeWidth={1.8} color="rgba(196,154,108,0.72)" />
+            </span>
+            <span style={{ fontSize:14, fontWeight:500, color:'rgba(196,154,108,0.72)' }}>Sair da conta</span>
           </button>
         </div>
 
