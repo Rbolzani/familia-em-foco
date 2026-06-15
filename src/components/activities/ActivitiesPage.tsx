@@ -7,7 +7,6 @@ import Modal from '@/components/ui/Modal'
 import { DeadlineBadge } from '@/components/ui/Badge'
 import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
-import { useRealtime } from '@/lib/useRealtime'
 import { useAccess } from '@/components/access/AccessContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -77,6 +76,10 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   const [activities, setActivities] = useState<Activity[]>(initialActivities ?? [])
   const [children, setChildren] = useState<Child[]>(initialChildren ?? [])
   const [loading, setLoading] = useState(!initialActivities)
+
+  // Realtime: RealtimeSync (layout) chama router.refresh() → props frescas chegam → sincroniza estado
+  useEffect(() => { setActivities(initialActivities ?? []) }, [initialActivities])
+  useEffect(() => { setChildren(initialChildren ?? []) }, [initialChildren])
   const [filterChild, setFilterChild] = useState('')
   const [modal, setModal] = useState<{ mode: 'new' | 'edit'; activity?: Activity } | null>(null)
   const [saving, setSaving] = useState(false)
@@ -100,9 +103,6 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   }, [category])
 
   useEffect(() => { load() }, [load])
-  // Realtime: recarrega a lista quando o parceiro cria/edita atividades
-  // ou muda marcadores de leva/busca (escopo de família via RLS).
-  useRealtime(['activities'], load)
 
   function openNew() {
     setForm({ ...emptyForm, date: new Date().toISOString().split('T')[0], child_id: children[0]?.id ?? '' })
@@ -218,6 +218,9 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
               index={gi}
               onEdit={(a) => openEdit(a)}
               onDelete={(id) => handleDelete(id)}
+              onLogisticsUpdate={(actId, field, val) =>
+                setActivities(prev => prev.map(a => a.id === actId ? { ...a, [field]: val } : a))
+              }
               familyMembers={familyMembers}
               currentUserId={currentUserId}
             />
@@ -437,28 +440,24 @@ function LogisticsChip({
 }
 
 function ActivityCard({
-  group, index, onEdit, onDelete, familyMembers = [], currentUserId,
+  group, index, onEdit, onDelete, onLogisticsUpdate, familyMembers = [], currentUserId,
 }: {
   group: ActivityWithChild[]
   accent: string
   index: number
   onEdit: (a: ActivityWithChild) => void
   onDelete: (id: string) => void
+  onLogisticsUpdate: (actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null) => void
   familyMembers?: { user_id: string; display_name: string | null; role: string }[]
   currentUserId?: string
 }) {
   const { canEdit } = useAccess()
-  const [localGroup, setLocalGroup] = useState<ActivityWithChild[]>(group)
-  const first  = localGroup[0]
-  const merged = localGroup.length > 1
+  const first  = group[0]
+  const merged = group.length > 1
   const fmtDate = (d: string | null) => d ? format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : '—'
 
   // Only show logistics chips for dated activities when family sharing is active
   const showLogistics = !!first.date && familyMembers.length > 0
-
-  function handleLogisticsUpdate(actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null) {
-    setLocalGroup(prev => prev.map(a => a.id === actId ? { ...a, [field]: value } : a))
-  }
 
   return (
     <div
@@ -472,7 +471,7 @@ function ActivityCard({
             {first.title}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {localGroup.map(a => a.child && (
+            {group.map(a => a.child && (
               <span key={a.id} className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                 style={{ background: a.child.avatar_color }}>
                 {a.child.name}
@@ -500,7 +499,7 @@ function ActivityCard({
           {/* Logistics chips — one row per activity in group */}
           {showLogistics && (
             <div className="mt-2.5 pt-2 space-y-1.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              {localGroup.map(a => (
+              {group.map(a => (
                 <div key={a.id} className="flex gap-2">
                   {merged && a.child && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0 self-center"
@@ -515,7 +514,7 @@ function ActivityCard({
                       currentUserId={currentUserId}
                       familyMembers={familyMembers}
                       activityId={a.id}
-                      onUpdated={(field, val) => handleLogisticsUpdate(a.id, field, val)}
+                      onUpdated={(field, val) => onLogisticsUpdate(a.id, field, val)}
                     />
                     <LogisticsChip
                       type="picks"
@@ -523,7 +522,7 @@ function ActivityCard({
                       currentUserId={currentUserId}
                       familyMembers={familyMembers}
                       activityId={a.id}
-                      onUpdated={(field, val) => handleLogisticsUpdate(a.id, field, val)}
+                      onUpdated={(field, val) => onLogisticsUpdate(a.id, field, val)}
                     />
                   </div>
                   {merged && canEdit && (
@@ -548,7 +547,7 @@ function ActivityCard({
           {/* Per-child action rows when merged and NO logistics */}
           {merged && !showLogistics && canEdit && (
             <div className="mt-2.5 space-y-1.5 border-t pt-2" style={{ borderColor:'rgba(0,0,0,0.06)' }}>
-              {localGroup.map(a => (
+              {group.map(a => (
                 <div key={a.id} className="flex items-center gap-2">
                   {a.child && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0"
