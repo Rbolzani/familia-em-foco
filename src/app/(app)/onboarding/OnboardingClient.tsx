@@ -245,17 +245,25 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
       if (!user) throw new Error('Sessão expirada.')
 
       // Garante que a família existe e obtém o family_id
-      let { data: families, error: familyErr } = await supabase.rpc('get_my_families')
-      if (familyErr) throw new Error(`Família: ${familyErr.message}`)
-      if (!families || families.length === 0) {
+      let { data: family } = await supabase
+        .from('families')
+        .select('id')
+        .eq('created_by', user.id)
+        .maybeSingle()
+
+      if (!family) {
         const familyName = (user.user_metadata?.family_name as string | undefined)?.trim() || 'Minha Família'
         const { error: createErr } = await supabase.rpc('create_my_family', { p_name: familyName })
         if (createErr) throw new Error(`Criar família: ${createErr.message}`)
-        const { data: refreshed } = await supabase.rpc('get_my_families')
-        families = refreshed
+        const { data: refreshed } = await supabase
+          .from('families')
+          .select('id')
+          .eq('created_by', user.id)
+          .maybeSingle()
+        family = refreshed
       }
-      const familyId = families?.[0]?.id
-      if (!familyId) throw new Error('Não foi possível obter o ID da família.')
+
+      if (!family?.id) throw new Error('Família não encontrada. Tente fazer logout e login novamente.')
 
       for (let i = 0; i < valid.length; i++) {
         const child = valid[i]
@@ -263,7 +271,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
           .from('children')
           .insert({
             user_id: user.id,
-            family_id: familyId,
+            family_id: family.id,
             name: child.name.trim(),
             birth_date: child.birth_date || null,
             school_name: child.school_name.trim() || null,
