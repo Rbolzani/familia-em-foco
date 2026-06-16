@@ -11,6 +11,7 @@ import {
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
 import { Toaster } from '@/components/ui/Toast'
+import TourOverlay from '@/components/tour/TourOverlay'
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface SidebarChild {
@@ -184,12 +185,12 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
   const panelBorder= darkMode ? 'rgba(80,130,84,0.22)' : 'rgba(61,102,65,0.22)'
 
   // ── Desktop NavItem ──────────────────────────────────────────────────
-  function NavItem({ href, label, icon: Icon, badge }: {
-    href: string; label: string; icon: React.ElementType; badge?: number
+  function NavItem({ href, label, icon: Icon, badge, tourId }: {
+    href: string; label: string; icon: React.ElementType; badge?: number; tourId?: string
   }) {
     const active = isActive(href)
     return (
-      <Link href={href}
+      <Link href={href} data-tour={tourId}
         className={`flex items-center gap-3 px-3 py-[6px] rounded-[11px] text-[14px] font-medium transition-all duration-150 relative mb-[1px] ${active ? 'nav-active' : 'hover:bg-black/[0.04]'}`}
         style={active ? { color:'#2C4A2E', fontWeight:700 } : { color:'rgba(26,43,28,0.50)' }}>
         {active && (
@@ -217,8 +218,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
   }
 
   // ── Mobile sidebar NavItem ──
-  function MobileNavItem({ href, icon: Icon, label, amber }: {
-    href: string; icon: React.ElementType; label: string; amber?: boolean
+  function MobileNavItem({ href, icon: Icon, label, amber, tourId }: {
+    href: string; icon: React.ElementType; label: string; amber?: boolean; tourId?: string
   }) {
     const active = isActive(href)
     const color = amber
@@ -226,6 +227,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
       : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.55)')
     return (
       <Link href={href} onClick={() => setMobileSidebarOpen(false)}
+        data-tour={tourId}
         style={{ display:'flex', flexDirection:'row', alignItems:'center',
           gap:12, height:48, padding:'0 16px', position:'relative',
           textDecoration:'none', flexShrink:0 }}>
@@ -316,6 +318,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
+              <NavItem href="/ia"         label="Captura IA" icon={Sparkles}   tourId="nav-ia" />
             </div>
           </nav>
 
@@ -323,7 +326,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <div style={{ flexShrink:0, borderTop:'1px solid rgba(61,102,65,0.14)', display:'flex', flexDirection:'column' }}>
 
             {/* Filhos — scrollable */}
-            <div style={{ padding:'8px 12px 4px', overflowY:'auto', maxHeight:160 }}>
+            <div data-tour="nav-children" style={{ padding:'8px 12px 4px', overflowY:'auto', maxHeight:160 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 7px' }}>
                 <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
                 <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
@@ -375,7 +378,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
                 Configurações
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
-              <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} />
+              <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
               <NavItem href="/alertas"       label="Alertas"             icon={Bell} />
             </div>
 
@@ -498,7 +501,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             </div>
 
             {/* Captura IA */}
-            <Link href="/ia">
+            <Link href="/ia" data-tour="nav-ia">
               <div className="flex items-center gap-1.5 rounded-[13px] px-3"
                 style={{ height:36, background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 3px 12px rgba(44,74,46,0.30)' }}>
                 <Sparkles size={13} color="#D4E8D5" />
@@ -585,8 +588,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
 
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
-          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber />
-          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber />
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber tourId="nav-children" />
+          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber tourId="nav-invite" />
           <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
@@ -761,6 +764,9 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           </div>
         </>
       )}
+
+      {/* ── Tour overlay — guia onboarding ── */}
+      <TourOverlay />
 
     </div>
   )

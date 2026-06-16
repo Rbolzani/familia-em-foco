@@ -4,6 +4,7 @@ import RealtimeSync from '@/components/layout/RealtimeSync'
 import { getAccess, getActiveFamily } from '@/lib/access'
 import { AccessProvider } from '@/components/access/AccessContext'
 import PartnerBanner from '@/components/access/PartnerBanner'
+import { TourProvider } from '@/components/tour/TourContext'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,13 +14,17 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     getActiveFamily(supabase),
   ])
 
+  const hasChildren = (sidebarChildren ?? []).length > 0
+
   return (
-    <AccessProvider value={access}>
-      <AppLayout sidebarChildren={sidebarChildren ?? []} activeFamilyId={activeFamilyId}>
-        <RealtimeSync />
-        <PartnerBanner />
-        {children}
-      </AppLayout>
-    </AccessProvider>
+    <TourProvider hasChildren={hasChildren}>
+      <AccessProvider value={access}>
+        <AppLayout sidebarChildren={sidebarChildren ?? []} activeFamilyId={activeFamilyId}>
+          <RealtimeSync />
+          <PartnerBanner />
+          {children}
+        </AppLayout>
+      </AccessProvider>
+    </TourProvider>
   )
 }

@@ -8,10 +8,6 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  // Novos usuários sem filhos vão para o onboarding
-  const { data: hasChildren } = await supabase.from('children').select('id').limit(1)
-  if (!hasChildren || hasChildren.length === 0) redirect('/onboarding')
-
   const today   = new Date()
   // Use Brazil timezone (America/Sao_Paulo) — server runs in UTC, so toISOString() would
   // give tomorrow's date for Brazilian users between 21h–24h local time.

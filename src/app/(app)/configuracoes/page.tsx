@@ -1,6 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ConfiguracoesClient from './ConfiguracoesClient'
+import { TourAdvancer } from '@/components/tour/TourAdvancer'
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient()
@@ -84,6 +85,8 @@ export default async function ConfiguracoesPage() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   return (
+    <>
+    <TourAdvancer step="invite" />
     <ConfiguracoesClient
       userId={user.id}
       userEmail={user.email ?? ''}
@@ -96,5 +99,6 @@ export default async function ConfiguracoesPage() {
       members={members}
       pendingInvites={pendingInvites}
     />
+    </>
   )
 }

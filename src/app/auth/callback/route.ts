@@ -27,11 +27,7 @@ export async function GET(request: Request) {
           }
         }
 
-        // Redireciona novos usuários (sem filhos) para o onboarding
-        const { data: children } = await supabase.from('children').select('id').limit(1)
-        const isNewUser = !children || children.length === 0
-        const destination = isNewUser && next === '/dashboard' ? '/onboarding' : next
-        return NextResponse.redirect(`${origin}${destination}`)
+        return NextResponse.redirect(`${origin}${next}`)
       }
       return NextResponse.redirect(`${origin}${next}`)
     }

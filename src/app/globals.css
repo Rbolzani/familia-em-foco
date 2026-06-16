@@ -109,6 +109,10 @@ h1, h2, h3   { font-family: var(--font-lora), Georgia, serif; }
 @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
 @keyframes scaleIn { from { opacity:0; transform:scale(0.95) } to { opacity:1; transform:scale(1) } }
 @keyframes float   { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-6px) } }
+@keyframes tour-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(90,140,94,0.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(90,140,94,0.10); }
+}
 
 .animate-fade-up  { animation: fadeUp  .45s cubic-bezier(.22,.68,0,1.2) both; }
 .animate-fade-in  { animation: fadeIn  .3s ease both; }
