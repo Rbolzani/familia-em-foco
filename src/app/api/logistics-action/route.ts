@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
 
   // Helper: get user's whatsapp phone from notification_settings
   async function getUserPhone(userId: string): Promise<string | null> {
-    const { data } = await admin.from('notification_settings').select('phone').eq('user_id', userId).maybeSingle()
-    return data?.phone ?? null
+    const { data } = await admin.from('notification_settings').select('whatsapp_number').eq('user_id', userId).maybeSingle()
+    return data?.whatsapp_number ?? null
   }
 
   // Helper: get user's display name

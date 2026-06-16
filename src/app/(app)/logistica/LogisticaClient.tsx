@@ -97,11 +97,13 @@ function LogChip({
   }
 
   // Quem o usuário atual pode sugerir:
-  // Owner → qualquer membro; Partner → só a si mesmo
+  // Owner → qualquer membro; Partner → a si mesmo OU ao owner (nunca a outro partner)
   const canSuggestTo = (targetId: string) => {
     if (targetId === currentUserId) return true
     if (isOwner) return true
-    return false
+    // partner pode sugerir ao owner mas não a outros partners
+    const target = familyMembers.find(m => m.user_id === targetId)
+    return target?.role === 'owner'
   }
 
   // Verificar se slot está bloqueado: alguém já confirmou E não sou eu, e não é pending

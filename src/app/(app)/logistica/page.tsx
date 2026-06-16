@@ -1,6 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getFamilyMembersForUser } from '@/lib/get-family-members'
 import LogisticaClient from './LogisticaClient'
 
 export default async function LogisticaPage() {
@@ -10,7 +9,7 @@ export default async function LogisticaPage() {
 
   const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
 
-  // Resolve familyId for this user (owner or member)
+  // Resolve familyId: owner ou member
   const { data: ownedFamily } = await supabase.from('families').select('id').eq('created_by', user.id).maybeSingle()
   let familyId = ownedFamily?.id ?? null
   if (!familyId) {
@@ -18,7 +17,7 @@ export default async function LogisticaPage() {
     familyId = membership?.family_id ?? null
   }
 
-  const [{ data: activities }, { data: children }, familyMembers, { data: pendingSuggestions }] = await Promise.all([
+  const [{ data: activities }, { data: children }, { data: rawMembers }, { data: pendingSuggestions }] = await Promise.all([
     supabase.from('activities')
       .select('*, child:children(name, avatar_color)')
       .not('date', 'is', null)
@@ -26,14 +25,29 @@ export default async function LogisticaPage() {
       .neq('status', 'cancelado')
       .order('date').order('time', { nullsFirst: false }),
     supabase.from('children').select('*').order('sort_order'),
-    getFamilyMembersForUser(user.id),
     familyId
-      ? supabase.from('logistics_suggestions')
-          .select('*')
-          .eq('family_id', familyId)
-          .eq('status', 'pending')
+      ? supabase.from('family_members').select('user_id, display_name, role').eq('family_id', familyId)
+      : Promise.resolve({ data: [] }),
+    familyId
+      ? supabase.from('logistics_suggestions').select('*').eq('family_id', familyId).eq('status', 'pending')
       : Promise.resolve({ data: [] }),
   ])
+
+  // Enriquecer display_name nulos com email via admin (igual às configurações)
+  const members = rawMembers ?? []
+  const missingIds = members.filter(m => !m.display_name).map(m => m.user_id)
+  let emailMap: Record<string, string> = {}
+  if (missingIds.length > 0) {
+    const admin = createAdminClient()
+    const { data: usersRes } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    if (usersRes?.users) {
+      usersRes.users.forEach(u => { emailMap[u.id] = u.email ?? '' })
+    }
+  }
+  const familyMembers = members.map(m => ({
+    ...m,
+    display_name: m.display_name ?? emailMap[m.user_id] ?? null,
+  }))
 
   return (
     <LogisticaClient
