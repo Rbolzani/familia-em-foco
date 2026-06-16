@@ -11,7 +11,6 @@ import {
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
 import { Toaster } from '@/components/ui/Toast'
-import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface SidebarChild {
@@ -26,7 +25,6 @@ interface SidebarChild {
 interface Props {
   children: React.ReactNode
   sidebarChildren: SidebarChild[]
-  families?: FamilyOption[]
 }
 
 // ── Palettes ───────────────────────────────────────────────────────────
@@ -48,7 +46,7 @@ function calcAge(birthDate: string | null) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────
-export default function AppLayout({ children, sidebarChildren: initial, families = [] }: Props) {
+export default function AppLayout({ children, sidebarChildren: initial }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
@@ -367,11 +365,6 @@ export default function AppLayout({ children, sidebarChildren: initial, families
               )}
             </div>
 
-            {/* Seletor de família (desktop) */}
-            <div style={{ padding:'8px 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
-              <FamilySwitcher families={families} />
-            </div>
-
             {/* Configurações section */}
             <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
@@ -437,9 +430,6 @@ export default function AppLayout({ children, sidebarChildren: initial, families
                 <div style={{ fontSize:13 }}>em Foco</div>
               </div>
             </div>
-
-            {/* Seletor de família (só aparece quando usuário tem 2+ famílias) */}
-            <FamilySwitcher families={families} />
 
             {/* Notificações (sino) */}
             <div ref={notifRef} className="relative">

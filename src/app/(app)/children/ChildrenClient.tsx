@@ -7,6 +7,7 @@ import Modal from '@/components/ui/Modal'
 import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAccess } from '@/components/access/AccessContext'
+import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
 
 // Stable singleton — not re-created on every render
 const supabase = createClient()
@@ -149,11 +150,12 @@ function PhotoPicker({ preview, onFile, onClear }: {
 }
 
 // ── Main component ────────────────────────────────────────────────────────
-interface Props { initialChildren: Child[] }
+interface Props { initialChildren: Child[]; families: FamilyOption[] }
 
-export default function ChildrenClient({ initialChildren }: Props) {
+export default function ChildrenClient({ initialChildren, families }: Props) {
   const { canEdit } = useAccess()
   const [children,     setChildren]     = useState<Child[]>(initialChildren)
+  useEffect(() => { setChildren(initialChildren) }, [initialChildren])
   const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
   const [saving,       setSaving]       = useState(false)
   const [saveError,    setSaveError]    = useState<string|null>(null)
@@ -405,6 +407,15 @@ export default function ChildrenClient({ initialChildren }: Props) {
             <Plus size={16} /> Adicionar
           </button>
         )}
+      </div>
+
+      {/* Seletor de conta (família) — gerencia os filhos da família escolhida */}
+      <div className="animate-fade-up flex items-center justify-between gap-3 p-3 rounded-2xl"
+        style={{ background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.14)' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(26,43,28,0.55)' }}>
+          Gerenciando filhos da conta:
+        </span>
+        <FamilySwitcher families={families} />
       </div>
 
       {/* Delete error banner */}

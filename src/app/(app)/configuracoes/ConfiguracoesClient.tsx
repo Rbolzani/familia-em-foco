@@ -25,6 +25,9 @@ interface Props {
   userEmail: string
   familyId: string | null
   isOwner: boolean
+  ownerId: string | null
+  ownerDisplayName: string | null
+  ownerEmail: string | null
   baseUrl: string
   members: Member[]
   pendingInvites: PendingInvite[]
@@ -38,7 +41,7 @@ const ROLES: { key: AccessRole; label: string; short: string; desc: string; icon
 const roleMeta = (r: string) => ROLES.find(x => x.key === r) ?? ROLES[1]
 
 export default function ConfiguracoesClient({
-  userId, userEmail, familyId, isOwner, baseUrl,
+  userId, userEmail, familyId, isOwner, ownerId, ownerDisplayName, ownerEmail, baseUrl,
   members: initialMembers, pendingInvites: initialInvites,
 }: Props) {
   const supabase = createClient()
@@ -150,17 +153,20 @@ export default function ConfiguracoesClient({
 
         {/* Members */}
         <div className="space-y-2 mb-5">
-          {/* Owner */}
+          {/* Owner — sempre o proprietário real da família ativa, mesmo quando quem está olhando é um parceiro */}
           <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(61,102,65,0.06)', border: '1px solid rgba(61,102,65,0.12)' }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-none"
               style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
-              {(me?.display_name ?? userEmail).charAt(0).toUpperCase()}
+              {(isOwner ? (me?.display_name ?? userEmail) : (ownerDisplayName ?? ownerEmail ?? 'P')).charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <div style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C' }}>
-                {me?.display_name ?? 'Você'} <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', fontWeight: 400 }}>({userEmail})</span>
+                {isOwner
+                  ? <>Você <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', fontWeight: 400 }}>({userEmail})</span></>
+                  : <>{ownerDisplayName ?? ownerEmail ?? 'Proprietário(a)'}{ownerEmail && ownerDisplayName ? <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', fontWeight: 400 }}> ({ownerEmail})</span> : null}</>
+                }
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)' }}>Proprietário(a)</div>
+              <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)' }}>Proprietário(a){ownerId === userId ? '' : ' · convidou você'}</div>
             </div>
             <Crown size={15} style={{ color: '#C49A6C', flexShrink: 0 }} />
           </div>

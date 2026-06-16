@@ -7,33 +7,30 @@ export default async function ConfiguracoesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  // Family owned by this user
-  const { data: familyData } = await supabase
-    .from('families')
-    .select('id, name, created_by')
-    .eq('created_by', user.id)
-    .maybeSingle()
+  // Família ATIVA do usuário (respeitando o seletor de família, não apenas "qual família ele criou")
+  const { data: activeFamilyId } = await supabase.rpc('auth_family_id')
 
-  let familyId = familyData?.id ?? null
-  let isOwner = !!familyData
+  let familyId: string | null = activeFamilyId ?? null
+  let isOwner = false
+  let ownerId: string | null = null
 
-  // If not an owner, maybe a partner in someone else's family
-  if (!familyId) {
-    const { data: memberData } = await supabase
-      .from('family_members')
-      .select('family_id')
-      .eq('user_id', user.id)
-      .order('joined_at', { ascending: false })
-      .limit(1)
+  if (familyId) {
+    const { data: famRow } = await supabase
+      .from('families')
+      .select('created_by')
+      .eq('id', familyId)
       .maybeSingle()
-    familyId = memberData?.family_id ?? null
-    isOwner = false
+    ownerId = famRow?.created_by ?? null
+    isOwner = ownerId === user.id
+  } else {
+    // Usuário sem nenhuma família ainda — pode criar uma (bootstrap no convite)
+    isOwner = true
   }
-
-  if (!familyId && !isOwner) isOwner = true
 
   let members: { id: string; user_id: string; display_name: string | null; role: string; access_role: string | null; joined_at: string }[] = []
   let pendingInvites: { id: string; token: string; invited_email: string | null; access_role: string; expires_at: string }[] = []
+  let ownerDisplayName: string | null = null
+  let ownerEmail: string | null = null
 
   if (familyId) {
     const { data: mems } = await supabase
@@ -43,10 +40,12 @@ export default async function ConfiguracoesPage() {
       .order('joined_at')
     const rawMembers = mems ?? []
 
-    // Enrich partners whose display_name is null with their auth email
-    const missingIds = rawMembers
-      .filter(m => !m.display_name)
-      .map(m => m.user_id)
+    // Enrich members whose display_name is null with their auth email
+    // (includes the owner, who may not even have a row in family_members)
+    const missingIds = Array.from(new Set([
+      ...rawMembers.filter(m => !m.display_name).map(m => m.user_id),
+      ...(ownerId ? [ownerId] : []),
+    ]))
 
     let emailMap: Record<string, string> = {}
     if (missingIds.length > 0) {
@@ -61,6 +60,12 @@ export default async function ConfiguracoesPage() {
       ...m,
       display_name: m.display_name ?? emailMap[m.user_id] ?? null,
     }))
+
+    if (ownerId) {
+      const ownerMember = rawMembers.find(m => m.user_id === ownerId)
+      ownerDisplayName = ownerMember?.display_name ?? emailMap[ownerId] ?? null
+      ownerEmail = ownerId === user.id ? (user.email ?? null) : (emailMap[ownerId] ?? null)
+    }
 
     if (isOwner) {
       const { data: invs } = await supabase
@@ -82,6 +87,9 @@ export default async function ConfiguracoesPage() {
       userEmail={user.email ?? ''}
       familyId={familyId}
       isOwner={isOwner}
+      ownerId={ownerId}
+      ownerDisplayName={ownerDisplayName}
+      ownerEmail={ownerEmail}
       baseUrl={baseUrl}
       members={members}
       pendingInvites={pendingInvites}
