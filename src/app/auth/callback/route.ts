@@ -11,12 +11,10 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // Cria família automaticamente se for o primeiro login (novo cadastro)
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: families } = await supabase.rpc('get_my_families')
         if (!families || families.length === 0) {
-          // Só cria família se não for partner de nenhuma família existente
           const { data: membership } = await supabase
             .from('family_members')
             .select('id')
@@ -28,6 +26,12 @@ export async function GET(request: Request) {
             await supabase.rpc('create_my_family', { p_name: familyName })
           }
         }
+
+        // Redireciona novos usuários (sem filhos) para o onboarding
+        const { data: children } = await supabase.from('children').select('id').limit(1)
+        const isNewUser = !children || children.length === 0
+        const destination = isNewUser && next === '/dashboard' ? '/onboarding' : next
+        return NextResponse.redirect(`${origin}${destination}`)
       }
       return NextResponse.redirect(`${origin}${next}`)
     }
