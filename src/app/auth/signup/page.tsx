@@ -8,6 +8,7 @@ import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 export default function SignupPage() {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [familyName, setFamilyName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -23,7 +24,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: { full_name: name },
+        data: { full_name: name, family_name: familyName.trim() || 'Minha Família' },
         emailRedirectTo: `${window.location.origin}/auth/callback${window.location.search}`,
       },
     })
@@ -138,6 +139,13 @@ export default function SignupPage() {
                 <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>Seu nome</label>
                 <input type="text" required value={name} onChange={e => setName(e.target.value)}
                   placeholder="João Silva" className="input-field" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: '#8585A8' }}>Nome da família</label>
+                <p className="text-xs mb-2" style={{ color: '#C0BFD5' }}>Como seus filhos e parceiros verão sua conta</p>
+                <input type="text" required value={familyName} onChange={e => setFamilyName(e.target.value)}
+                  placeholder="Ex.: Família Silva" className="input-field" />
               </div>
 
               <div>
