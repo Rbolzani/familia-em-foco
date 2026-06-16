@@ -13,15 +13,17 @@ export default async function ConfiguracoesPage() {
   let familyId: string | null = activeFamilyId ?? null
   let isOwner = false
   let ownerId: string | null = null
+  let familyCurrentName: string | null = null
 
   if (familyId) {
     const { data: famRow } = await supabase
       .from('families')
-      .select('created_by')
+      .select('created_by, name')
       .eq('id', familyId)
       .maybeSingle()
     ownerId = famRow?.created_by ?? null
     isOwner = ownerId === user.id
+    familyCurrentName = famRow?.name ?? null
   } else {
     // Usuário sem nenhuma família ainda — pode criar uma (bootstrap no convite)
     isOwner = true
@@ -86,6 +88,7 @@ export default async function ConfiguracoesPage() {
       userId={user.id}
       userEmail={user.email ?? ''}
       familyId={familyId}
+      familyCurrentName={familyCurrentName}
       isOwner={isOwner}
       ownerId={ownerId}
       ownerDisplayName={ownerDisplayName}
