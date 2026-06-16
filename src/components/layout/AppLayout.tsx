@@ -11,6 +11,7 @@ import {
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
 import { Toaster } from '@/components/ui/Toast'
+import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface SidebarChild {
@@ -25,6 +26,7 @@ interface SidebarChild {
 interface Props {
   children: React.ReactNode
   sidebarChildren: SidebarChild[]
+  families?: FamilyOption[]
 }
 
 // ── Palettes ───────────────────────────────────────────────────────────
@@ -46,7 +48,7 @@ function calcAge(birthDate: string | null) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────
-export default function AppLayout({ children, sidebarChildren: initial }: Props) {
+export default function AppLayout({ children, sidebarChildren: initial, families = [] }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
@@ -430,6 +432,9 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 <div style={{ fontSize:13 }}>em Foco</div>
               </div>
             </div>
+
+            {/* Seletor de família (só aparece quando usuário tem 2+ famílias) */}
+            <FamilySwitcher families={families} />
 
             {/* Notificações (sino) */}
             <div ref={notifRef} className="relative">
