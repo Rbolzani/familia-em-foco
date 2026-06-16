@@ -450,8 +450,8 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
 
               {/* Notif dropdown */}
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-xl z-50"
-                  style={{ width:300, maxHeight:360, overflowY:'auto',
+                <div className="rounded-2xl shadow-xl z-50"
+                  style={{ position:'fixed', top:60, right:8, left:8, maxWidth:360, margin:'0 auto', maxHeight:'70vh', overflowY:'auto',
                     background:'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
                     border:'1px solid rgba(61,102,65,0.18)',
                     boxShadow:'0 8px 32px rgba(44,74,46,0.18)' }}>
