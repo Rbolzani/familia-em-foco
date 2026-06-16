@@ -8,6 +8,7 @@ import { TourProvider } from '@/components/tour/TourContext'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const [{ data: sidebarChildren }, access, { familyId: activeFamilyId }] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
     getAccess(),
@@ -17,7 +18,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const hasChildren = (sidebarChildren ?? []).length > 0
 
   return (
-    <TourProvider hasChildren={hasChildren}>
+    <TourProvider hasChildren={hasChildren} userId={user?.id ?? ''}>
       <AccessProvider value={access}>
         <AppLayout sidebarChildren={sidebarChildren ?? []} activeFamilyId={activeFamilyId}>
           <RealtimeSync />

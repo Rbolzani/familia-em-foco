@@ -3,8 +3,8 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 export type TourStep = 'children' | 'invite' | 'ia' | 'done'
 
-const STORAGE_KEY = 'fef-tour-v1'
 const ORDER: TourStep[] = ['children', 'invite', 'ia', 'done']
+const storageKey = (userId: string) => `fef-tour-v1-${userId}`
 
 interface TourCtx {
   step: TourStep
@@ -23,43 +23,45 @@ const Ctx = createContext<TourCtx>({
 export function TourProvider({
   children,
   hasChildren,
+  userId,
 }: {
   children: React.ReactNode
   hasChildren: boolean
+  userId: string
 }) {
   const [step, setStep] = useState<TourStep>('done')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as TourStep | null
+    if (!userId) return
+    const key = storageKey(userId)
+    const saved = localStorage.getItem(key) as TourStep | null
     if (saved) {
       setStep(saved)
     } else if (hasChildren) {
-      // Usuário existente que já tem filhos — pular tour
       setStep('done')
-      localStorage.setItem(STORAGE_KEY, 'done')
+      localStorage.setItem(key, 'done')
     } else {
-      // Novo usuário — iniciar tour
       setStep('children')
-      localStorage.setItem(STORAGE_KEY, 'children')
+      localStorage.setItem(key, 'children')
     }
     setMounted(true)
-  }, [hasChildren])
+  }, [hasChildren, userId])
 
   const advance = useCallback((from: TourStep) => {
     setStep(prev => {
-      if (prev !== from) return prev // só avança se estiver no passo correto
+      if (prev !== from) return prev
       const idx = ORDER.indexOf(prev)
       const next = ORDER[Math.min(idx + 1, ORDER.length - 1)]
-      localStorage.setItem(STORAGE_KEY, next)
+      if (userId) localStorage.setItem(storageKey(userId), next)
       return next
     })
-  }, [])
+  }, [userId])
 
   const skip = useCallback(() => {
     setStep('done')
-    localStorage.setItem(STORAGE_KEY, 'done')
-  }, [])
+    if (userId) localStorage.setItem(storageKey(userId), 'done')
+  }, [userId])
 
   return (
     <Ctx.Provider value={{ step, isActive: mounted && step !== 'done', advance, skip }}>
