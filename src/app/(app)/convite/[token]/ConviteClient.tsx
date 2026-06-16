@@ -10,6 +10,7 @@ interface Props {
   token: string
   isValid: boolean
   alreadyMember: boolean
+  familyId: string | null
   familyName: string
   inviterName: string
   accessRole: AccessRole
@@ -53,7 +54,7 @@ function formatNames(names: string[]): string {
 }
 
 export default function ConviteClient({
-  token, isValid, alreadyMember, familyName, inviterName, accessRole, childrenNames,
+  token, isValid, alreadyMember, familyId, familyName, inviterName, accessRole, childrenNames,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -76,8 +77,12 @@ export default function ConviteClient({
       return
     }
 
-    setDone(true)
-    setLoading(false)
+    // Mudar automaticamente para o ambiente da família compartilhada e redirecionar
+    if (familyId) {
+      await supabase.rpc('switch_active_family', { p_family_id: familyId })
+    }
+
+    router.push('/dashboard')
   }
 
   const cardStyle: React.CSSProperties = {

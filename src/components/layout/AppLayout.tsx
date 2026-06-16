@@ -318,7 +318,6 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
-              <NavItem href="/ia"         label="Captura IA" icon={Sparkles}   tourId="nav-ia" />
             </div>
           </nav>
 

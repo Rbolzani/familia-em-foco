@@ -50,6 +50,7 @@ export default async function ConvitePage({ params }: Props) {
       token={token}
       isValid={isValid}
       alreadyMember={alreadyMember}
+      familyId={invite?.family_id ?? null}
       familyName={invite?.family_name ?? 'Família'}
       inviterName={invite?.inviter_name ?? 'Um familiar'}
       accessRole={invite?.access_role ?? 'logistics_editor'}

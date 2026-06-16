@@ -14,7 +14,7 @@ export default function RealtimeSync() {
   const router = useRouter()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useRealtime(['activities', 'family_members'], () => {
+  useRealtime(['activities', 'family_members', 'children'], () => {
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => router.refresh(), 300)
   })
