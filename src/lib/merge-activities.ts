@@ -25,10 +25,10 @@ export function titlesSimilar(a: string, b: string): boolean {
   if (na === nb) return true
   const [shorter, longer] = na.length <= nb.length ? [na, nb] : [nb, na]
   if (longer.startsWith(shorter) || longer.endsWith(shorter) || longer.includes(shorter)) return true
-  const wordsA = na.split(' ')
-  const wordsB = new Set(nb.split(' '))
-  const overlap = wordsA.filter(w => wordsB.has(w)).length
-  return overlap / wordsA.length >= 0.80
+  const setA = new Set(na.split(' '))
+  const setB = new Set(nb.split(' '))
+  const overlap = [...setA].filter(w => setB.has(w)).length
+  return overlap / Math.max(setA.size, setB.size) >= 0.80
 }
 
 export function mergeActivities<T extends { title: string; date: string | null; category: string }>(
