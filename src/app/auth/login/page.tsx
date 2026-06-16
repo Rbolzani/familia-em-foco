@@ -151,7 +151,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} method="POST" className="space-y-4">
               <div>
                 <label className="block text-xs font-bold mb-2 uppercase tracking-[0.08em]"
                   style={{ color: 'rgba(26,43,28,0.50)' }}>E-mail</label>

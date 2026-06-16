@@ -134,7 +134,7 @@ export default function SignupPage() {
               <p className="text-sm mt-2" style={{ color: '#8585A8' }}>Sem cartão de crédito.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} method="POST" className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold mb-2" style={{ color: '#8585A8' }}>Seu nome</label>
                 <input type="text" required value={name} onChange={e => setName(e.target.value)}
