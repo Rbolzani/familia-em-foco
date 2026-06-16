@@ -81,30 +81,43 @@ export default function FamilySwitcher({ families: initial }: Props) {
     }
   }
 
-  // Mostra o botão trigger mesmo com 0 famílias (parceiro puro sem família própria)
-  const showTrigger = families.length > 1 || families.length === 0 || !families.some(f => f.is_owner)
-
-  if (!showTrigger && families.length <= 1 && families.some(f => f.is_owner)) return null
+  // Pode trocar se tiver mais de 1 família, ou se for parceiro puro (para criar a própria)
+  const canSwitch = families.length > 1 || families.length === 0 || !families.some(f => f.is_owner)
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        disabled={switching}
-        style={{
+      {canSwitch ? (
+        <button
+          onClick={() => setOpen(o => !o)}
+          disabled={switching}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '5px 10px 5px 8px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'rgba(61,102,65,0.10)', transition: 'background .15s',
+            opacity: switching ? 0.6 : 1,
+          }}>
+          <Users size={13} color="rgba(44,74,46,0.65)" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#1A2B1C', maxWidth: 120,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {switching ? 'Trocando...' : (active?.family_name ?? 'Família')}
+          </span>
+          <ChevronDown size={11} color="rgba(44,74,46,0.55)"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s', flexShrink: 0 }} />
+        </button>
+      ) : (
+        /* Owner com 1 família — exibe o nome sem opção de troca */
+        <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '5px 10px 5px 8px', borderRadius: 10, border: 'none', cursor: 'pointer',
-          background: 'rgba(61,102,65,0.10)', transition: 'background .15s',
-          opacity: switching ? 0.6 : 1,
+          padding: '5px 10px 5px 8px', borderRadius: 10,
+          background: 'rgba(61,102,65,0.10)',
         }}>
-        <Users size={13} color="rgba(44,74,46,0.65)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#1A2B1C', maxWidth: 100,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {switching ? 'Trocando...' : (active?.family_name ?? 'Família')}
-        </span>
-        <ChevronDown size={11} color="rgba(44,74,46,0.55)"
-          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s', flexShrink: 0 }} />
-      </button>
+          <Users size={13} color="rgba(44,74,46,0.65)" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#1A2B1C', maxWidth: 160,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {active?.family_name ?? 'Minha Família'}
+          </span>
+        </div>
+      )}
 
       {open && typeof document !== 'undefined' && createPortal(
         <div ref={dropdownRef} style={{
