@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, Check, Crown, Users } from 'lucide-react'
+import { ChevronDown, Check, Crown, Users, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface FamilyOption {
@@ -16,12 +16,27 @@ interface Props {
   families: FamilyOption[]
 }
 
-export default function FamilySwitcher({ families }: Props) {
+export default function FamilySwitcher({ families: initial }: Props) {
   const router = useRouter()
   const supabase = createClient()
+  const [families, setFamilies] = useState(initial)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
+  const [newName, setNewName] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setFamilies(initial) }, [initial])
+
+  useEffect(() => {
+    if (!open) { setShowCreate(false); setNewName('') }
+  }, [open])
+
+  useEffect(() => {
+    if (showCreate) setTimeout(() => inputRef.current?.focus(), 50)
+  }, [showCreate])
 
   useEffect(() => {
     if (!open) return
@@ -32,27 +47,39 @@ export default function FamilySwitcher({ families }: Props) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  // Só renderiza se o usuário pertence a mais de 1 família
-  if (families.length <= 1) return null
-
   const active = families.find(f => f.is_active) ?? families[0]
 
   async function handleSwitch(familyId: string) {
-    if (familyId === active.family_id || switching) return
+    if (familyId === active?.family_id || switching) return
     setOpen(false)
     setSwitching(true)
     try {
-      const { data, error } = await supabase.rpc('switch_active_family', { p_family_id: familyId })
-      if (error || data === false) {
-        console.error('Erro ao trocar família:', error)
-        return
-      }
-      // Recarrega todas as Server Components da página
+      await supabase.rpc('switch_active_family', { p_family_id: familyId })
       router.refresh()
     } finally {
       setSwitching(false)
     }
   }
+
+  async function handleCreate() {
+    if (creating) return
+    setCreating(true)
+    try {
+      const { data: newFamilyId, error } = await supabase.rpc('create_my_family', {
+        p_name: newName.trim() || 'Minha Família',
+      })
+      if (error || !newFamilyId) { console.error(error); return }
+      setOpen(false)
+      router.refresh()
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // Mostra o botão trigger mesmo com 0 famílias (parceiro puro sem família própria)
+  const showTrigger = families.length > 1 || families.length === 0 || !families.some(f => f.is_owner)
+
+  if (!showTrigger && families.length <= 1 && families.some(f => f.is_owner)) return null
 
   return (
     <div ref={ref} className="relative">
@@ -66,8 +93,9 @@ export default function FamilySwitcher({ families }: Props) {
           opacity: switching ? 0.6 : 1,
         }}>
         <Users size={13} color="rgba(44,74,46,0.65)" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#1A2B1C', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {switching ? 'Trocando...' : active.family_name}
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1A2B1C', maxWidth: 100,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {switching ? 'Trocando...' : (active?.family_name ?? 'Família')}
         </span>
         <ChevronDown size={11} color="rgba(44,74,46,0.55)"
           style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s', flexShrink: 0 }} />
@@ -81,11 +109,15 @@ export default function FamilySwitcher({ families }: Props) {
           border: '1px solid rgba(61,102,65,0.18)',
           boxShadow: '0 8px 32px rgba(44,74,46,0.18)',
         }}>
-          <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(61,102,65,0.10)' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(26,43,28,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Suas famílias
-            </span>
-          </div>
+          {families.length > 0 && (
+            <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(61,102,65,0.10)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(26,43,28,0.45)',
+                textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Suas famílias
+              </span>
+            </div>
+          )}
+
           {families.map(f => (
             <button
               key={f.family_id}
@@ -94,18 +126,15 @@ export default function FamilySwitcher({ families }: Props) {
                 display: 'flex', alignItems: 'center', gap: 10,
                 width: '100%', padding: '11px 14px', border: 'none', cursor: 'pointer', textAlign: 'left',
                 background: f.is_active ? 'rgba(61,102,65,0.06)' : 'transparent',
-                transition: 'background .12s',
-              }}
-              onMouseEnter={e => { if (!f.is_active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = f.is_active ? 'rgba(61,102,65,0.06)' : 'transparent' }}>
+              }}>
               <div style={{
                 width: 32, height: 32, borderRadius: 9, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: f.is_owner ? 'linear-gradient(140deg,#3D6641,#2C4A2E)' : 'linear-gradient(140deg,#6366f1,#4338CA)',
+                background: f.is_owner
+                  ? 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+                  : 'linear-gradient(140deg,#6366f1,#4338CA)',
               }}>
-                {f.is_owner
-                  ? <Crown size={14} color="#D4E8D5" />
-                  : <Users size={14} color="#E0E7FF" />}
+                {f.is_owner ? <Crown size={14} color="#D4E8D5" /> : <Users size={14} color="#E0E7FF" />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: f.is_active ? 700 : 500, color: '#1A2B1C',
@@ -119,6 +148,71 @@ export default function FamilySwitcher({ families }: Props) {
               {f.is_active && <Check size={14} color="#2D6A35" style={{ flexShrink: 0 }} />}
             </button>
           ))}
+
+          {/* Criar nova família */}
+          <div style={{ borderTop: families.length > 0 ? '1px solid rgba(61,102,65,0.10)' : 'none' }}>
+            {!showCreate ? (
+              <button
+                onClick={() => setShowCreate(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '11px 14px', border: 'none', cursor: 'pointer',
+                  background: 'transparent', color: '#2D6A35',
+                }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(61,102,65,0.10)', border: '1.5px dashed rgba(61,102,65,0.30)',
+                }}>
+                  <Plus size={14} color="#2D6A35" />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Criar minha família</span>
+              </button>
+            ) : (
+              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <p style={{ fontSize: 12, color: 'rgba(26,43,28,0.55)', margin: 0 }}>
+                  Dê um nome para a sua família:
+                </p>
+                <input
+                  ref={inputRef}
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                  placeholder="Ex.: Família Silva"
+                  style={{
+                    width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13,
+                    border: '1.5px solid rgba(61,102,65,0.30)', outline: 'none',
+                    background: '#FAFAF8', color: '#1A2B1C', boxSizing: 'border-box',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => { setShowCreate(false); setNewName('') }}
+                    style={{
+                      flex: 1, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      border: '1px solid rgba(61,102,65,0.20)', background: 'transparent',
+                      color: 'rgba(26,43,28,0.55)', cursor: 'pointer',
+                    }}>
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleCreate}
+                    disabled={creating}
+                    style={{
+                      flex: 2, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                      border: 'none', background: 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+                      color: '#fff', cursor: creating ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                      opacity: creating ? 0.7 : 1,
+                    }}>
+                    {creating
+                      ? <><Loader2 size={11} className="animate-spin" /> Criando...</>
+                      : 'Criar família'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
