@@ -25,6 +25,7 @@ interface SidebarChild {
 interface Props {
   children: React.ReactNode
   sidebarChildren: SidebarChild[]
+  activeFamilyId?: string | null
 }
 
 // ── Palettes ───────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ function calcAge(birthDate: string | null) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────
-export default function AppLayout({ children, sidebarChildren: initial }: Props) {
+export default function AppLayout({ children, sidebarChildren: initial, activeFamilyId }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
@@ -83,12 +84,14 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
       if (!user) return
       userId = user.id
 
-      // Contar sugestões pendentes para mim
-      const { data: suggestions } = await supabase
+      // Contar sugestões pendentes para mim na família ativa
+      const sugQuery = supabase
         .from('logistics_suggestions')
         .select('id')
         .eq('proposed_to', user.id)
         .eq('status', 'pending')
+      if (activeFamilyId) sugQuery.eq('family_id', activeFamilyId)
+      const { data: suggestions } = await sugQuery
       setPendingLogisticsCount((suggestions ?? []).length)
 
       // Notificações in-app não lidas

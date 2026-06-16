@@ -1,6 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LogisticaClient from './LogisticaClient'
+import { getActiveFamily } from '@/lib/access'
 
 export default async function LogisticaPage() {
   const supabase = await createClient()
@@ -9,13 +10,7 @@ export default async function LogisticaPage() {
 
   const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
 
-  // Resolve familyId: owner ou member
-  const { data: ownedFamily } = await supabase.from('families').select('id').eq('created_by', user.id).maybeSingle()
-  let familyId = ownedFamily?.id ?? null
-  if (!familyId) {
-    const { data: membership } = await supabase.from('family_members').select('family_id').eq('user_id', user.id).maybeSingle()
-    familyId = membership?.family_id ?? null
-  }
+  const { familyId } = await getActiveFamily(supabase)
 
   const [{ data: activities }, { data: children }, { data: rawMembers }, { data: pendingSuggestions }] = await Promise.all([
     supabase.from('activities')

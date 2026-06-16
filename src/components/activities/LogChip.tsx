@@ -138,15 +138,29 @@ export default function LogChip({
         .insert({ activity_id: actId, field, proposed_by: currentUserId, proposed_to: targetUserId, family_id: familyId, status: 'pending' })
         .select().single()
 
-      if (error) { toast('Erro ao criar sugestão', 'error'); return }
+      if (error && !error.message?.includes('multiple') && !sug) {
+        toast('Erro ao criar sugestão', 'error'); return
+      }
+
+      // Se SELECT falhou mas INSERT foi OK, monta o objeto localmente
+      const newSug: LogisticsSuggestion = sug ?? {
+        id: crypto.randomUUID(),
+        activity_id: actId,
+        field,
+        proposed_by: currentUserId,
+        proposed_to: targetUserId,
+        family_id: familyId!,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      }
 
       fetch('/api/logistics-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'suggest', suggestionId: sug.id, proposedTo: targetUserId, familyId, activityTitle: activity.title }),
+        body: JSON.stringify({ action: 'suggest', suggestionId: newSug.id, proposedTo: targetUserId, familyId, activityTitle: activity.title }),
       }).catch(() => {})
 
-      onSuggestionCreated?.(sug)
+      onSuggestionCreated?.(newSug)
       onUpdate(actId, field, null)
       toast(`Sugestão enviada para ${memberName(targetUserId)} ✓`)
     } finally {

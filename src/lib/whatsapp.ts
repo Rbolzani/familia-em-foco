@@ -143,17 +143,26 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   const today = spDate(0)
   const weekEnd = spDate(7)
 
-  const { data: acts } = await admin
+  const actsQuery = admin
     .from('activities')
     .select('title, category, date, time, takes_user_id, picks_user_id, child:children(name)')
-    .in('user_id', userIds)
     .gte('date', today)
     .lte('date', weekEnd)
     .neq('status', 'cancelado')
     .order('date')
     .order('time', { nullsFirst: false })
 
-  const activities = (acts ?? []) as unknown as SummaryActivity[]
+  const { data: acts } = familyIds.length > 0
+    ? await actsQuery.in('family_id', familyIds)
+    : await actsQuery.eq('user_id', userId)
+
+  const seen = new Set<string>()
+  const activities = ((acts ?? []) as unknown as SummaryActivity[]).filter(a => {
+    const key = `${a.date}|${a.title}|${a.child?.name ?? ''}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   if (activities.length === 0) return null
 
   const todayActs = activities.filter(a => a.date === today)

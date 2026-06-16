@@ -2,19 +2,14 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ActivitiesPage from '@/components/activities/ActivitiesPage'
 import { nameFromEmail } from '@/lib/name-from-email'
+import { getActiveFamily } from '@/lib/access'
 
 export default async function EscolaPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: ownedFamily } = await supabase.from('families').select('id').eq('created_by', user.id).maybeSingle()
-  let familyId = ownedFamily?.id ?? null
-  const isOwner = !!ownedFamily
-  if (!familyId) {
-    const { data: m } = await supabase.from('family_members').select('family_id').eq('user_id', user.id).maybeSingle()
-    familyId = m?.family_id ?? null
-  }
+  const { familyId, isOwner } = await getActiveFamily(supabase)
 
   const [{ data: activities }, { data: children }, { data: rawMembers }, { data: suggestions }] = await Promise.all([
     supabase.from('activities').select('*, child:children(name, avatar_color)').eq('category', 'escola').order('date').order('time', { nullsFirst: false }),

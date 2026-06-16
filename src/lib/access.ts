@@ -1,4 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+/**
+ * Retorna { familyId, isOwner } da família ativa do usuário,
+ * respeitando a seleção feita pelo FamilySwitcher (switch_active_family).
+ */
+export async function getActiveFamily(supabase: SupabaseClient): Promise<{ familyId: string | null; isOwner: boolean }> {
+  const { data: families } = await supabase.rpc('get_my_families')
+  if (!families || families.length === 0) return { familyId: null, isOwner: false }
+  const active = (families as Array<{ family_id: string; is_owner: boolean; is_active: boolean }>)
+    .find(f => f.is_active) ?? families[0]
+  return { familyId: active.family_id, isOwner: active.is_owner }
+}
 
 export type AccessRole = 'owner' | 'read_only' | 'logistics_editor' | 'full_editor'
 
