@@ -27,6 +27,7 @@ export default function FamilySwitcher({ families: initial }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { setFamilies(initial) }, [initial])
@@ -42,7 +43,10 @@ export default function FamilySwitcher({ families: initial }: Props) {
   useEffect(() => {
     if (!open) return
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      const insideTrigger = ref.current?.contains(t)
+      const insideDropdown = dropdownRef.current?.contains(t)
+      if (!insideTrigger && !insideDropdown) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -103,7 +107,7 @@ export default function FamilySwitcher({ families: initial }: Props) {
       </button>
 
       {open && typeof document !== 'undefined' && createPortal(
-        <div style={{
+        <div ref={dropdownRef} style={{
           position: 'fixed', top: 60, left: 8, right: 8, maxWidth: 320, margin: '0 auto',
           zIndex: 99999, borderRadius: 16, overflow: 'hidden',
           background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
