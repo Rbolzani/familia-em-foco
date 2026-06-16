@@ -275,91 +275,51 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
       if (userErr || !user) throw new Error('Sessão expirada. Faça login novamente.')
 
       const baseFields = {
-        name:        form.name.trim(),
-        birth_date:  form.birth_date || null,
-        school_name: form.school_name.trim() || null,
+        name:         form.name.trim(),
+        birth_date:   form.birth_date || null,
+        school_name:  form.school_name.trim() || null,
         avatar_color: form.avatar_color,
       }
 
       if (modal?.mode === 'new') {
-        // Step 1: insert base fields (no avatar_url yet)
-        const { data: inserted, error: insertErr } = await supabase
-          .from('children')
-          .insert({ ...baseFields, user_id: user.id, sort_order: children.length })
-          .select()
-          .single()
-        if (insertErr || !inserted) {
-          console.error('[handleSave] insert error:', insertErr)
-          throw new Error(
-            `Erro ao cadastrar filho: ${insertErr?.message}\n\n` +
-            `Execute no Supabase SQL Editor:\n` +
-            `ALTER TABLE children ENABLE ROW LEVEL SECURITY;\n` +
-            `CREATE POLICY "children_insert" ON children FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);`
-          )
-        }
+        // Criar filho via API (admin client — sem RLS)
+        const res = await fetch('/api/children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...baseFields, sort_order: children.length }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(`Erro ao cadastrar filho: ${json.error}`)
 
-        // Step 2: upload photo and update avatar_url
+        // Upload foto e atualizar via API
         if (photoFile) {
-          const url = await uploadPhoto(user.id, inserted.id)
+          const url = await uploadPhoto(user.id, json.child.id)
           if (url) {
-            console.log('[handleSave] updating avatar_url:', url)
-            const { error: photoErr } = await supabase
-              .from('children').update({ avatar_url: url }).eq('id', inserted.id)
-            if (photoErr) {
-              console.error('[handleSave] avatar_url update error:', photoErr)
-              // Filho salvo, foto falhou — mantém modal aberto com erro visível
-              await load()
-              setSaveError(
-                `Filho adicionado ✓, mas a foto não salvou.\n\nErro: ${photoErr.message}\n\n` +
-                `Execute no Supabase SQL Editor e tente novamente:\n` +
-                `ALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;\n\n` +
-                `CREATE POLICY "children_update" ON children FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);`
-              )
-              setSaving(false)
-              return
-            }
+            await fetch('/api/children', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: json.child.id, ...baseFields, avatar_url: url }),
+            })
           }
         }
 
       } else {
         const child = modal!.child!
+        let avatarUrl: string | null | undefined = undefined
 
-        // Step 1: save base fields first
-        console.log('[handleSave] updating base fields for', child.id)
-        const { error: baseErr } = await supabase
-          .from('children').update(baseFields).eq('id', child.id)
-        if (baseErr) {
-          console.error('[handleSave] base update error:', baseErr)
-          throw new Error(
-            `Erro ao salvar dados: ${baseErr.message}\n\n` +
-            `Execute no Supabase SQL Editor:\n` +
-            `CREATE POLICY "children_update" ON children FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);`
-          )
-        }
-
-        // Step 2: save photo if new file selected
         if (photoFile) {
-          const url = await uploadPhoto(user.id, child.id)
-          if (url) {
-            console.log('[handleSave] updating avatar_url:', url)
-            const { error: photoErr } = await supabase
-              .from('children').update({ avatar_url: url }).eq('id', child.id)
-            if (photoErr) {
-              console.error('[handleSave] avatar_url update error:', photoErr)
-              await load()
-              setSaveError(
-                `Dados salvos ✓, mas a foto não salvou.\n\nErro: ${photoErr.message}\n\n` +
-                `Execute no Supabase SQL Editor e tente novamente:\n` +
-                `ALTER TABLE children ADD COLUMN IF NOT EXISTS avatar_url TEXT;`
-              )
-              setSaving(false)
-              return
-            }
-          }
+          avatarUrl = await uploadPhoto(user.id, child.id)
         } else if (photoPreview === null && child.avatar_url) {
-          // User removed the photo
-          await supabase.from('children').update({ avatar_url: null }).eq('id', child.id)
+          avatarUrl = null
         }
+
+        const res = await fetch('/api/children', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: child.id, ...baseFields, avatar_url: avatarUrl }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(`Erro ao salvar filho: ${json.error}`)
       }
 
       const wasFirst = modal?.mode === 'new' && children.length === 0
@@ -380,19 +340,14 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
     setDeleteError(null)
     setDeleting(id)
     try {
-      const { error } = await supabase.from('children').delete().eq('id', id)
-      if (error) {
-        console.error('[handleDelete] error:', error)
-        setDeleteError(
-          `Não foi possível excluir "${name}": ${error.message}\n\n` +
-          `Execute no Supabase SQL Editor:\n` +
-          `CREATE POLICY "children_delete" ON children FOR DELETE TO authenticated USING (auth.uid() = user_id);`
-        )
+      const res = await fetch(`/api/children?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json()
+        setDeleteError(`Não foi possível excluir "${name}": ${json.error}`)
       } else {
         await load()
       }
     } catch (err) {
-      console.error('[handleDelete] unexpected error:', err)
       setDeleteError(`Erro inesperado ao excluir "${name}". Tente novamente.`)
     } finally {
       setDeleting(null)
