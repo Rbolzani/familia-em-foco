@@ -52,11 +52,21 @@ export async function POST(req: NextRequest) {
       activity_title: activityTitle,
     })
 
-    // WhatsApp para o proposedTo
-    const phone = await getUserPhone(proposedTo)
-    if (phone) {
-      const msg = `Você tem sugestões de logística de ${proposerName} pendentes. Acesse o app Família em Foco para aceitar ou recusar.`
-      await sendWhatsApp(phone, msg)
+    // WhatsApp para o proposedTo — só envia se não há outras sugestões pendentes já existentes
+    // (evita 1 disparo por sugestão; o usuário recebe apenas 1 aviso de "tem pendências")
+    const { count: otherPending } = await admin
+      .from('logistics_suggestions')
+      .select('id', { count: 'exact', head: true })
+      .eq('proposed_to', proposedTo)
+      .eq('family_id', familyId)
+      .eq('status', 'pending')
+      .neq('id', suggestionId)
+    if ((otherPending ?? 0) === 0) {
+      const phone = await getUserPhone(proposedTo)
+      if (phone) {
+        const msg = `Você tem sugestões de logística de ${proposerName} pendentes. Acesse o app Família em Foco para aceitar ou recusar.`
+        await sendWhatsApp(phone, msg)
+      }
     }
 
     return NextResponse.json({ ok: true })
