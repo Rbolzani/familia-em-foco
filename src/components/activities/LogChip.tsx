@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Car, Home, ChevronDown, Clock, Check, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/components/ui/Toast'
@@ -53,14 +54,27 @@ export default function LogChip({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
 
   useEffect(() => {
     if (!open) return
+    function updatePos() {
+      if (!btnRef.current) return
+      const r = btnRef.current.getBoundingClientRect()
+      setDropPos({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: Math.max(r.width, 160) })
+    }
+    updatePos()
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    window.addEventListener('scroll', updatePos, true)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      window.removeEventListener('scroll', updatePos, true)
+    }
   }, [open])
 
   const pendingSug = suggestions.find(s => s.activity_id === actId && s.field === field && s.status === 'pending')
@@ -274,9 +288,58 @@ export default function LogChip({
 
   const suggestableMembers = familyMembers.filter(m => canSuggestTo(m.user_id))
 
+  const dropdown = open && dropPos ? createPortal(
+    <div ref={ref} className="py-1 rounded-xl shadow-xl"
+      style={{
+        position: 'absolute',
+        top: dropPos.top, left: dropPos.left, minWidth: dropPos.width,
+        zIndex: 9999,
+        background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
+        border: '1px solid rgba(61,102,65,0.18)',
+        boxShadow: '0 8px 24px rgba(44,74,46,0.18)',
+      }}>
+
+      {value && (
+        <button onClick={() => handleSelect(null)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
+          style={{ fontSize: 12, color: 'rgba(26,43,28,0.45)', border: 'none', background: 'none', cursor: 'pointer' }}>
+          <span className="w-4 h-4 rounded-full border border-dashed flex-shrink-0" style={{ borderColor: 'rgba(61,102,65,0.35)' }} />
+          Nenhum
+        </button>
+      )}
+
+      <button onClick={() => handleSelect(currentUserId)}
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
+        style={{ fontSize: 12, fontWeight: value === currentUserId ? 700 : 500,
+          color: value === currentUserId ? '#2D6A35' : '#1A2B1C',
+          border: 'none', background: 'none', cursor: 'pointer' }}>
+        <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>V</span>
+        Você {value === currentUserId && '✓'}
+      </button>
+
+      {suggestableMembers.filter(m => m.user_id !== currentUserId).map(m => (
+        <button key={m.user_id} onClick={() => handleSelect(m.user_id)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
+          style={{ fontSize: 12, fontWeight: value === m.user_id ? 700 : 500,
+            color: value === m.user_id ? '#4338CA' : '#1A2B1C',
+            border: 'none', background: 'none', cursor: 'pointer' }}>
+          <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+            style={{ background: 'linear-gradient(140deg,#6366f1,#4338CA)' }}>
+            {(m.display_name ?? '?').charAt(0).toUpperCase()}
+          </span>
+          {m.display_name ?? 'Parceiro(a)'}
+          {value === m.user_id ? ' ✓' : ' (sugerir)'}
+        </button>
+      ))}
+    </div>,
+    document.body
+  ) : null
+
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={btnRef}
         onClick={() => setOpen(o => !o)}
         disabled={loading}
         className="flex items-center gap-1 px-2 py-1.5 rounded-lg w-full hover:brightness-95 active:scale-95"
@@ -286,49 +349,7 @@ export default function LogChip({
         <span className="flex-1 text-left truncate">{value ? memberName(value) : 'Definir'}</span>
         <ChevronDown size={9} style={{ flexShrink: 0, opacity: 0.55, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
       </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 py-1 rounded-xl shadow-xl"
-          style={{ minWidth: 160, top: '100%', left: 0,
-            background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
-            border: '1px solid rgba(61,102,65,0.18)',
-            boxShadow: '0 8px 24px rgba(44,74,46,0.18)' }}>
-
-          {value && (
-            <button onClick={() => handleSelect(null)}
-              className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
-              style={{ fontSize: 12, color: 'rgba(26,43,28,0.45)', border: 'none', background: 'none', cursor: 'pointer' }}>
-              <span className="w-4 h-4 rounded-full border border-dashed flex-shrink-0" style={{ borderColor: 'rgba(61,102,65,0.35)' }} />
-              Nenhum
-            </button>
-          )}
-
-          <button onClick={() => handleSelect(currentUserId)}
-            className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
-            style={{ fontSize: 12, fontWeight: value === currentUserId ? 700 : 500,
-              color: value === currentUserId ? '#2D6A35' : '#1A2B1C',
-              border: 'none', background: 'none', cursor: 'pointer' }}>
-            <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>V</span>
-            Você {value === currentUserId && '✓'}
-          </button>
-
-          {suggestableMembers.filter(m => m.user_id !== currentUserId).map(m => (
-            <button key={m.user_id} onClick={() => handleSelect(m.user_id)}
-              className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-black/[0.04]"
-              style={{ fontSize: 12, fontWeight: value === m.user_id ? 700 : 500,
-                color: value === m.user_id ? '#4338CA' : '#1A2B1C',
-                border: 'none', background: 'none', cursor: 'pointer' }}>
-              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(140deg,#6366f1,#4338CA)' }}>
-                {(m.display_name ?? '?').charAt(0).toUpperCase()}
-              </span>
-              {m.display_name ?? 'Parceiro(a)'}
-              {value === m.user_id ? ' ✓' : ' (sugerir)'}
-            </button>
-          ))}
-        </div>
-      )}
+      {dropdown}
     </div>
   )
 }
