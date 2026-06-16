@@ -246,10 +246,12 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
 
       // Garante que a família existe (pode não existir se o usuário usou auto-confirm
       // e não passou pelo auth/callback)
-      const { data: families } = await supabase.rpc('get_my_families')
+      const { data: families, error: familyErr } = await supabase.rpc('get_my_families')
+      if (familyErr) throw new Error(`Família: ${familyErr.message}`)
       if (!families || families.length === 0) {
         const familyName = (user.user_metadata?.family_name as string | undefined)?.trim() || 'Minha Família'
-        await supabase.rpc('create_my_family', { p_name: familyName })
+        const { error: createErr } = await supabase.rpc('create_my_family', { p_name: familyName })
+        if (createErr) throw new Error(`Criar família: ${createErr.message}`)
       }
 
       for (let i = 0; i < valid.length; i++) {
@@ -267,7 +269,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
           .select()
           .single()
 
-        if (insertErr || !inserted) throw new Error(`Erro ao salvar ${child.name}.`)
+        if (insertErr || !inserted) throw new Error(`Inserir ${child.name}: ${insertErr?.message ?? 'sem retorno'}`)
 
         if (child.photoFile) {
           const url = await uploadPhoto(user.id, inserted.id, child.photoFile)
