@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle, Home } from 'lucide-react'
+import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle } from 'lucide-react'
 
 type AccessRole = 'read_only' | 'logistics_editor' | 'full_editor'
 
@@ -24,7 +24,6 @@ interface Props {
   userId: string
   userEmail: string
   familyId: string | null
-  familyCurrentName: string | null
   isOwner: boolean
   ownerId: string | null
   ownerDisplayName: string | null
@@ -42,16 +41,12 @@ const ROLES: { key: AccessRole; label: string; short: string; desc: string; icon
 const roleMeta = (r: string) => ROLES.find(x => x.key === r) ?? ROLES[1]
 
 export default function ConfiguracoesClient({
-  userId, userEmail, familyId, familyCurrentName, isOwner, ownerId, ownerDisplayName, ownerEmail, baseUrl,
+  userId, userEmail, familyId, isOwner, ownerId, ownerDisplayName, ownerEmail, baseUrl,
   members: initialMembers, pendingInvites: initialInvites,
 }: Props) {
   const supabase = createClient()
   const [members, setMembers]   = useState<Member[]>(initialMembers)
   const [invites, setInvites]   = useState<PendingInvite[]>(initialInvites)
-  const [editingName, setEditingName] = useState(false)
-  const [familyName, setFamilyName] = useState(familyCurrentName ?? '')
-  const [savingName, setSavingName] = useState(false)
-  const [nameSaved, setNameSaved] = useState(false)
   // Realtime: reflete partner entrando / mudança de acesso ao vivo
   useEffect(() => { setMembers(initialMembers) }, [initialMembers])
   useEffect(() => { setInvites(initialInvites) }, [initialInvites])
@@ -127,14 +122,6 @@ export default function ConfiguracoesClient({
     setMembers(prev => prev.filter(m => m.id !== memberId))
   }
 
-  async function saveFamilyName() {
-    if (!familyId || !familyName.trim()) return
-    setSavingName(true)
-    const { error } = await supabase.from('families').update({ name: familyName.trim() }).eq('id', familyId)
-    setSavingName(false)
-    if (!error) { setEditingName(false); setNameSaved(true); setTimeout(() => setNameSaved(false), 2500) }
-  }
-
   const partners = members.filter(m => m.role === 'partner')
   const me = members.find(m => m.user_id === userId)
 
@@ -154,55 +141,6 @@ export default function ConfiguracoesClient({
         <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 24, fontWeight: 700, color: '#1A2B1C' }}>Configurações</h1>
         <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.45)', marginTop: 2 }}>{userEmail}</p>
       </div>
-
-      {/* Nome da família — só para owner */}
-      {isOwner && familyId && (
-        <div style={cardStyle} className="animate-fade-up">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(61,102,65,0.10)' }}>
-              <Home size={14} color="#2D6A35" />
-            </div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A2B1C' }}>Nome da família</h2>
-          </div>
-          <p style={{ fontSize: 12, color: 'rgba(26,43,28,0.50)', marginBottom: 12 }}>
-            Este nome é exibido para todos os parceiros que compartilham esta conta com você.
-          </p>
-          {editingName ? (
-            <div className="flex gap-2">
-              <input
-                autoFocus
-                value={familyName}
-                onChange={e => setFamilyName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') saveFamilyName(); if (e.key === 'Escape') setEditingName(false) }}
-                placeholder="Ex.: Família Souza"
-                style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1.5px solid rgba(61,102,65,0.35)', fontSize: 13, color: '#1A2B1C', outline: 'none', background: '#fff' }}
-              />
-              <button onClick={saveFamilyName} disabled={savingName}
-                className="px-4 rounded-xl font-bold text-white text-sm transition-all hover:brightness-105 disabled:opacity-60"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                {savingName ? 'Salvando...' : 'Salvar'}
-              </button>
-              <button onClick={() => { setEditingName(false); setFamilyName(familyCurrentName ?? '') }}
-                className="px-3 rounded-xl text-sm font-semibold transition-all"
-                style={{ border: '1px solid rgba(61,102,65,0.20)', background: 'transparent', color: 'rgba(26,43,28,0.55)', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#1A2B1C', flex: 1 }}>
-                {familyName || 'Minha Família'}
-              </span>
-              {nameSaved && <span style={{ fontSize: 12, color: '#2D6A35', fontWeight: 600 }}>✓ Salvo</span>}
-              <button onClick={() => setEditingName(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all hover:brightness-105"
-                style={{ background: 'rgba(61,102,65,0.10)', color: '#2D6A35', border: 'none', cursor: 'pointer' }}>
-                <Pencil size={12} /> Renomear
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Compartilhar acesso */}
       <div style={cardStyle} className="animate-fade-up">

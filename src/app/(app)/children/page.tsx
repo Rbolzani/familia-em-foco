@@ -4,9 +4,10 @@ import type { FamilyOption } from '@/components/layout/FamilySwitcher'
 
 export default async function ChildrenPage() {
   const supabase = await createClient()
-  const [{ data: children }, { data: familiesRaw }] = await Promise.all([
+  const [{ data: children }, { data: familiesRaw }, { data: activeFamilyId }] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
     supabase.rpc('get_my_families'),
+    supabase.rpc('auth_family_id'),
   ])
 
   const families: FamilyOption[] = (familiesRaw ?? []).map((f: {
@@ -19,5 +20,29 @@ export default async function ChildrenPage() {
     member_count: Number(f.member_count),
   }))
 
-  return <ChildrenClient initialChildren={children ?? []} families={families} />
+  // Fetch active family name + ownership for rename feature
+  let familyId: string | null = activeFamilyId ?? null
+  let familyCurrentName: string | null = null
+  let isOwner = false
+
+  if (familyId) {
+    const { data: famRow } = await supabase
+      .from('families')
+      .select('name, created_by')
+      .eq('id', familyId)
+      .maybeSingle()
+    familyCurrentName = famRow?.name ?? null
+    const { data: { user } } = await supabase.auth.getUser()
+    isOwner = famRow?.created_by === user?.id
+  }
+
+  return (
+    <ChildrenClient
+      initialChildren={children ?? []}
+      families={families}
+      familyId={familyId}
+      familyCurrentName={familyCurrentName}
+      isOwner={isOwner}
+    />
+  )
 }

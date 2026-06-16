@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
-import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle, Check } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAccess } from '@/components/access/AccessContext'
 import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
@@ -150,12 +150,23 @@ function PhotoPicker({ preview, onFile, onClear }: {
 }
 
 // ── Main component ────────────────────────────────────────────────────────
-interface Props { initialChildren: Child[]; families: FamilyOption[] }
+interface Props {
+  initialChildren: Child[]
+  families: FamilyOption[]
+  familyId: string | null
+  familyCurrentName: string | null
+  isOwner: boolean
+}
 
-export default function ChildrenClient({ initialChildren, families }: Props) {
+export default function ChildrenClient({ initialChildren, families, familyId, familyCurrentName, isOwner }: Props) {
   const { canEdit } = useAccess()
   const [children,     setChildren]     = useState<Child[]>(initialChildren)
   useEffect(() => { setChildren(initialChildren) }, [initialChildren])
+  const [familyName,   setFamilyName]   = useState(familyCurrentName ?? '')
+  const [editingName,  setEditingName]  = useState(false)
+  const [savingName,   setSavingName]   = useState(false)
+  const [nameSaved,    setNameSaved]    = useState(false)
+  useEffect(() => { setFamilyName(familyCurrentName ?? '') }, [familyCurrentName])
   const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
   const [saving,       setSaving]       = useState(false)
   const [saveError,    setSaveError]    = useState<string|null>(null)
@@ -384,6 +395,14 @@ export default function ChildrenClient({ initialChildren, families }: Props) {
     }
   }
 
+  async function saveFamilyName() {
+    if (!familyId || !familyName.trim()) return
+    setSavingName(true)
+    const { error } = await supabase.from('families').update({ name: familyName.trim() }).eq('id', familyId)
+    setSavingName(false)
+    if (!error) { setEditingName(false); setNameSaved(true); setTimeout(() => setNameSaved(false), 2500) }
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
 
@@ -409,13 +428,61 @@ export default function ChildrenClient({ initialChildren, families }: Props) {
         )}
       </div>
 
-      {/* Seletor de conta (família) — gerencia os filhos da família escolhida */}
-      <div className="animate-fade-up flex items-center justify-between gap-3 p-3 rounded-2xl"
+      {/* Conta / família ativa */}
+      <div className="animate-fade-up rounded-2xl overflow-hidden"
         style={{ background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.14)' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(26,43,28,0.55)' }}>
-          Gerenciando filhos da conta:
-        </span>
-        <FamilySwitcher families={families} />
+
+        {/* Linha: seletor de conta */}
+        <div className="flex items-center justify-between gap-3 px-3 py-3">
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(26,43,28,0.55)' }}>
+            Conta ativa:
+          </span>
+          <FamilySwitcher families={families} />
+        </div>
+
+        {/* Linha: nome da família (só para owner) */}
+        {isOwner && familyId && (
+          <div style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }} className="px-3 py-3">
+            {editingName ? (
+              <div className="flex gap-2 items-center">
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(26,43,28,0.55)', flexShrink: 0 }}>
+                  Nome:
+                </span>
+                <input
+                  autoFocus
+                  value={familyName}
+                  onChange={e => setFamilyName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveFamilyName(); if (e.key === 'Escape') { setEditingName(false); setFamilyName(familyCurrentName ?? '') } }}
+                  placeholder="Ex.: Família Souza"
+                  style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1.5px solid rgba(61,102,65,0.35)', fontSize: 13, color: '#1A2B1C', outline: 'none', background: '#fff' }}
+                />
+                <button onClick={saveFamilyName} disabled={savingName}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:brightness-105 disabled:opacity-60"
+                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+                  <Check size={13} color="#fff" />
+                </button>
+                <button onClick={() => { setEditingName(false); setFamilyName(familyCurrentName ?? '') }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                  style={{ border: '1px solid rgba(61,102,65,0.20)', background: 'transparent', cursor: 'pointer', flexShrink: 0 }}>
+                  <X size={13} color="rgba(26,43,28,0.45)" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(26,43,28,0.55)' }}>Nome da família:</span>
+                <div className="flex items-center gap-2">
+                  {nameSaved && <span style={{ fontSize: 11, color: '#2D6A35', fontWeight: 600 }}>✓ Salvo</span>}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1A2B1C' }}>{familyName || 'Minha Família'}</span>
+                  <button onClick={() => setEditingName(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all hover:brightness-105"
+                    style={{ background: 'rgba(61,102,65,0.10)', color: '#2D6A35', border: 'none', cursor: 'pointer' }}>
+                    <Pencil size={11} /> Renomear
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Delete error banner */}

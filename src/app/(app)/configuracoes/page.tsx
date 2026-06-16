@@ -88,7 +88,6 @@ export default async function ConfiguracoesPage() {
       userId={user.id}
       userEmail={user.email ?? ''}
       familyId={familyId}
-      familyCurrentName={familyCurrentName}
       isOwner={isOwner}
       ownerId={ownerId}
       ownerDisplayName={ownerDisplayName}
