@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut, Car, Settings, UserPlus, Bell, X,
+  Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -67,6 +67,79 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
   const [mobileTemaOpen,   setMobileTemaOpen]   = useState(false)
   const [mobileSidebarOpen,setMobileSidebarOpen]= useState(false)
   const [desktopTweaksOpen,setDesktopTweaksOpen]= useState(false)
+
+  // ── Notificações de logística ─────────────────────────────────────────
+  const [pendingLogisticsCount, setPendingLogisticsCount] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<{ id: string; type: string; payload: Record<string, string>; read: boolean; created_at: string }[]>([])
+  const notifRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    let userId: string
+
+    async function loadNotifications() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      userId = user.id
+
+      // Contar sugestões pendentes para mim
+      const { data: suggestions } = await supabase
+        .from('logistics_suggestions')
+        .select('id')
+        .eq('proposed_to', user.id)
+        .eq('status', 'pending')
+      setPendingLogisticsCount((suggestions ?? []).length)
+
+      // Notificações in-app não lidas
+      const { data: notifs } = await supabase
+        .from('app_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      setNotifications((notifs ?? []) as typeof notifications)
+    }
+
+    loadNotifications()
+
+    // Realtime: novas sugestões para mim
+    const channel = supabase.channel('global_logistics_notif')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_suggestions' }, () => {
+        loadNotifications()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_notifications' }, () => {
+        loadNotifications()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [pathname])
+
+  useEffect(() => {
+    if (!notifOpen) return
+    function handler(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [notifOpen])
+
+  async function markAllRead() {
+    const supabase = createClient()
+    await supabase.from('app_notifications').update({ read: true }).eq('read', false)
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  function notifLabel(n: typeof notifications[number]): string {
+    const p = n.payload
+    if (n.type === 'logistics_suggestion') return `${p.proposed_by_name ?? 'Parceiro(a)'} sugeriu uma tarefa de logística para você`
+    if (n.type === 'logistics_rejected') return `${p.rejected_by_name ?? 'Parceiro(a)'} recusou sua sugestão: ${p.activity_title ?? ''}`
+    if (n.type === 'logistics_accepted') return `${p.accepted_by_name ?? 'Parceiro(a)'} aceitou sua sugestão: ${p.activity_title ?? ''}`
+    return 'Notificação de logística'
+  }
+
+  const unreadCount = notifications.filter(n => !n.read).length + pendingLogisticsCount
 
   const appRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLDivElement>(null)   // mobile sidebar — same filter as app-wrap
@@ -228,7 +301,7 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
               </div>
               <NavItem href="/dashboard"  label="Início"    icon={LayoutDashboard} />
               <NavItem href="/calendario" label="Agenda"    icon={CalendarDays} />
-              <NavItem href="/logistica"  label="Logística" icon={Car} />
+              <NavItem href="/logistica"  label="Logística" icon={Car} badge={pendingLogisticsCount} />
             </div>
             <div>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
@@ -356,6 +429,69 @@ export default function AppLayout({ children, sidebarChildren: initial }: Props)
                 <div style={{ fontSize:13 }}>Família</div>
                 <div style={{ fontSize:13 }}>em Foco</div>
               </div>
+            </div>
+
+            {/* Notificações (sino) */}
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={() => { setNotifOpen(o => !o); if (!notifOpen) markAllRead() }}
+                style={{ width:36, height:36, borderRadius:10, border:'none', cursor:'pointer', flexShrink:0, position:'relative',
+                  background: unreadCount > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(61,102,65,0.10)',
+                  display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Bell size={16} color={unreadCount > 0 ? '#D97706' : 'rgba(44,74,46,0.55)'} />
+                {unreadCount > 0 && (
+                  <span style={{ position:'absolute', top:-3, right:-3, minWidth:16, height:16, borderRadius:8,
+                    background:'#D97706', color:'#fff', fontSize:9, fontWeight:800,
+                    display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notif dropdown */}
+              {notifOpen && (
+                <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-xl z-50"
+                  style={{ width:300, maxHeight:360, overflowY:'auto',
+                    background:'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
+                    border:'1px solid rgba(61,102,65,0.18)',
+                    boxShadow:'0 8px 32px rgba(44,74,46,0.18)' }}>
+                  <div className="flex items-center justify-between px-4 py-3"
+                    style={{ borderBottom:'1px solid rgba(61,102,65,0.10)' }}>
+                    <span style={{ fontSize:13, fontWeight:700, color:'#1A2B1C' }}>Notificações</span>
+                    <Link href="/logistica" onClick={() => setNotifOpen(false)}
+                      style={{ fontSize:11, fontWeight:700, color:'#2D6A35', textDecoration:'none' }}>
+                      Ver logística →
+                    </Link>
+                  </div>
+                  {pendingLogisticsCount > 0 && (
+                    <div className="flex items-center gap-2 px-4 py-3"
+                      style={{ background:'rgba(245,158,11,0.06)', borderBottom:'1px solid rgba(245,158,11,0.15)' }}>
+                      <Clock size={13} color="#D97706" />
+                      <span style={{ fontSize:12, color:'#92400E', fontWeight:600 }}>
+                        {pendingLogisticsCount} sugestão{pendingLogisticsCount > 1 ? 'ões' : ''} de logística aguardando sua resposta
+                      </span>
+                    </div>
+                  )}
+                  {notifications.length === 0 && pendingLogisticsCount === 0 && (
+                    <div style={{ padding:'24px 16px', textAlign:'center', fontSize:12, color:'rgba(26,43,28,0.40)', fontStyle:'italic' }}>
+                      Nenhuma notificação
+                    </div>
+                  )}
+                  {notifications.map(n => (
+                    <div key={n.id} className="flex items-start gap-3 px-4 py-3"
+                      style={{ borderBottom:'1px solid rgba(61,102,65,0.07)',
+                        background: n.read ? 'transparent' : 'rgba(245,158,11,0.04)' }}>
+                      <div className="flex-1 min-w-0">
+                        <p style={{ fontSize:12, color:'#1A2B1C', lineHeight:1.4 }}>{notifLabel(n)}</p>
+                        <p style={{ fontSize:10, color:'rgba(26,43,28,0.40)', marginTop:2 }}>
+                          {new Date(n.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
+                        </p>
+                      </div>
+                      {!n.read && <div style={{ width:7, height:7, borderRadius:'50%', background:'#D97706', flexShrink:0, marginTop:4 }} />}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Captura IA */}
