@@ -367,6 +367,11 @@ export default function AppLayout({ children, sidebarChildren: initial, families
               )}
             </div>
 
+            {/* Seletor de família (desktop) */}
+            <div style={{ padding:'8px 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
+              <FamilySwitcher families={families} />
+            </div>
+
             {/* Configurações section */}
             <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
