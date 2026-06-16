@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2, Camera, ArrowRight, Check, Users, Sparkles, Mic, ImageIcon, Type, X, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Camera, ArrowRight, Check, Users, Sparkles, Mic, ImageIcon, Type, X, Loader2, CalendarDays, Bot, Share2, Baby, Handshake } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -244,6 +244,14 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Sessão expirada.')
 
+      // Garante que a família existe (pode não existir se o usuário usou auto-confirm
+      // e não passou pelo auth/callback)
+      const { data: families } = await supabase.rpc('get_my_families')
+      if (!families || families.length === 0) {
+        const familyName = (user.user_metadata?.family_name as string | undefined)?.trim() || 'Minha Família'
+        await supabase.rpc('create_my_family', { p_name: familyName })
+      }
+
       for (let i = 0; i < valid.length; i++) {
         const child = valid[i]
         const { data: inserted, error: insertErr } = await supabase
@@ -445,7 +453,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
     <div style={container}>
       {/* Logo */}
       <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🌿</div>
+        <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', boxShadow: '0 4px 16px rgba(44,74,46,0.28)' }}>
+          <Sparkles size={26} color="#D4E8D5" />
+        </div>
         <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 22, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
           Família em Foco
         </h1>
@@ -461,7 +471,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>👋</div>
+          <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(61,102,65,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <Handshake size={28} color="#3D6641" />
+          </div>
           <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 22, fontWeight: 700, color: '#1A2B1C', margin: '0 0 10px' }}>
             Olá, {firstName}!
           </h2>
@@ -472,12 +484,12 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
-            { icon: '📅', text: 'Agenda escolar e atividades centralizadas' },
-            { icon: '🤖', text: 'IA que organiza por foto ou texto' },
-            { icon: '👫', text: 'Compartilhe com o seu parceiro(a)' },
+            { icon: <CalendarDays size={18} color="#3D6641" />, text: 'Agenda escolar e atividades centralizadas' },
+            { icon: <Bot size={18} color="#3D6641" />, text: 'IA que organiza por foto, texto ou voz' },
+            { icon: <Share2 size={18} color="#3D6641" />, text: 'Compartilhe com o seu parceiro(a)' },
           ].map(({ icon, text }) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(61,102,65,0.05)', borderRadius: 12 }}>
-              <span style={{ fontSize: 20 }}>{icon}</span>
+              <div style={{ flexShrink: 0 }}>{icon}</div>
               <span style={{ fontSize: 14, color: '#2C4A2E', fontWeight: 500 }}>{text}</span>
             </div>
           ))}
@@ -494,7 +506,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'children') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 6 }}>🌿</div>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
+          <Sparkles size={20} color="#D4E8D5" />
+        </div>
         <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
           Família em Foco
         </h1>
@@ -510,6 +524,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         </div>
 
         <div>
+          <div style={{ width: 48, height: 48, borderRadius: 15, background: 'rgba(61,102,65,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+            <Baby size={24} color="#3D6641" />
+          </div>
           <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', margin: '0 0 6px' }}>
             Quem são seus filhos?
           </h2>
@@ -561,7 +578,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'invite') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 6 }}>🌿</div>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
+          <Sparkles size={20} color="#D4E8D5" />
+        </div>
         <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
           Família em Foco
         </h1>
@@ -577,7 +596,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>👫</div>
+          <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(61,102,65,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <Users size={28} color="#3D6641" />
+          </div>
           <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', margin: '0 0 8px' }}>
             Convide seu parceiro(a)
           </h2>
@@ -636,7 +657,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'ai') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 6 }}>🌿</div>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
+          <Sparkles size={20} color="#D4E8D5" />
+        </div>
         <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
           Família em Foco
         </h1>
@@ -652,7 +675,9 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
+          <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(61,102,65,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <Bot size={28} color="#3D6641" />
+          </div>
           <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', margin: '0 0 8px' }}>
             Experimente a IA agora
           </h2>
