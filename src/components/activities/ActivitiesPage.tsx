@@ -5,19 +5,14 @@ import { Activity, ActivityCategory, Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { DeadlineBadge } from '@/components/ui/Badge'
-import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Car, Home } from 'lucide-react'
+import { Plus, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
 import { mergeActivities } from '@/lib/merge-activities'
 import { useAccess } from '@/components/access/AccessContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from '@/components/ui/Toast'
 import EmptyState from '@/components/ui/EmptyState'
-
-interface FamilyMemberInfo {
-  user_id: string
-  display_name: string | null
-  role: string
-}
+import LogChip, { LogisticsSuggestion, FamilyMemberInfo } from '@/components/activities/LogChip'
 
 interface Props {
   category: ActivityCategory
@@ -25,11 +20,13 @@ interface Props {
   emoji: string
   color: string
   subtypes?: string[]
-  // Pre-fetched from server → no client-side loading waterfall
   initialActivities?: Activity[]
   initialChildren?: Child[]
   familyMembers?: FamilyMemberInfo[]
   currentUserId?: string
+  familyId?: string | null
+  isOwner?: boolean
+  initialSuggestions?: LogisticsSuggestion[]
 }
 
 const ALERT_OPTIONS = [
@@ -69,17 +66,17 @@ const emptyForm = {
   child_id: '', title: '', description: '', date: '', time: '', alert_days: 3, location: '',
 }
 
-export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren, familyMembers = [], currentUserId }: Props) {
+export default function ActivitiesPage({ category, title, emoji, color, initialActivities, initialChildren, familyMembers = [], currentUserId, familyId, isOwner = false, initialSuggestions = [] }: Props) {
   const supabase = createClient()
   const { canEdit } = useAccess()
-  // If server pre-fetched data, use it immediately (no loading flash)
   const [activities, setActivities] = useState<Activity[]>(initialActivities ?? [])
   const [children, setChildren] = useState<Child[]>(initialChildren ?? [])
+  const [suggestions, setSuggestions] = useState<LogisticsSuggestion[]>(initialSuggestions)
   const [loading, setLoading] = useState(!initialActivities)
 
-  // Realtime: RealtimeSync (layout) chama router.refresh() → props frescas chegam → sincroniza estado
   useEffect(() => { setActivities(initialActivities ?? []) }, [initialActivities])
   useEffect(() => { setChildren(initialChildren ?? []) }, [initialChildren])
+  useEffect(() => { setSuggestions(initialSuggestions ?? []) }, [initialSuggestions])
   const [filterChild, setFilterChild] = useState('')
   const [modal, setModal] = useState<{ mode: 'new' | 'edit'; activity?: Activity } | null>(null)
   const [saving, setSaving] = useState(false)
@@ -218,11 +215,15 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
               index={gi}
               onEdit={(a) => openEdit(a)}
               onDelete={(id) => handleDelete(id)}
-              onLogisticsUpdate={(actId, field, val) =>
+              onLogisticsUpdate={(actId, field, val, removeSugId) => {
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, [field]: val } : a))
-              }
+                if (removeSugId) setSuggestions(prev => prev.filter(s => s.id !== removeSugId))
+              }}
               familyMembers={familyMembers}
               currentUserId={currentUserId}
+              familyId={familyId ?? null}
+              isOwner={isOwner}
+              suggestions={suggestions}
             />
           ))}
         </div>
@@ -350,114 +351,27 @@ type ActivityWithChild = Activity & {
   picks_user_id?: string | null
 }
 
-function LogisticsChip({
-  type,
-  assignedUserId,
-  currentUserId,
-  familyMembers,
-  activityId,
-  onUpdated,
-}: {
-  type: 'takes' | 'picks'
-  assignedUserId: string | null | undefined
-  currentUserId: string | undefined
-  familyMembers: { user_id: string; display_name: string | null }[]
-  activityId: string
-  onUpdated: (field: 'takes_user_id' | 'picks_user_id', value: string | null) => void
-}) {
-  const supabase = createClient()
-  const { canLogistics } = useAccess()
-  const [saving, setSaving] = useState(false)
-
-  const field: 'takes_user_id' | 'picks_user_id' = type === 'takes' ? 'takes_user_id' : 'picks_user_id'
-  const isMe = assignedUserId === currentUserId
-  const isPartner = assignedUserId && assignedUserId !== currentUserId
-  const assignedMember = familyMembers.find(m => m.user_id === assignedUserId)
-  const assignedName = isMe ? 'Você' : (assignedMember?.display_name ?? 'Parceiro(a)')
-
-  async function handleClick() {
-    if (saving) return
-    // If partner assigned → confirm before reatribuir
-    if (isPartner) {
-      const ok = confirm(`${assignedName} já assumiu essa função. Deseja reatribuir para você?`)
-      if (!ok) return
-    }
-    setSaving(true)
-    const newValue = assignedUserId === currentUserId ? null : (currentUserId ?? null)
-    await supabase.from('activities').update({ [field]: newValue }).eq('id', activityId)
-    onUpdated(field, newValue)
-    setSaving(false)
-  }
-
-  const icon = type === 'takes' ? <Car size={11} /> : <Home size={11} />
-  const label = type === 'takes' ? 'Leva' : 'Busca'
-
-  let chipStyle: React.CSSProperties
-  if (!assignedUserId) {
-    chipStyle = {
-      background: 'rgba(61,102,65,0.05)',
-      border: '1.5px dashed rgba(61,102,65,0.25)',
-      color: 'rgba(26,43,28,0.40)',
-    }
-  } else if (isMe) {
-    chipStyle = {
-      background: 'rgba(61,102,65,0.10)',
-      border: '1.5px solid rgba(61,102,65,0.30)',
-      color: '#2D6A35',
-    }
-  } else {
-    chipStyle = {
-      background: 'rgba(99,102,241,0.07)',
-      border: '1.5px solid rgba(99,102,241,0.25)',
-      color: '#4338CA',
-    }
-  }
-
-  // read_only não edita logística — chip vira apenas leitura
-  if (!canLogistics) {
-    return (
-      <div
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg flex-1"
-        style={{ fontSize: 11, fontWeight: 600, cursor: 'default', ...chipStyle }}>
-        {icon}
-        <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, marginRight: 2 }}>{label.toUpperCase()}</span>
-        {assignedUserId ? assignedName : '—'}
-      </div>
-    )
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={saving}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all hover:brightness-95 active:scale-95 disabled:opacity-50 flex-1"
-      style={{ fontSize: 11, fontWeight: 600, cursor: 'pointer', ...chipStyle }}>
-      {icon}
-      <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, marginRight: 2 }}>{label.toUpperCase()}</span>
-      {assignedUserId ? assignedName : 'Definir'}
-    </button>
-  )
-}
-
 function ActivityCard({
-  group, index, onEdit, onDelete, onLogisticsUpdate, familyMembers = [], currentUserId,
+  group, index, onEdit, onDelete, onLogisticsUpdate, familyMembers = [], currentUserId, familyId, isOwner, suggestions,
 }: {
   group: ActivityWithChild[]
   accent: string
   index: number
   onEdit: (a: ActivityWithChild) => void
   onDelete: (id: string) => void
-  onLogisticsUpdate: (actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null) => void
-  familyMembers?: { user_id: string; display_name: string | null; role: string }[]
+  onLogisticsUpdate: (actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null, removeSugId?: string) => void
+  familyMembers?: FamilyMemberInfo[]
   currentUserId?: string
+  familyId?: string | null
+  isOwner?: boolean
+  suggestions?: LogisticsSuggestion[]
 }) {
   const { canEdit } = useAccess()
   const first  = group[0]
   const merged = group.length > 1
   const fmtDate = (d: string | null) => d ? format(new Date(d + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : '—'
 
-  // Only show logistics chips for dated activities when family sharing is active
-  const showLogistics = !!first.date && familyMembers.length > 0
+  const showLogistics = !!first.date && familyMembers.length > 0 && !!currentUserId
 
   return (
     <div
@@ -508,21 +422,31 @@ function ActivityCard({
                     </span>
                   )}
                   <div className="flex gap-1.5 flex-1">
-                    <LogisticsChip
-                      type="takes"
-                      assignedUserId={a.takes_user_id}
-                      currentUserId={currentUserId}
+                    <LogChip
+                      actId={a.id}
+                      field="takes_user_id"
+                      value={a.takes_user_id ?? null}
+                      activity={{ id: a.id, title: a.title, date: a.date }}
+                      suggestions={suggestions ?? []}
                       familyMembers={familyMembers}
-                      activityId={a.id}
-                      onUpdated={(field, val) => onLogisticsUpdate(a.id, field, val)}
+                      currentUserId={currentUserId!}
+                      familyId={familyId ?? null}
+                      isOwner={isOwner ?? false}
+                      onUpdate={(actId, field, val, removeSugId) => onLogisticsUpdate(actId, field, val, removeSugId)}
+                      compact
                     />
-                    <LogisticsChip
-                      type="picks"
-                      assignedUserId={a.picks_user_id}
-                      currentUserId={currentUserId}
+                    <LogChip
+                      actId={a.id}
+                      field="picks_user_id"
+                      value={a.picks_user_id ?? null}
+                      activity={{ id: a.id, title: a.title, date: a.date }}
+                      suggestions={suggestions ?? []}
                       familyMembers={familyMembers}
-                      activityId={a.id}
-                      onUpdated={(field, val) => onLogisticsUpdate(a.id, field, val)}
+                      currentUserId={currentUserId!}
+                      familyId={familyId ?? null}
+                      isOwner={isOwner ?? false}
+                      onUpdate={(actId, field, val, removeSugId) => onLogisticsUpdate(actId, field, val, removeSugId)}
+                      compact
                     />
                   </div>
                   {merged && canEdit && (

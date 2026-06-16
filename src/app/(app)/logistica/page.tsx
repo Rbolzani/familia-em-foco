@@ -44,9 +44,10 @@ export default async function LogisticaPage() {
       usersRes.users.forEach(u => { emailMap[u.id] = u.email ?? '' })
     }
   }
+  const { nameFromEmail } = await import('@/lib/name-from-email')
   const familyMembers = members.map(m => ({
     ...m,
-    display_name: m.display_name ?? emailMap[m.user_id] ?? null,
+    display_name: m.display_name ?? nameFromEmail(emailMap[m.user_id] ?? ''),
   }))
 
   return (
