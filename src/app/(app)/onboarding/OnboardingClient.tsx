@@ -241,51 +241,32 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
     setError(null)
 
     try {
+      // Inserir filhos via API route (usa service role, bypassa RLS)
+      const res = await fetch('/api/onboarding/children', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          children: valid.map(c => ({
+            name: c.name.trim(),
+            birth_date: c.birth_date || null,
+            school_name: c.school_name.trim() || null,
+            avatar_color: c.avatar_color,
+          })),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Erro ao salvar filhos.')
+
+      // Upload de fotos para os filhos inseridos
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Sessão expirada.')
-
-      // Garante que a família existe e obtém o family_id
-      let { data: family } = await supabase
-        .from('families')
-        .select('id')
-        .eq('created_by', user.id)
-        .maybeSingle()
-
-      if (!family) {
-        const familyName = (user.user_metadata?.family_name as string | undefined)?.trim() || 'Minha Família'
-        const { error: createErr } = await supabase.rpc('create_my_family', { p_name: familyName })
-        if (createErr) throw new Error(`Criar família: ${createErr.message}`)
-        const { data: refreshed } = await supabase
-          .from('families')
-          .select('id')
-          .eq('created_by', user.id)
-          .maybeSingle()
-        family = refreshed
-      }
-
-      if (!family?.id) throw new Error('Família não encontrada. Tente fazer logout e login novamente.')
-
-      for (let i = 0; i < valid.length; i++) {
-        const child = valid[i]
-        const { data: inserted, error: insertErr } = await supabase
-          .from('children')
-          .insert({
-            user_id: user.id,
-            family_id: family.id,
-            name: child.name.trim(),
-            birth_date: child.birth_date || null,
-            school_name: child.school_name.trim() || null,
-            avatar_color: child.avatar_color,
-            sort_order: i,
-          })
-          .select()
-          .single()
-
-        if (insertErr || !inserted) throw new Error(`Inserir ${child.name}: ${insertErr?.message ?? 'sem retorno'}`)
-
-        if (child.photoFile) {
-          const url = await uploadPhoto(user.id, inserted.id, child.photoFile)
-          if (url) await supabase.from('children').update({ avatar_url: url }).eq('id', inserted.id)
+      if (user) {
+        for (let i = 0; i < valid.length; i++) {
+          const child = valid[i]
+          const inserted = json.children?.[i]
+          if (child.photoFile && inserted?.id) {
+            const url = await uploadPhoto(user.id, inserted.id, child.photoFile)
+            if (url) await supabase.from('children').update({ avatar_url: url }).eq('id', inserted.id)
+          }
         }
       }
 
