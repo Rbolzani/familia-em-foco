@@ -21,7 +21,7 @@ export default function SignupPage() {
     if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
     setLoading(true); setError('')
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
         data: { full_name: name, family_name: familyName.trim() || 'Minha Família' },
@@ -29,7 +29,13 @@ export default function SignupPage() {
       },
     })
     if (error) { setError(error.message); setLoading(false); return }
-    setSuccess(true)
+    if (data.session) {
+      // Auto-confirm ativo — sessão criada imediatamente, ir direto para o app.
+      // O layout cria a família com o nome escolhido no formulário (via user_metadata).
+      router.push('/dashboard')
+    } else {
+      setSuccess(true)
+    }
   }
 
   if (success) {
