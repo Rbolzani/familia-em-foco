@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, Child } from '@/lib/types'
 import { CategoryBadge } from '@/components/ui/Badge'
-import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, HeartPulse, Trophy, CalendarDays } from 'lucide-react'
+import { useAccess } from '@/components/access/AccessContext'
+import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, HeartPulse, Trophy, CalendarDays, Trash2, Loader2 } from 'lucide-react'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay,
   isToday, startOfWeek, endOfWeek, addMonths, subMonths,
@@ -32,13 +33,24 @@ const LEGEND = [
 
 type ActivityWithChild = Activity & { child?: { name: string; avatar_color: string } }
 
-function ActivityDetailCard({ a, i }: { a: ActivityWithChild; i: number }) {
+function ActivityDetailCard({ a, i, onDelete, canEdit }: {
+  a: ActivityWithChild; i: number; canEdit: boolean; onDelete: (id: string) => Promise<void>
+}) {
   const bar  = CAT_BAR[a.category]    ?? '#5A8C5E'
   const ibg  = CAT_ICO_BG[a.category] ?? 'rgba(61,102,65,0.08)'
   const icol = CAT_BAR[a.category]    ?? '#3D6641'
   const Icon = CAT_ICON[a.category]   ?? CalendarDays
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm(`Excluir "${a.title}"?`)) return
+    setDeleting(true)
+    await onDelete(a.id)
+  }
+
   return (
-    <div className="rounded-[17px] p-3 flex items-start gap-2.5 animate-fade-up"
+    <div className="rounded-[17px] p-3 flex items-start gap-2.5 animate-fade-up group"
       style={{ backgroundImage:'linear-gradient(160deg,#FFFFFF 0%,#FAF5EC 100%)',
         border:'1px solid rgba(61,102,65,0.16)',
         boxShadow:'0 2px 8px rgba(44,74,46,0.08),0 -1px 0 rgba(255,255,255,0.85) inset',
@@ -71,12 +83,23 @@ function ActivityDetailCard({ a, i }: { a: ActivityWithChild; i: number }) {
         )}
         <div className="mt-1.5"><CategoryBadge category={a.category}/></div>
       </div>
+      {canEdit && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          title="Excluir atividade"
+          className="flex-none w-7 h-7 rounded-[9px] flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:!opacity-100"
+          style={{ background:'rgba(220,38,38,0.08)', border:'1px solid rgba(220,38,38,0.16)', color: deleting ? 'rgba(220,38,38,0.40)' : '#DC2626' }}>
+          {deleting ? <Loader2 size={13} className="animate-spin"/> : <Trash2 size={13}/>}
+        </button>
+      )}
     </div>
   )
 }
 
-function DayDetail({ selectedDay, selectedDayActs, onClose }: {
+function DayDetail({ selectedDay, selectedDayActs, onClose, onDelete, canEdit }: {
   selectedDay: Date; selectedDayActs: ActivityWithChild[]; onClose: ()=>void
+  onDelete: (id: string) => Promise<void>; canEdit: boolean
 }) {
   return (
     <>
@@ -110,7 +133,9 @@ function DayDetail({ selectedDay, selectedDayActs, onClose }: {
           ? <div className="flex flex-col items-center justify-center h-24 text-center">
               <p className="text-sm italic" style={{ color:'rgba(26,43,28,0.40)' }}>Nenhuma atividade neste dia.</p>
             </div>
-          : selectedDayActs.map((a,i)=><ActivityDetailCard key={a.id} a={a} i={i}/>)
+          : selectedDayActs.map((a,i)=>(
+              <ActivityDetailCard key={a.id} a={a} i={i} onDelete={onDelete} canEdit={canEdit}/>
+            ))
         }
       </div>
     </>
@@ -131,6 +156,7 @@ const CATEGORIES = [
 
 export default function CalendarioClient({ initialActivities, initialChildren }: Props) {
   const supabase = createClient()
+  const { canEdit } = useAccess()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [activities,  setActivities]  = useState<Activity[]>(initialActivities)
   const [children,    setChildren]    = useState<Child[]>(initialChildren)
@@ -180,6 +206,11 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
   const days            = eachDayOfInterval({start:calStart, end:calEnd})
   const actsForDay      = (day:Date) => filtered.filter(a=>a.date===format(day,'yyyy-MM-dd'))
   const selectedDayActs = (selectedDay?actsForDay(selectedDay):[]) as ActivityWithChild[]
+
+  async function handleDelete(id: string) {
+    await supabase.from('activities').delete().eq('id', id)
+    setActivities(prev => prev.filter(a => a.id !== id))
+  }
 
   function closeSheet() { setSelectedDay(null); setDragY(0) }
 
@@ -366,7 +397,7 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
         {selectedDay&&(
           <div className="hidden lg:flex w-72 flex-shrink-0 flex-col overflow-hidden animate-fade-in"
             style={{ borderLeft:'1px solid rgba(61,102,65,0.16)', backgroundImage:'linear-gradient(160deg,#FFFFFF 0%,#F8F3EA 100%)', boxShadow:'-4px 0 20px rgba(44,74,46,0.07)' }}>
-            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet}/>
+            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet} onDelete={handleDelete} canEdit={canEdit}/>
           </div>
         )}
       </div>
@@ -396,7 +427,7 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
               style={{ touchAction:'none' }}>
               <div className="w-10 h-1 rounded-full" style={{ background:'rgba(61,102,65,0.28)' }}/>
             </div>
-            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet}/>
+            <DayDetail selectedDay={selectedDay} selectedDayActs={selectedDayActs} onClose={closeSheet} onDelete={handleDelete} canEdit={canEdit}/>
           </div>
         </>
       )}
