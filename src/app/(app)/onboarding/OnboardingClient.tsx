@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2, Camera, ArrowRight, Check, Users, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Camera, ArrowRight, Check, Users, Sparkles, Mic, ImageIcon, Type, X, Loader2 } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -10,6 +10,20 @@ const AVATAR_COLORS = [
   '#F4522D','#F5A623','#00C48C','#2563EB',
   '#7C3AED','#DB2777','#0891B2','#059669',
 ]
+
+interface AiActivity {
+  title: string
+  date?: string | null
+  time?: string | null
+  category?: string
+  description?: string | null
+}
+
+interface AiExtractResult {
+  activities?: AiActivity[]
+  reminders?: { title: string }[]
+  documents?: { title: string; category?: string }[]
+}
 
 interface ChildForm {
   id: string
@@ -191,7 +205,7 @@ function ChildCard({
 // ── Main onboarding component ──────────────────────────────────────────────
 export default function OnboardingClient({ firstName }: { firstName: string }) {
   const router = useRouter()
-  const [step, setStep] = useState<'welcome' | 'children' | 'invite' | 'done'>('welcome')
+  const [step, setStep] = useState<'welcome' | 'children' | 'invite' | 'ai' | 'done'>('welcome')
   const [children, setChildren] = useState<ChildForm[]>([newChildForm()])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -282,6 +296,118 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
     window.open(`https://wa.me/?text=${msg}`, '_blank')
   }
 
+  // ── AI demo state ─────────────────────────────────────────────────────────
+  const [aiMode, setAiMode] = useState<'text' | 'image'>('text')
+  const [aiInput, setAiInput] = useState('')
+  const [aiImage, setAiImage] = useState<{ file: File; preview: string } | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiResult, setAiResult] = useState<AiExtractResult | null>(null)
+  const [aiSaved, setAiSaved] = useState(false)
+  const [aiSaving, setAiSaving] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [recording, setRecording] = useState(false)
+  const mediaRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const aiImageInputRef = useRef<HTMLInputElement>(null)
+
+  async function runAiDemo() {
+    if (!aiInput.trim() && !aiImage) return
+    setAiLoading(true)
+    setAiResult(null)
+    setAiError(null)
+    try {
+      let body: FormData | string
+      let headers: Record<string, string> = {}
+      if (aiImage) {
+        const fd = new FormData()
+        fd.append('image', aiImage.file)
+        if (aiInput.trim()) fd.append('text', aiInput.trim())
+        body = fd
+      } else {
+        body = JSON.stringify({ text: aiInput.trim() })
+        headers['Content-Type'] = 'application/json'
+      }
+      const res = await fetch('/api/ai-extract', { method: 'POST', headers, body: body as BodyInit })
+      if (!res.ok) throw new Error('Erro na análise. Tente novamente.')
+      const json = await res.json()
+      setAiResult(json)
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : 'Erro desconhecido.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  async function saveAiItems() {
+    if (!aiResult || aiSaved) return
+    setAiSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error()
+      const { data: childList } = await supabase.from('children').select('id').limit(1)
+      const childId = childList?.[0]?.id ?? null
+
+      for (const item of (aiResult.activities ?? [])) {
+        await supabase.from('activities').insert({
+          user_id: user.id,
+          child_id: childId,
+          title: item.title,
+          date: item.date ?? null,
+          time: item.time ?? null,
+          category: item.category ?? 'escola',
+          description: item.description ?? null,
+          ai_generated: true,
+          status: 'pendente',
+        })
+      }
+      setAiSaved(true)
+    } catch {
+      // silent — user can try again
+    } finally {
+      setAiSaving(false)
+    }
+  }
+
+  async function startVoice() {
+    if (recording) {
+      mediaRef.current?.stop()
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/mp4'
+      const mr = new MediaRecorder(stream, { mimeType })
+      chunksRef.current = []
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        setRecording(false)
+        const blob = new Blob(chunksRef.current, { type: mimeType })
+        const fd = new FormData()
+        fd.append('audio', blob, 'rec.webm')
+        try {
+          const res = await fetch('/api/voice-transcribe', { method: 'POST', body: fd })
+          const json = await res.json()
+          if (json.text) setAiInput(prev => prev ? `${prev} ${json.text}` : json.text)
+        } catch { /* ignore */ }
+      }
+      mr.start()
+      mediaRef.current = mr
+      setRecording(true)
+    } catch { /* microphone denied */ }
+  }
+
+  function handleAiImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    const url = URL.createObjectURL(f)
+    setAiImage({ file: f, preview: url })
+    setAiMode('image')
+    e.target.value = ''
+  }
+
   function finish() {
     router.push('/dashboard')
   }
@@ -326,9 +452,10 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
       </div>
 
       <div style={card}>
-        {/* Step dots */}
+        {/* Step dots — 4 steps total */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <StepDot active={true} done={false} />
+          <StepDot active={false} done={false} />
           <StepDot active={false} done={false} />
           <StepDot active={false} done={false} />
         </div>
@@ -378,6 +505,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <StepDot active={false} done={true} />
           <StepDot active={true} done={false} />
+          <StepDot active={false} done={false} />
           <StepDot active={false} done={false} />
         </div>
 
@@ -445,6 +573,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
           <StepDot active={false} done={true} />
           <StepDot active={false} done={true} />
           <StepDot active={true} done={false} />
+          <StepDot active={false} done={false} />
         </div>
 
         <div style={{ textAlign: 'center' }}>
@@ -481,11 +610,15 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
             }}>
               <span style={{ fontSize: 16 }}>💬</span> Enviar pelo WhatsApp
             </button>
+
+            <button onClick={() => setStep('ai')} style={btn}>
+              Continuar <ArrowRight size={16} />
+            </button>
           </div>
         )}
 
         <button
-          onClick={finish}
+          onClick={() => setStep('ai')}
           style={{
             width: '100%', padding: '13px', borderRadius: 13,
             border: '1.5px solid rgba(61,102,65,0.25)',
@@ -494,6 +627,223 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
           <Users size={15} /> Convidar depois
+        </button>
+      </div>
+    </div>
+  )
+
+  // ── Step: AI demo ─────────────────────────────────────────────────────
+  if (step === 'ai') return (
+    <div style={container}>
+      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 6 }}>🌿</div>
+        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
+          Família em Foco
+        </h1>
+      </div>
+
+      <div style={{ ...card, maxHeight: 'calc(100dvh - 140px)', overflowY: 'auto' }}>
+        {/* Step dots */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          <StepDot active={false} done={true} />
+          <StepDot active={false} done={true} />
+          <StepDot active={false} done={true} />
+          <StepDot active={true} done={false} />
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
+          <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C', margin: '0 0 8px' }}>
+            Experimente a IA agora
+          </h2>
+          <p style={{ fontSize: 14, color: 'rgba(26,43,28,0.55)', lineHeight: 1.6, margin: 0 }}>
+            Fale, escreva ou tire uma foto — a IA extrai e organiza tudo automaticamente.
+          </p>
+        </div>
+
+        {/* Mode selector */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {([
+            { mode: 'text' as const, icon: <Type size={15} />, label: 'Texto' },
+            { mode: 'image' as const, icon: <ImageIcon size={15} />, label: 'Foto' },
+          ] as const).map(({ mode, icon, label }) => (
+            <button key={mode} onClick={() => { setAiMode(mode); if (mode === 'image') aiImageInputRef.current?.click() }}
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 11,
+                border: `1.5px solid ${aiMode === mode ? '#3D6641' : 'rgba(61,102,65,0.2)'}`,
+                background: aiMode === mode ? 'rgba(61,102,65,0.08)' : 'transparent',
+                color: aiMode === mode ? '#2C4A2E' : 'rgba(26,43,28,0.45)',
+                fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transition: 'all 0.15s',
+              }}>
+              {icon} {label}
+            </button>
+          ))}
+          <input ref={aiImageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAiImage} />
+
+          {/* Voice button */}
+          <button onClick={startVoice}
+            style={{
+              flex: 1, padding: '10px 12px', borderRadius: 11,
+              border: `1.5px solid ${recording ? '#DC2626' : 'rgba(61,102,65,0.2)'}`,
+              background: recording ? 'rgba(220,38,38,0.08)' : 'transparent',
+              color: recording ? '#DC2626' : 'rgba(26,43,28,0.45)',
+              fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              transition: 'all 0.15s',
+            }}>
+            <Mic size={15} /> {recording ? 'Parar' : 'Voz'}
+          </button>
+        </div>
+
+        {/* Image preview */}
+        {aiImage && (
+          <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', maxHeight: 160 }}>
+            <img src={aiImage.preview} alt="" style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+            <button onClick={() => { setAiImage(null); setAiMode('text') }}
+              style={{
+                position: 'absolute', top: 8, right: 8,
+                background: 'rgba(0,0,0,0.55)', border: 'none', borderRadius: 8,
+                width: 28, height: 28, cursor: 'pointer', color: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Text input */}
+        <div style={{ position: 'relative' }}>
+          <textarea
+            value={aiInput}
+            onChange={e => setAiInput(e.target.value)}
+            placeholder={
+              aiMode === 'image'
+                ? 'Opcional: acrescente uma observação sobre a imagem...'
+                : 'Ex: "Maria tem consulta na terça às 14h na Dra. Ana, e prova de português na sexta"'
+            }
+            rows={3}
+            style={{
+              width: '100%', padding: '12px 14px', borderRadius: 12,
+              border: '1.5px solid rgba(61,102,65,0.2)', background: 'rgba(61,102,65,0.03)',
+              fontSize: 14, color: '#1A2B1C', resize: 'none', outline: 'none',
+              fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+              boxSizing: 'border-box',
+            }}
+          />
+          {recording && (
+            <div style={{
+              position: 'absolute', bottom: 10, right: 12,
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 12, color: '#DC2626', fontWeight: 600,
+            }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulse 1s infinite' }} />
+              Gravando...
+            </div>
+          )}
+        </div>
+
+        {/* Hint pills */}
+        {!aiResult && !aiLoading && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {[
+              'Consulta pediátrica na sexta às 15h',
+              'Prova de matemática dia 20',
+              'Futebol toda terça às 17h30',
+            ].map(hint => (
+              <button key={hint} onClick={() => setAiInput(hint)}
+                style={{
+                  padding: '6px 12px', borderRadius: 20,
+                  border: '1px solid rgba(61,102,65,0.2)',
+                  background: 'rgba(61,102,65,0.04)',
+                  fontSize: 12, color: '#3D6641', cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>
+                {hint}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {aiError && (
+          <p style={{ color: '#DC2626', fontSize: 13, textAlign: 'center', margin: 0 }}>{aiError}</p>
+        )}
+
+        {/* Result */}
+        {aiResult && !aiLoading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(26,43,28,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+              IA encontrou:
+            </p>
+            {(aiResult.activities ?? []).map((a, i) => (
+              <div key={i} style={{
+                background: 'rgba(61,102,65,0.06)', borderRadius: 11,
+                padding: '10px 14px', border: '1px solid rgba(61,102,65,0.12)',
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C', margin: '0 0 4px' }}>📅 {a.title}</p>
+                {a.date && <p style={{ fontSize: 12, color: 'rgba(26,43,28,0.5)', margin: 0 }}>{a.date}{a.time ? ` às ${a.time}` : ''}</p>}
+              </div>
+            ))}
+            {(aiResult.reminders ?? []).map((r, i) => (
+              <div key={i} style={{
+                background: 'rgba(245,166,35,0.07)', borderRadius: 11,
+                padding: '10px 14px', border: '1px solid rgba(245,166,35,0.2)',
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C', margin: 0 }}>📌 {r.title}</p>
+              </div>
+            ))}
+            {(aiResult.documents ?? []).map((d, i) => (
+              <div key={i} style={{
+                background: 'rgba(37,99,235,0.06)', borderRadius: 11,
+                padding: '10px 14px', border: '1px solid rgba(37,99,235,0.12)',
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C', margin: 0 }}>📄 {d.title}</p>
+              </div>
+            ))}
+            {!aiSaved ? (
+              <button onClick={saveAiItems} disabled={aiSaving} style={{
+                ...btn,
+                background: 'linear-gradient(140deg,#059669,#047857)',
+              }}>
+                {aiSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {aiSaving ? 'Salvando...' : 'Salvar na agenda'}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#059669', fontWeight: 600 }}>
+                <Check size={16} /> Salvo com sucesso!
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Analyze button */}
+        {!aiResult && (
+          <button
+            onClick={runAiDemo}
+            disabled={aiLoading || (!aiInput.trim() && !aiImage)}
+            style={{
+              ...btn,
+              opacity: aiLoading || (!aiInput.trim() && !aiImage) ? 0.5 : 1,
+            }}>
+            {aiLoading
+              ? <><Loader2 size={16} className="animate-spin" /> Analisando...</>
+              : <><Sparkles size={16} /> Analisar com IA</>
+            }
+          </button>
+        )}
+
+        {/* Skip */}
+        <button
+          onClick={finish}
+          style={{
+            width: '100%', padding: '12px', borderRadius: 13,
+            border: '1.5px solid rgba(61,102,65,0.2)',
+            background: 'transparent', color: 'rgba(26,43,28,0.45)',
+            fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+          Ir para o dashboard <ArrowRight size={15} />
         </button>
       </div>
     </div>
