@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, Check, Crown, Users, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -101,10 +102,10 @@ export default function FamilySwitcher({ families: initial }: Props) {
           style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s', flexShrink: 0 }} />
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div style={{
           position: 'fixed', top: 60, left: 8, right: 8, maxWidth: 320, margin: '0 auto',
-          zIndex: 9999, borderRadius: 16, overflow: 'hidden',
+          zIndex: 99999, borderRadius: 16, overflow: 'hidden',
           background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
           border: '1px solid rgba(61,102,65,0.18)',
           boxShadow: '0 8px 32px rgba(44,74,46,0.18)',
@@ -213,7 +214,8 @@ export default function FamilySwitcher({ families: initial }: Props) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
