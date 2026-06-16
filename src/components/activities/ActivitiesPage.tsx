@@ -77,6 +77,24 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
   useEffect(() => { setActivities(initialActivities ?? []) }, [initialActivities])
   useEffect(() => { setChildren(initialChildren ?? []) }, [initialChildren])
   useEffect(() => { setSuggestions(initialSuggestions ?? []) }, [initialSuggestions])
+
+  // Realtime: logistics_suggestions → update chip state live
+  useEffect(() => {
+    if (!familyId) return
+    const channel = supabase
+      .channel(`suggestions_activities_${familyId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_suggestions', filter: `family_id=eq.${familyId}` }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setSuggestions(prev => [...prev.filter(s => s.id !== (payload.new as LogisticsSuggestion).id), payload.new as LogisticsSuggestion])
+        } else if (payload.eventType === 'UPDATE') {
+          setSuggestions(prev => prev.map(s => s.id === (payload.new as LogisticsSuggestion).id ? payload.new as LogisticsSuggestion : s))
+        } else if (payload.eventType === 'DELETE') {
+          setSuggestions(prev => prev.filter(s => s.id !== (payload.old as { id: string }).id))
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [familyId])
   const [filterChild, setFilterChild] = useState('')
   const [modal, setModal] = useState<{ mode: 'new' | 'edit'; activity?: Activity } | null>(null)
   const [saving, setSaving] = useState(false)
@@ -219,6 +237,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, [field]: val } : a))
                 if (removeSugId) setSuggestions(prev => prev.filter(s => s.id !== removeSugId))
               }}
+              onSuggestionCreated={sug => setSuggestions(prev => [...prev.filter(s => s.id !== sug.id), sug])}
               familyMembers={familyMembers}
               currentUserId={currentUserId}
               familyId={familyId ?? null}
@@ -352,7 +371,7 @@ type ActivityWithChild = Activity & {
 }
 
 function ActivityCard({
-  group, index, onEdit, onDelete, onLogisticsUpdate, familyMembers = [], currentUserId, familyId, isOwner, suggestions,
+  group, index, onEdit, onDelete, onLogisticsUpdate, onSuggestionCreated, familyMembers = [], currentUserId, familyId, isOwner, suggestions,
 }: {
   group: ActivityWithChild[]
   accent: string
@@ -360,6 +379,7 @@ function ActivityCard({
   onEdit: (a: ActivityWithChild) => void
   onDelete: (id: string) => void
   onLogisticsUpdate: (actId: string, field: 'takes_user_id' | 'picks_user_id', value: string | null, removeSugId?: string) => void
+  onSuggestionCreated?: (sug: LogisticsSuggestion) => void
   familyMembers?: FamilyMemberInfo[]
   currentUserId?: string
   familyId?: string | null
@@ -433,6 +453,7 @@ function ActivityCard({
                       familyId={familyId ?? null}
                       isOwner={isOwner ?? false}
                       onUpdate={(actId, field, val, removeSugId) => onLogisticsUpdate(actId, field, val, removeSugId)}
+                      onSuggestionCreated={onSuggestionCreated}
                       compact
                     />
                     <LogChip
@@ -446,6 +467,7 @@ function ActivityCard({
                       familyId={familyId ?? null}
                       isOwner={isOwner ?? false}
                       onUpdate={(actId, field, val, removeSugId) => onLogisticsUpdate(actId, field, val, removeSugId)}
+                      onSuggestionCreated={onSuggestionCreated}
                       compact
                     />
                   </div>

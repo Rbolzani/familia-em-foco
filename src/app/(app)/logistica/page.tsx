@@ -33,8 +33,14 @@ export default async function LogisticaPage() {
       : Promise.resolve({ data: [] }),
   ])
 
-  // Enriquecer display_name nulos com email via admin (igual às configurações)
   const members = rawMembers ?? []
+
+  if (familyId && !members.find(m => m.role === 'owner')) {
+    const { data: fam } = await supabase.from('families').select('created_by').eq('id', familyId).maybeSingle()
+    if (fam?.created_by) members.push({ user_id: fam.created_by, display_name: null, role: 'owner' })
+  }
+
+  // Enriquecer display_name nulos com email via admin
   const missingIds = members.filter(m => !m.display_name).map(m => m.user_id)
   let emailMap: Record<string, string> = {}
   if (missingIds.length > 0) {

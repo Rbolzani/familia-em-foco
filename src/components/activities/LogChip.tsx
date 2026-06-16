@@ -40,6 +40,7 @@ interface Props {
   familyId: string | null
   isOwner: boolean
   onUpdate: (actId: string, field: 'takes_user_id' | 'picks_user_id', newVal: string | null, removeSuggestionId?: string) => void
+  onSuggestionCreated?: (sug: LogisticsSuggestion) => void
   /** compact=true used in ActivityCard (smaller width) */
   compact?: boolean
 }
@@ -47,7 +48,7 @@ interface Props {
 export default function LogChip({
   actId, field, value, activity,
   suggestions, familyMembers, currentUserId, familyId, isOwner,
-  onUpdate, compact = false,
+  onUpdate, onSuggestionCreated, compact = false,
 }: Props) {
   const supabase = createClient()
   const { canLogistics } = useAccess()
@@ -145,6 +146,7 @@ export default function LogChip({
         body: JSON.stringify({ action: 'suggest', suggestionId: sug.id, proposedTo: targetUserId, familyId, activityTitle: activity.title }),
       }).catch(() => {})
 
+      onSuggestionCreated?.(sug)
       onUpdate(actId, field, null)
       toast(`Sugestão enviada para ${memberName(targetUserId)} ✓`)
     } finally {
