@@ -1,32 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
-// Mapa completo de dados pessoais excluídos neste endpoint (LGPD art. 18, VI):
-//
-//  Camada 1 — SQL function delete_my_account_admin():
-//    • notification_settings.*     → WhatsApp, horário de resumo
-//    • family_invites.invited_email → anonimizado (→ NULL) em convites recebidos
-//    • family_invites.*             → deletado nos convites enviados pelo usuário
-//    • activities.takes/picks_user_id → zerados (chips de logística)
-//    • family_members.*             → todas as linhas do usuário removidas
-//
-//  Camada 2 — Supabase Storage:
-//    • bucket "documents"           → arquivos de famílias solo excluídos
-//
-//  Camada 3 — admin.auth.admin.deleteUser():
-//    • auth.users.email             → excluído
-//    • auth.users.encrypted_password → excluído
-//    • auth.users.phone             → excluído
-//    • auth.users.user_metadata     → excluído (family_name, etc.)
-//    • auth.sessions / refresh_tokens → invalidados automaticamente
-
 export async function POST(request: Request) {
   // 1. Verificar sessão
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // 2. Verificar confirmação explícita (LGPD: ação intencional documentada)
+  // 2. Verificar confirmação explícita (LGPD)
   let confirmation: string
   try {
     const body = await request.json()
@@ -41,8 +22,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
 
   try {
-    // 3. Coletar caminhos de Storage ANTES da limpeza do banco
-    //    (só famílias solo — famílias com parceiros ficam intactas)
+    // 3. Coletar caminhos de Storage ANTES da limpeza (famílias solo apenas)
     const { data: myFamilies } = await admin
       .from('families')
       .select('id')
@@ -70,36 +50,33 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Limpeza do banco — SECURITY DEFINER, service_role only
-    //    (inclui anonimização de family_invites.invited_email)
-    const { error: rpcErr } = await admin.rpc('delete_my_account_admin', { p_uid: user.id })
+    // 4. Limpeza do banco via SECURITY DEFINER usando auth.uid() do usuário
+    //    (chamado com o client do usuário para que auth.uid() retorne o ID correto)
+    const { error: rpcErr } = await supabase.rpc('delete_my_account')
     if (rpcErr) {
       console.error('[delete-account] rpc error:', rpcErr)
-      throw rpcErr
+      throw new Error(rpcErr.message)
     }
 
-    // 5. Deletar arquivos do Storage (melhor esforço — banco já limpo)
+    // 5. Deletar arquivos do Storage (melhor esforço)
     if (storagePathsToDelete.length > 0) {
       const { error: storageErr } = await admin.storage
         .from('documents')
         .remove(storagePathsToDelete)
-      if (storageErr) console.error('[delete-account] storage partial error:', storageErr)
+      if (storageErr) console.error('[delete-account] storage error:', storageErr)
     }
 
     // 6. Deletar auth.users — remove email, senha, telefone, user_metadata
-    //    Este é o passo final e irreversível.
     const { error: authErr } = await admin.auth.admin.deleteUser(user.id)
     if (authErr) {
       console.error('[delete-account] auth delete error:', authErr)
-      throw authErr
+      throw new Error(authErr.message)
     }
 
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[delete-account]', err)
-    return NextResponse.json(
-      { error: 'Erro interno ao excluir conta. Tente novamente.' },
-      { status: 500 },
-    )
+    const message = err instanceof Error ? err.message : 'Erro desconhecido'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
