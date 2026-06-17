@@ -1,50 +1,48 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { X, Users, UserPlus, Bell, Sparkles } from 'lucide-react'
 import { useTour, TourStep } from './TourContext'
 
 interface StepConfig {
   tourId: string
+  icon: React.ElementType
   title: string
-  message: string
-  points?: string[]
-  hint: string
+  desc: string
 }
 
 const STEPS: Record<Exclude<TourStep, 'done'>, StepConfig> = {
   children: {
     tourId: 'nav-children',
-    title: 'Passo 1 de 4 — Seus filhos',
-    message: 'Tudo começa cadastrando os perfis dos seus filhos. O app organiza a agenda, saúde, atividades e documentos de cada um separadamente.',
-    hint: '☝️ Clique em "Cadastrar primeiro filho" para começar — ou clique em qualquer lugar para continuar o tour.',
+    icon: Users,
+    title: 'Seus filhos',
+    desc: 'Cadastre os perfis dos seus filhos.',
   },
   invite: {
     tourId: 'nav-invite',
-    title: 'Passo 2 de 4 — Compartilhar acesso',
-    message: 'Convide seu parceiro(a) para acompanhar a rotina dos filhos em tempo real, com o nível de acesso que você escolher.',
-    points: ['Agenda sincronizada ao vivo', 'Quem leva e quem busca, combinados'],
-    hint: '☝️ Em "Compartilhar Acesso" você gera o convite — ou clique em qualquer lugar para continuar.',
+    icon: UserPlus,
+    title: 'Compartilhar acesso',
+    desc: 'Convide seu parceiro(a) para a rotina.',
   },
   alertas: {
     tourId: 'nav-alertas',
-    title: 'Passo 3 de 4 — Alertas no WhatsApp',
-    message: 'Cadastre seu número de WhatsApp e receba um resumo diário com os compromissos dos filhos, no horário que você definir.',
-    points: ['Resumo matinal automático', 'Nunca mais esqueça uma prova ou consulta'],
-    hint: '☝️ Em "Alertas" você configura o WhatsApp — ou clique em qualquer lugar para continuar.',
+    icon: Bell,
+    title: 'Alertas no WhatsApp',
+    desc: 'Resumo diário dos compromissos.',
   },
   ia: {
     tourId: 'nav-ia',
-    title: 'Passo 4 de 4 — Captura com IA',
-    message: 'Foto da agenda escolar, texto livre ou áudio — a IA extrai e organiza tudo automaticamente em atividades, lembretes e documentos.',
-    points: ['Foto, texto ou voz', 'Tudo classificado pra você'],
-    hint: '☝️ Use "Captura com IA" para adicionar o primeiro dado — ou clique em qualquer lugar para finalizar.',
+    icon: Sparkles,
+    title: 'Captura com IA',
+    desc: 'Foto, texto ou áudio — a IA organiza.',
   },
 }
 
+const ORDER: Exclude<TourStep, 'done'>[] = ['children', 'invite', 'alertas', 'ia']
+
 interface Rect { left: number; top: number; width: number; height: number }
 
-const DIM = 'rgba(10,18,11,0.72)'
-const PAD = 12
+const DIM = 'rgba(10,18,11,0.58)'
+const CARD_W = 264
 
 export default function TourOverlay() {
   const { step, isActive, next, skip } = useTour()
@@ -56,27 +54,28 @@ export default function TourOverlay() {
     const els = Array.from(document.querySelectorAll(`[data-tour="${config.tourId}"]`))
     const visible = els.find(el => {
       const r = el.getBoundingClientRect()
-      return r.width > 0 && r.height > 0 && r.left > -50 && r.left < window.innerWidth
+      return r.width > 0 && r.height > 0 && r.left > -40 && r.left < window.innerWidth
     })
     setRect(visible ? visible.getBoundingClientRect() : null)
   }, [isActive, step])
 
+  // Re-mede a posição do alvo — com timeouts que cobrem a animação de
+  // abertura da sidebar mobile (~250ms).
   useEffect(() => {
     findTarget()
-    const t = setTimeout(findTarget, 150)
+    const t1 = setTimeout(findTarget, 150)
+    const t2 = setTimeout(findTarget, 400)
+    const t3 = setTimeout(findTarget, 800)
     window.addEventListener('resize', findTarget)
     window.addEventListener('scroll', findTarget, true)
     return () => {
-      clearTimeout(t)
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3)
       window.removeEventListener('resize', findTarget)
       window.removeEventListener('scroll', findTarget, true)
     }
   }, [findTarget])
 
-  // Avanço por clique: qualquer clique na página avança o tour para o próximo
-  // passo. O botão "pular" (X) chama skip() e usa stopPropagation, então não
-  // dispara este listener. Bubble phase garante que a navegação do Link e o
-  // avanço aconteçam juntos.
+  // Qualquer clique avança o tour. O X (pular) usa stopPropagation.
   useEffect(() => {
     if (!isActive) return
     function onClick() { next() }
@@ -87,13 +86,14 @@ export default function TourOverlay() {
   if (!isActive || step === 'done') return null
 
   const config = STEPS[step as Exclude<TourStep, 'done'>]
+  const stepIdx = ORDER.indexOf(step as Exclude<TourStep, 'done'>)
 
   function handleSkip(e: React.MouseEvent) {
     e.stopPropagation()
     skip()
   }
 
-  // Sem elemento visível → modal centrado
+  // Sem alvo visível → balão centrado
   if (!rect) {
     return (
       <div style={{
@@ -101,117 +101,121 @@ export default function TourOverlay() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: DIM, padding: '24px 20px',
       }}>
-        <TourCard config={config} onSkip={handleSkip} />
+        <Balloon config={config} stepIdx={stepIdx} onSkip={handleSkip} />
       </div>
     )
   }
 
   const vw = window.innerWidth
   const vh = window.innerHeight
-  const sx = Math.max(0, rect.left - PAD)
-  const sy = Math.max(0, rect.top  - PAD)
-  const sw = rect.width  + PAD * 2
-  const sh = rect.height + PAD * 2
 
-  // Tooltip: abaixo se couber, senão acima
-  const CARD_W = Math.min(300, vw - 32)
-  const CARD_H = 250
-  const belowY = sy + sh + 12
-  const aboveY = sy - CARD_H - 12
-  const tooltipTop = belowY + CARD_H < vh ? belowY : Math.max(8, aboveY)
-  const tooltipLeft = Math.max(16, Math.min(vw - CARD_W - 16, rect.left + rect.width / 2 - CARD_W / 2))
+  // Beacon: ponto pulsante no canto direito do item destacado
+  const beaconCx = rect.left + rect.width - 16
+  const beaconCy = rect.top + rect.height / 2
+
+  // Posição do balão: prefere à direita do item (sidebar); senão abaixo; senão acima
+  const GAP = 16
+  let bLeft: number
+  let bTop: number
+  const fitsRight = rect.left + rect.width + GAP + CARD_W <= vw - 8
+  if (fitsRight) {
+    bLeft = rect.left + rect.width + GAP
+    bTop = Math.max(12, Math.min(rect.top, vh - 160))
+  } else {
+    bLeft = Math.max(12, Math.min(vw - CARD_W - 12, rect.left + rect.width / 2 - CARD_W / 2))
+    const below = rect.top + rect.height + GAP
+    bTop = below + 150 < vh ? below : Math.max(12, rect.top - 150 - GAP)
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
 
-      {/* 4 painéis de escurecimento — a área do destaque fica LIVRE para receber cliques */}
-      <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: sy, background: DIM, pointerEvents: 'all' }} />
-      <div style={{ position: 'absolute', left: 0, top: sy + sh, right: 0, bottom: 0, background: DIM, pointerEvents: 'all' }} />
-      <div style={{ position: 'absolute', left: 0, top: sy, width: Math.max(0, sx), height: sh, background: DIM, pointerEvents: 'all' }} />
-      <div style={{ position: 'absolute', left: sx + sw, top: sy, right: 0, height: sh, background: DIM, pointerEvents: 'all' }} />
+      {/* 4 painéis de escurecimento — o item fica livre para clique */}
+      <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: Math.max(0, rect.top), background: DIM, pointerEvents: 'all' }} />
+      <div style={{ position: 'absolute', left: 0, top: rect.top + rect.height, right: 0, bottom: 0, background: DIM, pointerEvents: 'all' }} />
+      <div style={{ position: 'absolute', left: 0, top: rect.top, width: Math.max(0, rect.left), height: rect.height, background: DIM, pointerEvents: 'all' }} />
+      <div style={{ position: 'absolute', left: rect.left + rect.width, top: rect.top, right: 0, height: rect.height, background: DIM, pointerEvents: 'all' }} />
 
-      {/* Anel pulsante ao redor do elemento destacado */}
-      <div style={{
-        position: 'absolute',
-        left: sx, top: sy, width: sw, height: sh,
-        borderRadius: 12,
-        border: '2px solid #6BA86F',
-        boxShadow: '0 0 0 4px rgba(90,140,94,0.30)',
-        animation: 'tour-pulse 2s ease-in-out infinite',
-        pointerEvents: 'none',
-      }} />
+      {/* Beacon pulsante */}
+      <div style={{ position: 'absolute', left: beaconCx, top: beaconCy, width: 0, height: 0, pointerEvents: 'none' }}>
+        <span style={{
+          position: 'absolute', left: -7, top: -7, width: 14, height: 14, borderRadius: '50%',
+          background: '#6BA86F', animation: 'tour-beacon 1.6s ease-out infinite',
+        }} />
+        <span style={{
+          position: 'absolute', left: -5, top: -5, width: 10, height: 10, borderRadius: '50%',
+          background: '#5A8C5E', boxShadow: '0 0 0 2px rgba(255,255,255,0.85)',
+        }} />
+      </div>
 
-      {/* Tooltip informativo */}
+      {/* Balão informativo */}
       <div style={{
-        position: 'absolute',
-        top: tooltipTop,
-        left: tooltipLeft,
-        width: CARD_W,
-        pointerEvents: 'all',
-        zIndex: 9001,
+        position: 'absolute', top: bTop, left: bLeft, width: CARD_W,
+        pointerEvents: 'all', zIndex: 9001,
       }}>
-        <TourCard config={config} onSkip={handleSkip} />
+        <Balloon config={config} stepIdx={stepIdx} onSkip={handleSkip} />
       </div>
     </div>
   )
 }
 
-function TourCard({ config, onSkip }: {
+function Balloon({ config, stepIdx, onSkip }: {
   config: StepConfig
+  stepIdx: number
   onSkip: (e: React.MouseEvent) => void
 }) {
+  const Icon = config.icon
   return (
-    <div style={{
-      background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
-      borderRadius: 16,
-      padding: '14px 18px 14px',
-      boxShadow: '0 12px 48px rgba(10,20,12,0.50)',
-      border: '1px solid rgba(61,102,65,0.18)',
+    <div className="animate-scale-in" style={{
+      background: '#FFFFFF',
+      borderRadius: 14,
+      padding: '13px 14px',
+      boxShadow: '0 10px 40px rgba(10,20,12,0.45)',
+      border: '1px solid rgba(61,102,65,0.16)',
+      position: 'relative',
     }}>
-      {/* Header — botão pular */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 2 }}>
-        <button onClick={onSkip} title="Pular tour" style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-          color: 'rgba(26,43,28,0.28)', display: 'flex', alignItems: 'center',
+      {/* Skip */}
+      <button onClick={onSkip} title="Pular tour" style={{
+        position: 'absolute', top: 8, right: 8,
+        background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+        color: 'rgba(26,43,28,0.30)', display: 'flex', alignItems: 'center',
+      }}>
+        <X size={14} />
+      </button>
+
+      {/* Título com ícone */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 4, paddingRight: 18 }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: 9, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(61,102,65,0.10)',
         }}>
-          <X size={14} />
-        </button>
+          <Icon size={15} color="#2D6A35" strokeWidth={2} />
+        </div>
+        <span style={{ fontFamily: 'var(--font-lora)', fontSize: 14.5, fontWeight: 700, color: '#1A2B1C' }}>
+          {config.title}
+        </span>
       </div>
 
-      {/* Title */}
-      <h3 style={{ fontFamily: 'var(--font-lora)', fontSize: 15, fontWeight: 700, color: '#1A2B1C', margin: '0 0 6px' }}>
-        {config.title}
-      </h3>
-
-      {/* Message */}
-      <p style={{ fontSize: 12.5, color: 'rgba(26,43,28,0.58)', lineHeight: 1.65, margin: '0 0 10px' }}>
-        {config.message}
+      {/* Descrição */}
+      <p style={{ fontSize: 12.5, color: 'rgba(26,43,28,0.58)', lineHeight: 1.5, margin: '0 0 10px', paddingLeft: 1 }}>
+        {config.desc}
       </p>
 
-      {/* Bullet points */}
-      {config.points && (
-        <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {config.points.map(pt => (
-            <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5, color: '#2C4A2E', fontWeight: 600 }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#5A8C5E', flexShrink: 0 }} />
-              {pt}
-            </div>
+      {/* Rodapé: dots + dica */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {ORDER.map((_, i) => (
+            <span key={i} style={{
+              width: i === stepIdx ? 16 : 5, height: 5, borderRadius: 3,
+              background: i === stepIdx ? '#5A8C5E' : 'rgba(61,102,65,0.22)',
+              transition: 'width .2s',
+            }} />
           ))}
         </div>
-      )}
-
-      {/* Hint — instrução de onde clicar */}
-      <div style={{
-        padding: '8px 12px',
-        borderRadius: 10,
-        background: 'rgba(61,102,65,0.07)',
-        border: '1px solid rgba(61,102,65,0.14)',
-        fontSize: 12,
-        color: '#2C4A2E',
-        fontWeight: 600,
-        lineHeight: 1.5,
-      }}>
-        {config.hint}
+        <span style={{ fontSize: 11, color: 'rgba(26,43,28,0.42)', fontWeight: 500 }}>
+          clique para continuar
+        </span>
       </div>
     </div>
   )

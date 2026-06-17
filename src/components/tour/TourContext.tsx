@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 export type TourStep = 'children' | 'invite' | 'alertas' | 'ia' | 'done'
 
 const ORDER: TourStep[] = ['children', 'invite', 'alertas', 'ia', 'done']
-const storageKey = (userId: string) => `fef-tour-v2-${userId}`
+const storageKey = (userId: string) => `fef-tour-v3-${userId}`
 
 interface TourCtx {
   step: TourStep

@@ -12,6 +12,7 @@ import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
 import { Toaster } from '@/components/ui/Toast'
 import TourOverlay from '@/components/tour/TourOverlay'
+import { useTour } from '@/components/tour/TourContext'
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface SidebarChild {
@@ -51,6 +52,7 @@ function calcAge(birthDate: string | null) {
 export default function AppLayout({ children, sidebarChildren: initial, activeFamilyId }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+  const { isActive: tourActive } = useTour()
 
   const [liveChildren, setLiveChildren] = useState<SidebarChild[]>(initial)
   useEffect(() => {
@@ -165,8 +167,18 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     if (nav) nav.style.filter = filterStr
   }, [palIdx, sepia, brightness, contrast, darkMode])
 
-  // Close sidebar on navigation
-  useEffect(() => { setMobileSidebarOpen(false) }, [pathname])
+  // Close sidebar on navigation — exceto durante o tour, em que a sidebar
+  // verde precisa ficar aberta para o beacon percorrer as abas.
+  useEffect(() => {
+    if (!tourActive) setMobileSidebarOpen(false)
+  }, [pathname, tourActive])
+
+  // Durante o tour no mobile, força a sidebar verde aberta.
+  useEffect(() => {
+    if (tourActive && typeof window !== 'undefined' && window.innerWidth < 768) {
+      setMobileSidebarOpen(true)
+    }
+  }, [tourActive, pathname, mobileSidebarOpen])
 
   async function handleLogout() {
     await createClient().auth.signOut()
@@ -226,7 +238,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
       ? (active ? '#E5B87A'   : 'rgba(196,154,108,0.72)')
       : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.55)')
     return (
-      <Link href={href} onClick={() => setMobileSidebarOpen(false)}
+      <Link href={href} onClick={() => { if (!tourActive) setMobileSidebarOpen(false) }}
         data-tour={tourId}
         style={{ display:'flex', flexDirection:'row', alignItems:'center',
           gap:12, height:48, padding:'0 16px', position:'relative',
