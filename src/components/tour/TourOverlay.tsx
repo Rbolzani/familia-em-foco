@@ -21,7 +21,7 @@ const STEPS: Record<Exclude<TourStep, 'done'>, StepConfig> = {
     tourId: 'nav-invite',
     icon: UserPlus,
     title: 'Compartilhar acesso',
-    desc: 'Convide seu parceiro(a) para a rotina.',
+    desc: 'Convide seu parceiro para visualizar toda a rotina e organizar a logística.',
   },
   alertas: {
     tourId: 'nav-alertas',
