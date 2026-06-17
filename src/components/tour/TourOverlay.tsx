@@ -14,29 +14,31 @@ interface StepConfig {
 const STEPS: Record<Exclude<TourStep, 'done'>, StepConfig> = {
   children: {
     tourId: 'nav-children',
-    title: 'Passo 1 — Seus filhos',
-    message: 'Cadastre os perfis dos seus filhos. O app vai organizar a agenda, saúde, atividades e documentos de cada um separadamente.',
-    hint: '☝️ Clique em "Cadastrar primeiro filho" no menu ao lado',
+    title: 'Passo 1 de 4 — Seus filhos',
+    message: 'Tudo começa cadastrando os perfis dos seus filhos. O app organiza a agenda, saúde, atividades e documentos de cada um separadamente.',
+    hint: '☝️ Clique em "Cadastrar primeiro filho" para começar — ou clique em qualquer lugar para continuar o tour.',
   },
   invite: {
     tourId: 'nav-invite',
-    title: 'Passo 2 — Parceiro & WhatsApp',
-    message: 'Convide seu parceiro(a) para compartilhar a rotina em tempo real. Também configure seu número de WhatsApp para receber resumos diários.',
-    points: ['Agenda sincronizada ao vivo', 'Alertas e resumos pelo WhatsApp'],
-    hint: '☝️ Clique em "Compartilhar Acesso" no menu ao lado',
+    title: 'Passo 2 de 4 — Compartilhar acesso',
+    message: 'Convide seu parceiro(a) para acompanhar a rotina dos filhos em tempo real, com o nível de acesso que você escolher.',
+    points: ['Agenda sincronizada ao vivo', 'Quem leva e quem busca, combinados'],
+    hint: '☝️ Em "Compartilhar Acesso" você gera o convite — ou clique em qualquer lugar para continuar.',
+  },
+  alertas: {
+    tourId: 'nav-alertas',
+    title: 'Passo 3 de 4 — Alertas no WhatsApp',
+    message: 'Cadastre seu número de WhatsApp e receba um resumo diário com os compromissos dos filhos, no horário que você definir.',
+    points: ['Resumo matinal automático', 'Nunca mais esqueça uma prova ou consulta'],
+    hint: '☝️ Em "Alertas" você configura o WhatsApp — ou clique em qualquer lugar para continuar.',
   },
   ia: {
     tourId: 'nav-ia',
-    title: 'Passo 3 — Captura com IA',
+    title: 'Passo 4 de 4 — Captura com IA',
     message: 'Foto da agenda escolar, texto livre ou áudio — a IA extrai e organiza tudo automaticamente em atividades, lembretes e documentos.',
-    hint: '☝️ Clique em "Captura IA" para adicionar o primeiro dado',
+    points: ['Foto, texto ou voz', 'Tudo classificado pra você'],
+    hint: '☝️ Use "Captura com IA" para adicionar o primeiro dado — ou clique em qualquer lugar para finalizar.',
   },
-}
-
-const LABELS: Record<Exclude<TourStep, 'done'>, string> = {
-  children: '1 de 3',
-  invite: '2 de 3',
-  ia: '3 de 3',
 }
 
 interface Rect { left: number; top: number; width: number; height: number }
@@ -45,7 +47,7 @@ const DIM = 'rgba(10,18,11,0.72)'
 const PAD = 12
 
 export default function TourOverlay() {
-  const { step, isActive, skip } = useTour()
+  const { step, isActive, next, skip } = useTour()
   const [rect, setRect] = useState<Rect | null>(null)
 
   const findTarget = useCallback(() => {
@@ -71,12 +73,27 @@ export default function TourOverlay() {
     }
   }, [findTarget])
 
+  // Avanço por clique: qualquer clique na página avança o tour para o próximo
+  // passo. O botão "pular" (X) chama skip() e usa stopPropagation, então não
+  // dispara este listener. Bubble phase garante que a navegação do Link e o
+  // avanço aconteçam juntos.
+  useEffect(() => {
+    if (!isActive) return
+    function onClick() { next() }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [isActive, next])
+
   if (!isActive || step === 'done') return null
 
   const config = STEPS[step as Exclude<TourStep, 'done'>]
-  const label  = LABELS[step as Exclude<TourStep, 'done'>]
 
-  // Sem elemento visível → modal centrado bloqueante
+  function handleSkip(e: React.MouseEvent) {
+    e.stopPropagation()
+    skip()
+  }
+
+  // Sem elemento visível → modal centrado
   if (!rect) {
     return (
       <div style={{
@@ -84,7 +101,7 @@ export default function TourOverlay() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: DIM, padding: '24px 20px',
       }}>
-        <TourCard config={config} label={label} onSkip={skip} />
+        <TourCard config={config} onSkip={handleSkip} />
       </div>
     )
   }
@@ -98,7 +115,7 @@ export default function TourOverlay() {
 
   // Tooltip: abaixo se couber, senão acima
   const CARD_W = Math.min(300, vw - 32)
-  const CARD_H = 240
+  const CARD_H = 250
   const belowY = sy + sh + 12
   const aboveY = sy - CARD_H - 12
   const tooltipTop = belowY + CARD_H < vh ? belowY : Math.max(8, aboveY)
@@ -133,30 +150,26 @@ export default function TourOverlay() {
         pointerEvents: 'all',
         zIndex: 9001,
       }}>
-        <TourCard config={config} label={label} onSkip={skip} />
+        <TourCard config={config} onSkip={handleSkip} />
       </div>
     </div>
   )
 }
 
-function TourCard({ config, label, onSkip }: {
+function TourCard({ config, onSkip }: {
   config: StepConfig
-  label: string
-  onSkip: () => void
+  onSkip: (e: React.MouseEvent) => void
 }) {
   return (
     <div style={{
       background: 'linear-gradient(160deg,#FFFFFF,#F8F3EA)',
       borderRadius: 16,
-      padding: '18px 18px 14px',
+      padding: '14px 18px 14px',
       boxShadow: '0 12px 48px rgba(10,20,12,0.50)',
       border: '1px solid rgba(61,102,65,0.18)',
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(26,43,28,0.38)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-          {label}
-        </span>
+      {/* Header — botão pular */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 2 }}>
         <button onClick={onSkip} title="Pular tour" style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 2,
           color: 'rgba(26,43,28,0.28)', display: 'flex', alignItems: 'center',

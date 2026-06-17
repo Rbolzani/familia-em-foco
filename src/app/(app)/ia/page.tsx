@@ -54,7 +54,6 @@ interface ExtDocument {
 
 export default function IAPage() {
   const access = useAccess()
-  const { advance } = useTour()
   const supabase = createClient()
   const fileRef  = useRef<HTMLInputElement>(null)
   const pasteZoneRef = useRef<HTMLDivElement>(null)
@@ -145,10 +144,6 @@ export default function IAPage() {
       setActivities(allActs)
       setReminders(allRems)
       setDocuments(allDocs)
-      // Tour: avança quando a IA retorna o primeiro resultado
-      if (allActs.length + allRems.length + allDocs.length > 0) {
-        advance('ia')
-      }
     } catch (e: any) {
       setError(e.message)
     } finally {

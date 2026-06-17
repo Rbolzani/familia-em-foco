@@ -502,7 +502,7 @@ export default function DashboardClient({ userName, children, todayActivities, u
           </p>
         </div>
         <div className="topbar-actions flex gap-[10px] pt-1 flex-shrink-0">
-          <Link href="/ia">
+          <Link href="/ia" data-tour="nav-ia">
             <button className="flex items-center gap-2 px-5 py-[11px] rounded-full text-[14px] font-bold transition-all hover:-translate-y-[2px]"
               style={{ background:'linear-gradient(140deg,#3D6641 0%,#2C4A2E 100%)', color:'#D4E8D5', boxShadow:'0 4px 18px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
               <Sparkles size={15}/> Captura com IA

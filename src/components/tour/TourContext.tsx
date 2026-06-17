@@ -1,22 +1,22 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
-export type TourStep = 'children' | 'invite' | 'ia' | 'done'
+export type TourStep = 'children' | 'invite' | 'alertas' | 'ia' | 'done'
 
-const ORDER: TourStep[] = ['children', 'invite', 'ia', 'done']
-const storageKey = (userId: string) => `fef-tour-v1-${userId}`
+const ORDER: TourStep[] = ['children', 'invite', 'alertas', 'ia', 'done']
+const storageKey = (userId: string) => `fef-tour-v2-${userId}`
 
 interface TourCtx {
   step: TourStep
   isActive: boolean
-  advance: (from: TourStep) => void
+  next: () => void
   skip: () => void
 }
 
 const Ctx = createContext<TourCtx>({
   step: 'done',
   isActive: false,
-  advance: () => {},
+  next: () => {},
   skip: () => {},
 })
 
@@ -48,13 +48,13 @@ export function TourProvider({
     setMounted(true)
   }, [hasChildren, userId])
 
-  const advance = useCallback((from: TourStep) => {
+  // Avança para o próximo passo — incondicional (qualquer clique avança o tour)
+  const next = useCallback(() => {
     setStep(prev => {
-      if (prev !== from) return prev
       const idx = ORDER.indexOf(prev)
-      const next = ORDER[Math.min(idx + 1, ORDER.length - 1)]
-      if (userId) localStorage.setItem(storageKey(userId), next)
-      return next
+      const nextStep = ORDER[Math.min(idx + 1, ORDER.length - 1)]
+      if (userId) localStorage.setItem(storageKey(userId), nextStep)
+      return nextStep
     })
   }, [userId])
 
@@ -64,7 +64,7 @@ export function TourProvider({
   }, [userId])
 
   return (
-    <Ctx.Provider value={{ step, isActive: mounted && step !== 'done', advance, skip }}>
+    <Ctx.Provider value={{ step, isActive: mounted && step !== 'done', next, skip }}>
       {children}
     </Ctx.Provider>
   )

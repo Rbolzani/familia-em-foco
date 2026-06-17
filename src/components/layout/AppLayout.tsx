@@ -378,7 +378,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
               <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
-              <NavItem href="/alertas"       label="Alertas"             icon={Bell} />
+              <NavItem href="/alertas"       label="Alertas"             icon={Bell} tourId="nav-alertas" />
             </div>
 
             {/* Sair + Tweaks */}
@@ -589,7 +589,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
           <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber tourId="nav-children" />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber tourId="nav-invite" />
-          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber />
+          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber tourId="nav-alertas" />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
             style={{ display:'flex', flexDirection:'row', alignItems:'center',

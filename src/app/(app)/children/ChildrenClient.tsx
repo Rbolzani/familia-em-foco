@@ -8,7 +8,6 @@ import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle, Chec
 import EmptyState from '@/components/ui/EmptyState'
 import { useAccess } from '@/components/access/AccessContext'
 import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
-import { useTour } from '@/components/tour/TourContext'
 
 // Stable singleton — not re-created on every render
 const supabase = createClient()
@@ -161,7 +160,6 @@ interface Props {
 
 export default function ChildrenClient({ initialChildren, families, familyId, familyCurrentName, isOwner }: Props) {
   const { canEdit } = useAccess()
-  const { advance } = useTour()
   const [children,     setChildren]     = useState<Child[]>(initialChildren)
   useEffect(() => { setChildren(initialChildren) }, [initialChildren])
   const [familyName,   setFamilyName]   = useState(familyCurrentName ?? '')
@@ -322,10 +320,8 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
         if (!res.ok) throw new Error(`Erro ao salvar filho: ${json.error}`)
       }
 
-      const wasFirst = modal?.mode === 'new' && children.length === 0
       await load()
       closeModal()
-      if (wasFirst) advance('children')
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido.'
