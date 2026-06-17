@@ -1,6 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
+// Mapa completo de dados pessoais excluídos neste endpoint (LGPD art. 18, VI):
+//
+//  Camada 1 — SQL function delete_my_account_admin():
+//    • notification_settings.*     → WhatsApp, horário de resumo
+//    • family_invites.invited_email → anonimizado (→ NULL) em convites recebidos
+//    • family_invites.*             → deletado nos convites enviados pelo usuário
+//    • activities.takes/picks_user_id → zerados (chips de logística)
+//    • family_members.*             → todas as linhas do usuário removidas
+//
+//  Camada 2 — Supabase Storage:
+//    • bucket "documents"           → arquivos de famílias solo excluídos
+//
+//  Camada 3 — admin.auth.admin.deleteUser():
+//    • auth.users.email             → excluído
+//    • auth.users.encrypted_password → excluído
+//    • auth.users.phone             → excluído
+//    • auth.users.user_metadata     → excluído (family_name, etc.)
+//    • auth.sessions / refresh_tokens → invalidados automaticamente
+
 export async function POST(request: Request) {
   // 1. Verificar sessão
   const supabase = await createClient()
@@ -22,7 +41,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
 
   try {
-    // 3. Coletar caminhos de Storage a deletar ANTES da limpeza do banco
+    // 3. Coletar caminhos de Storage ANTES da limpeza do banco
     //    (só famílias solo — famílias com parceiros ficam intactas)
     const { data: myFamilies } = await admin
       .from('families')
@@ -33,7 +52,6 @@ export async function POST(request: Request) {
     let storagePathsToDelete: string[] = []
 
     if (myFamilyIds.length > 0) {
-      // Famílias que têm pelo menos um outro membro
       const { data: otherMembers } = await admin
         .from('family_members')
         .select('family_id')
@@ -52,14 +70,15 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Executar limpeza do banco (SECURITY DEFINER, service_role only)
+    // 4. Limpeza do banco — SECURITY DEFINER, service_role only
+    //    (inclui anonimização de family_invites.invited_email)
     const { error: rpcErr } = await admin.rpc('delete_my_account_admin', { p_uid: user.id })
     if (rpcErr) {
       console.error('[delete-account] rpc error:', rpcErr)
       throw rpcErr
     }
 
-    // 5. Deletar arquivos do Storage (melhor esforço — banco já foi limpo)
+    // 5. Deletar arquivos do Storage (melhor esforço — banco já limpo)
     if (storagePathsToDelete.length > 0) {
       const { error: storageErr } = await admin.storage
         .from('documents')
@@ -67,7 +86,8 @@ export async function POST(request: Request) {
       if (storageErr) console.error('[delete-account] storage partial error:', storageErr)
     }
 
-    // 6. Deletar auth.users — ponto sem retorno
+    // 6. Deletar auth.users — remove email, senha, telefone, user_metadata
+    //    Este é o passo final e irreversível.
     const { error: authErr } = await admin.auth.admin.deleteUser(user.id)
     if (authErr) {
       console.error('[delete-account] auth delete error:', authErr)
