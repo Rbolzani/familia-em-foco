@@ -27,13 +27,13 @@ const STEPS: Record<Exclude<TourStep, 'done'>, StepConfig> = {
     tourId: 'nav-alertas',
     icon: Bell,
     title: 'Alertas no WhatsApp',
-    desc: 'Resumo diário dos compromissos.',
+    desc: 'Cadastre seu WhatsApp e habilite o recurso de resumo diário.',
   },
   ia: {
     tourId: 'nav-ia',
     icon: Sparkles,
     title: 'Captura com IA',
-    desc: 'Foto, texto ou áudio — a IA organiza.',
+    desc: 'Insira foto, print, texto corrido ou áudio — a IA entende e organiza tudo.',
   },
 }
 
