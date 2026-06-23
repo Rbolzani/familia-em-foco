@@ -240,6 +240,14 @@ input[type=range]::-webkit-slider-thumb {
 /* ─── main-container: bounded height on mobile so calendar grid *
  * gets a definite height for flex-1 / grid 1fr to work.       */
 .main-container { min-height: 100vh; }
+
+/* main é flex-col; seus filhos (wrappers de página) usam mx-auto, que
+ * em um flex item DESABILITA o stretch — fazendo o wrapper dimensionar
+ * pelo conteúdo (min-content) e estourar a viewport no mobile.
+ * Forçar width:100% faz o wrapper preencher a largura disponível e o
+ * overflow-x:hidden recortar corretamente. Sem efeito no desktop
+ * (max-w-* + mx-auto continuam centralizando). Corrige TODAS as telas. */
+.main-container > * { width: 100%; min-width: 0; }
 @media (max-width: 767px) {
   .main-container {
     height: 100svh;

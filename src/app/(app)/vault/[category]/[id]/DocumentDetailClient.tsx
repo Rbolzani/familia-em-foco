@@ -184,8 +184,9 @@ export default function DocumentDetailClient({ document: doc, category, children
       {/* Hero — coluna única no mobile, lado a lado no desktop */}
       <div className="animate-fade-up flex flex-col md:flex-row gap-4" style={{ minWidth: 0 }}>
 
-        {/* Preview inline do arquivo selecionado */}
-        <div style={{ ...CARD, padding: 14, minWidth: 0, flex: '1 1 0' }}>
+        {/* Preview inline do arquivo selecionado — só no desktop.
+            No mobile a lista de arquivos abaixo (com Visualizar/Baixar/Excluir) basta. */}
+        <div className="hidden md:block" style={{ ...CARD, padding: 14, minWidth: 0, flex: '1 1 0' }}>
           <div style={{ height: 240, borderRadius: 12, overflow: 'hidden', background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {previewFile && inlineUrl && previewFile.mime_type?.startsWith('image/') ? (
               <img src={inlineUrl} alt={previewFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
