@@ -170,6 +170,9 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   // Verifica se o owner da família está com parceiro em período de graça.
   // Calculado ANTES de decidir não enviar, para que o aviso saia mesmo quando
   // a família não tem atividades no período.
+  // familyIsPaid: a agenda diária é recurso pago. O aviso de grace abaixo é
+  // notificação de conta e sai mesmo no free.
+  let familyIsPaid = false
   const graceLines: string[] = []
   if (familyIds.length > 0) {
     const { data: families } = await admin
@@ -180,9 +183,15 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     for (const fam of families ?? []) {
       const { data: ownerSub } = await admin
         .from('subscriptions')
-        .select('partner_grace_until, plan')
+        .select('partner_grace_until, plan, status')
         .eq('user_id', fam.created_by)
         .maybeSingle()
+
+      // Plano efetivo da família = plano do owner (ativo ou em trial).
+      if (ownerSub && ownerSub.plan !== 'free' &&
+          (ownerSub.status === 'active' || ownerSub.status === 'trialing')) {
+        familyIsPaid = true
+      }
 
       if (ownerSub?.partner_grace_until && ownerSub.plan === 'free') {
         const graceEnd  = new Date(ownerSub.partner_grace_until)
@@ -194,7 +203,8 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
 
           if (fam.created_by === userId) {
             // Mensagem para o owner
-            graceLines.push(`⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: familia-em-foco.com.br/planos`)
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familia-em-foco.vercel.app'
+            graceLines.push(`⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`)
           } else {
             // Mensagem para o parceiro
             graceLines.push(`⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família.`)
@@ -202,9 +212,34 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
         }
       }
     }
+  } else {
+    // Usuário sem família (solo) — plano vem da própria assinatura.
+    const { data: ownSub } = await admin
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (ownSub && ownSub.plan !== 'free' &&
+        (ownSub.status === 'active' || ownSub.status === 'trialing')) {
+      familyIsPaid = true
+    }
   }
 
-  // Nada a enviar: sem atividades E sem aviso de grace.
+  // ── Família no plano gratuito ───────────────────────────────────────────
+  // A agenda diária é recurso pago: não é enviada no free. O aviso de grace,
+  // por ser notificação de conta, ainda sai (é o que traz o cliente de volta).
+  if (!familyIsPaid) {
+    if (graceLines.length === 0) return null
+    const lines: string[] = []
+    lines.push(`🌿 *Família em Foco* — ${fmtShort(today)}`)
+    lines.push('')
+    lines.push(...graceLines)
+    lines.push('')
+    lines.push('💚 _Família em Foco_')
+    return lines.join('\n')
+  }
+
+  // Nada a enviar: plano pago, sem atividades E sem aviso de grace.
   if (activities.length === 0 && graceLines.length === 0) return null
 
   const lines: string[] = []
