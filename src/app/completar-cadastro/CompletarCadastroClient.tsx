@@ -3,6 +3,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { formatCPF, formatPhoneBR, isValidCPF, isValidPhoneBR } from '@/lib/cpf'
+import { readAttribution, clearAttribution } from '@/lib/attribution'
+
+const ACQUISITION_OPTIONS = [
+  'Instagram', 'Facebook', 'Google / busca', 'TikTok',
+  'Indicação de amigo', 'Grupo de pais / escola', 'YouTube', 'Outro',
+]
 
 interface Props {
   email: string
@@ -15,6 +21,8 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
   const [phone, setPhone]       = useState('')
   const [cpf, setCpf]           = useState('')
   const [birthDate, setBirth]   = useState('')
+  const [source, setSource]     = useState('')
+  const [consent, setConsent]   = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
 
@@ -28,16 +36,23 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
     if (!isValidPhoneBR(phone))     { setError('Celular inválido. Use DDD + número.'); return }
     if (!isValidCPF(cpf))           { setError('CPF inválido.'); return }
     if (!birthDate)                 { setError('Informe sua data de nascimento.'); return }
+    if (!source)                    { setError('Conte como você nos conheceu.'); return }
 
     setLoading(true)
     try {
       const res = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: fullName, phone, cpf, birth_date: birthDate }),
+        body: JSON.stringify({
+          full_name: fullName, phone, cpf, birth_date: birthDate,
+          acquisition_source: source,
+          marketing_consent: consent,
+          attribution: readAttribution(),
+        }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Erro ao salvar.')
+      clearAttribution()
       router.push('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido.')
@@ -98,6 +113,22 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
               <input type="date" required value={birthDate} onChange={e => setBirth(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)} className="input-field" />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(26,43,28,0.55)' }}>Como você nos conheceu?</label>
+              <select required value={source} onChange={e => setSource(e.target.value)} className="input-field">
+                <option value="" disabled>Selecione…</option>
+                {ACQUISITION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+                className="mt-0.5" style={{ accentColor: '#3D6641', width: 16, height: 16 }} />
+              <span className="text-xs leading-relaxed" style={{ color: 'rgba(26,43,28,0.60)' }}>
+                Quero receber dicas, novidades e ofertas da Família em Foco por e-mail e WhatsApp. (opcional)
+              </span>
+            </label>
 
             {error && (
               <div className="text-xs font-semibold px-4 py-3 rounded-2xl"

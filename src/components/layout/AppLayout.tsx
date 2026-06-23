@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star,
+  Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star, UserCog,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -389,6 +389,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
                 Configurações
                 <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
               </div>
+              <NavItem href="/conta"         label="Minha Conta"         icon={UserCog} />
               <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
               <NavItem href="/alertas"       label="Alertas"             icon={Bell} tourId="nav-alertas" />
               <NavItem href="/planos"        label="Planos"              icon={Star} />
@@ -601,6 +602,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         {/* Bottom items */}
         <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
           <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber tourId="nav-children" />
+          <MobileNavItem href="/conta"         icon={UserCog}  label="Minha Conta"          amber />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber tourId="nav-invite" />
           <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber tourId="nav-alertas" />
           <MobileNavItem href="/planos"        icon={Star}     label="Planos"              amber />

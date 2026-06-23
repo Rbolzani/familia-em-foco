@@ -1,12 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { captureAttribution } from '@/lib/attribution'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 
 export default function SignupPage() {
   const router = useRouter()
+  // Captura UTM/referrer no primeiro acesso ao signup (atribuição de aquisição).
+  useEffect(() => { captureAttribution() }, [])
   const [name, setName] = useState('')
   const [familyName, setFamilyName] = useState('')
   const [email, setEmail] = useState('')
