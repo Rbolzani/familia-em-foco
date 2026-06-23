@@ -48,3 +48,15 @@ export function isValidPhoneBR(value: string): boolean {
   const d = onlyDigits(value)
   return d.length === 10 || d.length === 11
 }
+
+/**
+ * Normaliza um telefone para o formato de envio de WhatsApp (DDI 55 + DDD + número).
+ * Aceita com ou sem o 55 e com máscara. Retorna null se não for um número válido.
+ */
+export function toWhatsAppNumber(value: string | null | undefined): string | null {
+  const d = onlyDigits(value ?? '')
+  if (!d) return null
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) return d
+  if (d.length === 10 || d.length === 11) return '55' + d
+  return null
+}

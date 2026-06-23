@@ -1,7 +1,7 @@
 // Cron diário (Vercel Cron, 07:00 BRT): envia o resumo matinal
 // para todos os usuários com o recurso habilitado.
 import { NextRequest, NextResponse } from 'next/server'
-import { adminClient, buildDailySummary, sendWhatsApp } from '@/lib/whatsapp'
+import { adminClient, buildDailySummary, sendWhatsApp, runGraceNotices } from '@/lib/whatsapp'
 
 export const maxDuration = 60
 
@@ -85,7 +85,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const result = { sent, skipped, failed, total }
+  // ── Avisos de grace (notificação de conta) — independe do toggle/horário ──
+  let grace = { sent: 0, skipped: 0, failed: 0 }
+  try {
+    grace = await runGraceNotices(admin)
+    console.log('[whatsapp-daily] grace:', grace)
+  } catch (e) {
+    console.error('[whatsapp-daily] erro no grace pass:', e)
+  }
+
+  const result = { sent, skipped, failed, total, grace }
   console.log('[whatsapp-daily] concluído:', result)
   return NextResponse.json(result)
 }

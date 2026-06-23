@@ -9,12 +9,13 @@ interface Props {
   userId: string
   userEmail: string
   whatsapp: { number: string; enabled: boolean; time: string }
+  prefilledFromCadastro?: boolean
   twilioMode?: boolean
   twilioKeyword?: string
   whatsappBlocked?: boolean
 }
 
-export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode, twilioKeyword, whatsappBlocked }: Props) {
+export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFromCadastro, twilioMode, twilioKeyword, whatsappBlocked }: Props) {
   const supabase = createClient()
 
   const [waNumber, setWaNumber]   = useState(whatsapp.number)
@@ -227,6 +228,11 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
             {waSaving ? '...' : 'Salvar'}
           </button>
         </div>
+        {prefilledFromCadastro && (
+          <p style={{ fontSize: 12, color: 'rgba(26,43,28,0.50)', margin: '-8px 0 16px' }}>
+            Preenchemos com o celular do seu cadastro. Se o seu WhatsApp for outro número, altere e salve.
+          </p>
+        )}
 
         {/* Toggle */}
         <div className="flex items-center justify-between p-3 rounded-xl mb-3"

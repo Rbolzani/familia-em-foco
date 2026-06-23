@@ -1,6 +1,7 @@
 // Server-only: envio de mensagens via Meta WhatsApp Cloud API
 // e montagem do resumo matinal da família.
 import { createClient as createAdminClient, SupabaseClient } from '@supabase/supabase-js'
+import { toWhatsAppNumber } from './cpf'
 
 const GRAPH_URL = 'https://graph.facebook.com/v25.0'
 
@@ -166,81 +167,29 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   const todayActs = activities.filter(a => a.date === today)
   const nextActs = activities.filter(a => a.date > today)
 
-  // ── Aviso de grace period (independente de haver atividades) ────────────
-  // Verifica se o owner da família está com parceiro em período de graça.
-  // Calculado ANTES de decidir não enviar, para que o aviso saia mesmo quando
-  // a família não tem atividades no período.
-  // familyIsPaid: a agenda diária é recurso pago. O aviso de grace abaixo é
-  // notificação de conta e sai mesmo no free.
+  // Plano efetivo da família = plano do owner (ativo/trial). A agenda diária é
+  // recurso PAGO; o aviso de grace é notificação de conta e é tratado à parte
+  // (ver runGraceNotices) — por isso não entra mais neste resumo.
   let familyIsPaid = false
-  const graceLines: string[] = []
   if (familyIds.length > 0) {
     const { data: families } = await admin
-      .from('families')
-      .select('id, created_by')
-      .in('id', familyIds)
-
-    for (const fam of families ?? []) {
-      const { data: ownerSub } = await admin
-        .from('subscriptions')
-        .select('partner_grace_until, plan, status')
-        .eq('user_id', fam.created_by)
-        .maybeSingle()
-
-      // Plano efetivo da família = plano do owner (ativo ou em trial).
-      if (ownerSub && ownerSub.plan !== 'free' &&
-          (ownerSub.status === 'active' || ownerSub.status === 'trialing')) {
-        familyIsPaid = true
-      }
-
-      if (ownerSub?.partner_grace_until && ownerSub.plan === 'free') {
-        const graceEnd  = new Date(ownerSub.partner_grace_until)
-        const isExpired = graceEnd <= new Date()
-        if (!isExpired) {
-          const msLeft   = graceEnd.getTime() - Date.now()
-          const daysLeft = Math.max(0, Math.ceil(msLeft / 86_400_000))
-          const dayStr   = daysLeft <= 1 ? 'hoje' : `em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`
-
-          if (fam.created_by === userId) {
-            // Mensagem para o owner
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familia-em-foco.vercel.app'
-            graceLines.push(`⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`)
-          } else {
-            // Mensagem para o parceiro
-            graceLines.push(`⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família.`)
-          }
-        }
-      }
+      .from('families').select('created_by').in('id', familyIds)
+    const ownerIds = [...new Set((families ?? []).map(f => f.created_by as string))]
+    if (ownerIds.length > 0) {
+      const { data: subs } = await admin
+        .from('subscriptions').select('plan, status').in('user_id', ownerIds)
+      familyIsPaid = (subs ?? []).some(s =>
+        s.plan !== 'free' && (s.status === 'active' || s.status === 'trialing'))
     }
   } else {
-    // Usuário sem família (solo) — plano vem da própria assinatura.
     const { data: ownSub } = await admin
-      .from('subscriptions')
-      .select('plan, status')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (ownSub && ownSub.plan !== 'free' &&
-        (ownSub.status === 'active' || ownSub.status === 'trialing')) {
-      familyIsPaid = true
-    }
+      .from('subscriptions').select('plan, status').eq('user_id', userId).maybeSingle()
+    familyIsPaid = !!ownSub && ownSub.plan !== 'free' &&
+      (ownSub.status === 'active' || ownSub.status === 'trialing')
   }
 
-  // ── Família no plano gratuito ───────────────────────────────────────────
-  // A agenda diária é recurso pago: não é enviada no free. O aviso de grace,
-  // por ser notificação de conta, ainda sai (é o que traz o cliente de volta).
-  if (!familyIsPaid) {
-    if (graceLines.length === 0) return null
-    const lines: string[] = []
-    lines.push(`🌿 *Família em Foco* — ${fmtShort(today)}`)
-    lines.push('')
-    lines.push(...graceLines)
-    lines.push('')
-    lines.push('💚 _Família em Foco_')
-    return lines.join('\n')
-  }
-
-  // Nada a enviar: plano pago, sem atividades E sem aviso de grace.
-  if (activities.length === 0 && graceLines.length === 0) return null
+  // Free não recebe a agenda; sem atividades também não há o que enviar.
+  if (!familyIsPaid || activities.length === 0) return null
 
   const lines: string[] = []
   lines.push(`🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`)
@@ -276,13 +225,87 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     if (nextActs.length > 8) lines.push(`… e mais ${nextActs.length - 8} atividades no app`)
   }
 
-  if (graceLines.length > 0) {
-    lines.push('')
-    lines.push(...graceLines)
-  }
-
   lines.push('')
   lines.push('💚 _Família em Foco_')
 
   return lines.join('\n')
+}
+
+// ── Número de WhatsApp do usuário ────────────────────────────────────────────
+// Precedência: número definido em /alertas (override) → celular do cadastro.
+// Retorna no formato de envio (55 + DDD + número) ou null se não houver válido.
+export async function resolveWhatsAppNumber(admin: SupabaseClient, userId: string): Promise<string | null> {
+  const { data: ns } = await admin
+    .from('notification_settings')
+    .select('whatsapp_number')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (ns?.whatsapp_number) {
+    const n = toWhatsAppNumber(ns.whatsapp_number)
+    if (n) return n
+  }
+  const { data: prof } = await admin
+    .from('profiles')
+    .select('phone')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return toWhatsAppNumber(prof?.phone)
+}
+
+// ── Avisos de grace period (notificação de conta) ────────────────────────────
+// Independe do toggle de resumo diário e do horário escolhido. Envia a cada
+// membro da família em graça, usando o número resolvido (override → cadastro),
+// no máximo uma vez por dia (dedup via notification_settings.last_grace_notice_on).
+export async function runGraceNotices(admin: SupabaseClient): Promise<{ sent: number; skipped: number; failed: number }> {
+  const today = spDate(0)
+  let sent = 0, skipped = 0, failed = 0
+
+  const { data: owners } = await admin
+    .from('subscriptions')
+    .select('user_id, partner_grace_until')
+    .eq('plan', 'free')
+    .not('partner_grace_until', 'is', null)
+    .gt('partner_grace_until', new Date().toISOString())
+
+  for (const o of owners ?? []) {
+    const graceEnd = new Date(o.partner_grace_until as string)
+    const daysLeft = Math.max(0, Math.ceil((graceEnd.getTime() - Date.now()) / 86_400_000))
+    const dayStr = daysLeft <= 1 ? 'hoje' : `em ${daysLeft} dias`
+
+    const { data: fam } = await admin
+      .from('families').select('id').eq('created_by', o.user_id).maybeSingle()
+    if (!fam?.id) continue
+
+    const { data: members } = await admin
+      .from('family_members').select('user_id').eq('family_id', fam.id)
+
+    for (const m of members ?? []) {
+      const memberId = m.user_id as string
+
+      // Dedup: já enviou hoje?
+      const { data: ns } = await admin
+        .from('notification_settings').select('last_grace_notice_on').eq('user_id', memberId).maybeSingle()
+      if (ns?.last_grace_notice_on === today) { skipped++; continue }
+
+      const number = await resolveWhatsAppNumber(admin, memberId)
+      if (!number) { skipped++; continue }
+
+      const isOwner = memberId === o.user_id
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familia-em-foco.vercel.app'
+      const body = isOwner
+        ? `🌿 *Família em Foco*\n\n⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`
+        : `🌿 *Família em Foco*\n\n⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família para manter seu acesso.`
+
+      const result = await sendWhatsApp(number, body)
+      if (result.ok) sent++; else { failed++; console.error(`[grace] falha p/ ${memberId}:`, result.error) }
+
+      // Marca como enviado hoje (mesmo em falha, evita retry no mesmo dia).
+      await admin.from('notification_settings').upsert(
+        { user_id: memberId, last_grace_notice_on: today, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' },
+      )
+    }
+  }
+
+  return { sent, skipped, failed }
 }
