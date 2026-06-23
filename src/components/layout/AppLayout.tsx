@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
-  ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
+  Palette, Moon, Sun, SlidersHorizontal,
   Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star, UserCog,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
@@ -39,14 +39,6 @@ const PALETTES = [
   { name:'Ardósia',  hue:0,   sat:0.08, dot:'linear-gradient(140deg,#64748B,#1E293B)' },
 ]
 
-function calcAge(birthDate: string | null) {
-  if (!birthDate) return null
-  const birth = new Date(birthDate), today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  if (today.getMonth() < birth.getMonth() ||
-     (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
-  return age
-}
 
 // ── Component ──────────────────────────────────────────────────────────
 export default function AppLayout({ children, sidebarChildren: initial, activeFamilyId }: Props) {
@@ -354,31 +346,21 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
                   </div>
                 </Link>
               ) : (
-                liveChildren.map(child => {
-                  const age = calcAge(child.birth_date)
-                  return (
-                    <Link key={child.id} href="/children">
-                      <div className="flex items-center gap-3 transition-all duration-150 hover:translate-x-1 cursor-pointer"
-                        style={{ padding:'6px 10px', borderRadius:11, marginBottom:4,
-                          background:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"), rgba(255,255,255,0.62)`,
-                          backgroundSize:'200px 200px, 100% 100%',
-                          border:'1px solid rgba(61,102,65,0.18)',
-                          boxShadow:'0 2px 10px rgba(44,74,46,0.09),0 -1px 0 rgba(255,255,255,0.85) inset,inset 1px 0 rgba(255,255,255,0.55)',
-                        }}>
-                        <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={32} radius={10} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'#1A2B1C', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{child.name}</div>
-                          {(age !== null || child.school_name) && (
-                            <div style={{ fontSize:10.5, fontStyle:'italic', color:'rgba(26,43,28,0.40)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                              {age !== null ? `${age} anos` : ''}{age !== null && child.school_name ? ' · ' : ''}{child.school_name ?? ''}
-                            </div>
-                          )}
-                        </div>
-                        <ChevronRight size={12} color="rgba(26,43,28,0.28)" />
+                <div style={{ display:'flex', flexWrap:'wrap', gap:12, padding:'2px 4px' }}>
+                  {liveChildren.map(child => (
+                    <Link key={child.id} href="/children"
+                      title={child.name}
+                      className="transition-transform duration-150 hover:-translate-y-0.5"
+                      style={{ width:48, textAlign:'center', textDecoration:'none' }}>
+                      <div style={{ width:40, margin:'0 auto' }}>
+                        <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={40} radius={20} />
+                      </div>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#1A2B1C', marginTop:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {child.name}
                       </div>
                     </Link>
-                  )
-                })
+                  ))}
+                </div>
               )}
             </div>
 

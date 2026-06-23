@@ -517,9 +517,40 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
         />
       )}
 
-      {/* List */}
+      {/* Lista — mobile: bolinhas lado a lado (toque para editar/excluir) */}
       {children.length > 0 && (
-        <div className="space-y-3 stagger">
+        <div className="md:hidden">
+          <div className="grid grid-cols-3 gap-x-2 gap-y-5 mt-1">
+            {children.map(child => (
+              <button key={child.id} onClick={() => canEdit && openEdit(child)}
+                className="flex flex-col items-center"
+                style={{ background:'none', border:'none', padding:0, cursor: canEdit ? 'pointer' : 'default' }}>
+                <ChildAvatar child={child} size={62} radius={31} />
+                <span style={{ fontSize:12, fontWeight:600, color:'#1A2B1C', marginTop:6, maxWidth:84, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {child.name}
+                </span>
+              </button>
+            ))}
+            {canEdit && (
+              <button onClick={openNew} className="flex flex-col items-center"
+                style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                <div style={{ width:62, height:62, borderRadius:'50%', border:'1.5px dashed rgba(61,102,65,0.35)',
+                  display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(61,102,65,0.55)' }}>
+                  <Plus size={24} />
+                </div>
+                <span style={{ fontSize:12, fontWeight:600, color:'rgba(26,43,28,0.45)', marginTop:6 }}>Novo</span>
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-center mt-4" style={{ color:'rgba(26,43,28,0.40)' }}>
+            Toque numa bolinha para editar ou excluir
+          </p>
+        </div>
+      )}
+
+      {/* Lista — desktop: cards de gestão */}
+      {children.length > 0 && (
+        <div className="space-y-3 stagger hidden md:block">
           {children.map((child, i) => (
             <div key={child.id}
               className="card card-lift animate-fade-up p-4 flex items-center gap-4"
@@ -701,6 +732,15 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
                   : '✓ Salvar alterações'}
             </button>
           </div>
+
+          {modal?.mode === 'edit' && canEdit && modal.child && (
+            <button
+              onClick={async () => { const c = modal.child!; await handleDelete(c.id, c.name); closeModal() }}
+              style={{ marginTop: 12, width: '100%', background: 'none', border: 'none',
+                color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '6px' }}>
+              Excluir filho
+            </button>
+          )}
         </div>
       </Modal>
     </div>
