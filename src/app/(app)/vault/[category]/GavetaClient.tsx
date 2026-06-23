@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Plus, FileText, ChevronRight, X, Upload, Loader2 } from 'lucide-react'
+import { ChevronLeft, FileText, ChevronRight, X, Upload, Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
@@ -110,21 +110,11 @@ export default function GavetaClient({ category, children, documents: initialDoc
       </div>
 
       {/* Header */}
-      <div className="animate-fade-up flex items-center justify-between">
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 28, fontWeight: 700, color: '#1A2B1C', letterSpacing: '-0.02em' }}>
-            {meta.label}
-          </h1>
-          <p className="text-sm mt-0.5 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>{meta.desc}</p>
-        </div>
-        {canEdit && (
-          <button onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-white text-sm transition-all hover:brightness-105 active:scale-95"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
-            <Plus size={15} />
-            Novo
-          </button>
-        )}
+      <div className="animate-fade-up">
+        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 28, fontWeight: 700, color: '#1A2B1C', letterSpacing: '-0.02em' }}>
+          {meta.label}
+        </h1>
+        <p className="text-sm mt-0.5 italic" style={{ color: 'rgba(26,43,28,0.50)' }}>{meta.desc}</p>
       </div>
 
       {/* Filtro filho */}

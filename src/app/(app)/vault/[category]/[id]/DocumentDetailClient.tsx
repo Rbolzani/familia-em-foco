@@ -53,21 +53,22 @@ export default function DocumentDetailClient({ document: doc, category, children
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [preview, setPreview] = useState<{ url: string; mime: string | null; name: string } | null>(null)
   const [previewing, setPreviewing] = useState<string | null>(null)
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(doc.files?.[0] ?? null)
   const [inlineUrl, setInlineUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Carrega o preview inline do arquivo principal (primeiro arquivo).
-  const primaryFile = files[0] ?? null
+  // Carrega o preview inline do arquivo selecionado.
   useEffect(() => {
-    if (!primaryFile) { setInlineUrl(null); return }
+    if (!previewFile) { setInlineUrl(null); return }
+    setInlineUrl(null)
     let active = true
-    fetch(`/api/documents/${doc.id}/signed-url?fileId=${primaryFile.id}`)
+    fetch(`/api/documents/${doc.id}/signed-url?fileId=${previewFile.id}`)
       .then(r => r.json())
       .then(j => { if (active && j.url) setInlineUrl(j.url) })
       .catch(() => {})
     return () => { active = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryFile?.id])
+  }, [previewFile?.id])
 
   async function viewFile(file: DocumentFile) {
     setPreviewing(file.id)
@@ -105,7 +106,11 @@ export default function DocumentDetailClient({ document: doc, category, children
     try {
       const res = await fetch(`/api/documents/${doc.id}/files?fileId=${file.id}`, { method: 'DELETE' })
       if (!res.ok) { toast('Erro ao remover arquivo', 'error'); return }
-      setFiles(prev => prev.filter(f => f.id !== file.id))
+      setFiles(prev => {
+        const next = prev.filter(f => f.id !== file.id)
+        if (previewFile?.id === file.id) setPreviewFile(next[0] ?? null)
+        return next
+      })
       toast('Arquivo removido')
     } catch {
       toast('Erro ao remover arquivo', 'error')
@@ -124,7 +129,12 @@ export default function DocumentDetailClient({ document: doc, category, children
       const res = await fetch(`/api/documents/${doc.id}/files`, { method: 'POST', body: form })
       const json = await res.json()
       if (!res.ok) { toast(json.error ?? 'Erro no upload', 'error'); return }
-      setFiles(prev => [...prev, ...json.files])
+      const added: DocumentFile[] = json.files
+      setFiles(prev => {
+        const next = [...prev, ...added]
+        if (!previewFile && next.length > 0) setPreviewFile(next[0])
+        return next
+      })
       setNewFiles([])
       setShowAddFiles(false)
       toast('Arquivos adicionados ✓')
@@ -174,31 +184,54 @@ export default function DocumentDetailClient({ document: doc, category, children
       {/* Hero — 2 colunas: preview à esquerda, dados à direita */}
       <div className="animate-fade-up grid md:grid-cols-2 gap-4">
 
-        {/* Preview inline do arquivo principal */}
+        {/* Preview inline do arquivo selecionado */}
         <div style={{ ...CARD, padding: 14 }}>
           <div style={{ height: 240, borderRadius: 12, overflow: 'hidden', background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {primaryFile && inlineUrl && primaryFile.mime_type?.startsWith('image/') ? (
-              <img src={inlineUrl} alt={primaryFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            ) : primaryFile && inlineUrl && primaryFile.mime_type === 'application/pdf' ? (
-              <iframe src={inlineUrl} title={primaryFile.file_name} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+            {previewFile && inlineUrl && previewFile.mime_type?.startsWith('image/') ? (
+              <img src={inlineUrl} alt={previewFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : previewFile && inlineUrl && previewFile.mime_type === 'application/pdf' ? (
+              <iframe src={inlineUrl} title={previewFile.file_name} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
             ) : (
               <div className="flex flex-col items-center gap-2" style={{ color: 'rgba(26,43,28,0.35)' }}>
-                {primaryFile ? <Loader2 size={28} className="animate-spin" /> : <FileText size={40} strokeWidth={1.2} />}
-                <span className="text-xs">{primaryFile ? 'Carregando…' : 'Sem arquivo anexado'}</span>
+                {previewFile ? <Loader2 size={28} className="animate-spin" /> : <FileText size={40} strokeWidth={1.2} />}
+                <span className="text-xs">{previewFile ? 'Carregando…' : 'Sem arquivo anexado'}</span>
               </div>
             )}
           </div>
-          {primaryFile && (
+
+          {/* Thumbnails — só aparece quando há mais de 1 arquivo */}
+          {files.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+              {files.map((file, idx) => (
+                <button key={file.id} onClick={() => setPreviewFile(file)}
+                  className="flex-shrink-0 flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all"
+                  style={{
+                    background: previewFile?.id === file.id ? 'rgba(61,102,65,0.15)' : 'rgba(61,102,65,0.05)',
+                    border: previewFile?.id === file.id ? '1.5px solid rgba(61,102,65,0.40)' : '1px solid rgba(61,102,65,0.10)',
+                    minWidth: 56,
+                  }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: '#3D6641' }}>
+                    {fileIcon(file.mime_type)}
+                  </div>
+                  <span className="text-[10px] font-medium" style={{ color: 'rgba(26,43,28,0.55)', maxWidth: 52, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Arquivo {idx + 1}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {previewFile && (
             <div className="flex gap-2 mt-3">
-              <button onClick={() => viewFile(primaryFile)} disabled={previewing === primaryFile.id}
+              <button onClick={() => viewFile(previewFile)} disabled={previewing === previewFile.id}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
                 style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
-                {previewing === primaryFile.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Visualizar
+                {previewing === previewFile.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Visualizar
               </button>
-              <button onClick={() => downloadFile(primaryFile)} disabled={downloading === primaryFile.id}
+              <button onClick={() => downloadFile(previewFile)} disabled={downloading === previewFile.id}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all hover:brightness-95"
                 style={{ background: '#fff', border: '1px solid rgba(61,102,65,0.22)', color: '#3D6641' }}>
-                {downloading === primaryFile.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Baixar
+                {downloading === previewFile.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Baixar
               </button>
             </div>
           )}
