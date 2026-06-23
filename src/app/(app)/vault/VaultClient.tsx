@@ -164,15 +164,16 @@ export default function VaultClient({ children, documents: initialDocuments }: P
       </div>
 
       {/* Farol de status */}
-      <div className="grid grid-cols-3 gap-3 animate-fade-up">
+      <div className="grid grid-cols-4 gap-2.5 animate-fade-up">
         {[
-          { n: counts.ok,   label: 'Em dia',   emoji: '🟢', bg: 'rgba(59,109,17,0.10)',  color: '#27500A' },
-          { n: counts.soon, label: 'A vencer',  emoji: '🟡', bg: 'rgba(245,158,11,0.12)', color: '#854F0B' },
-          { n: counts.late, label: 'Vencidos',  emoji: '🔴', bg: 'rgba(220,38,38,0.09)',  color: '#A32D2D' },
+          { n: base.length,  label: 'Total',    emoji: '📁', bg: 'rgba(61,102,65,0.08)',   color: '#2C4A2E' },
+          { n: counts.ok,    label: 'Em dia',   emoji: '🟢', bg: 'rgba(59,109,17,0.10)',   color: '#27500A' },
+          { n: counts.soon,  label: 'A vencer', emoji: '🟡', bg: 'rgba(245,158,11,0.12)',  color: '#854F0B' },
+          { n: counts.late,  label: 'Vencidos', emoji: '🔴', bg: 'rgba(220,38,38,0.09)',   color: '#A32D2D' },
         ].map(c => (
-          <div key={c.label} style={{ background: c.bg, borderRadius: 14, padding: '12px 14px' }}>
+          <div key={c.label} style={{ background: c.bg, borderRadius: 14, padding: '12px 10px' }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: c.color }}>{c.n}</div>
-            <div style={{ fontSize: 12, color: c.color, fontWeight: 600 }}>{c.emoji} {c.label}</div>
+            <div style={{ fontSize: 11, color: c.color, fontWeight: 600 }}>{c.emoji} {c.label}</div>
           </div>
         ))}
       </div>
@@ -220,7 +221,7 @@ export default function VaultClient({ children, documents: initialDocuments }: P
       </div>
 
       {/* Gavetas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         {VAULT_CATEGORIES.map((cat, i) => {
           const count = countByCategory(cat.key)
           return (
