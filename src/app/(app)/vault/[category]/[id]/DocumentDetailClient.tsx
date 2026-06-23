@@ -181,11 +181,11 @@ export default function DocumentDetailClient({ document: doc, category, children
         <span className="font-bold truncate" style={{ color: '#1A2B1C', minWidth: 0 }}>{doc.title}</span>
       </div>
 
-      {/* Hero — 2 colunas: preview à esquerda, dados à direita */}
-      <div className="animate-fade-up grid md:grid-cols-2 gap-4">
+      {/* Hero — coluna única no mobile, lado a lado no desktop */}
+      <div className="animate-fade-up flex flex-col md:flex-row gap-4" style={{ minWidth: 0 }}>
 
         {/* Preview inline do arquivo selecionado */}
-        <div style={{ ...CARD, padding: 14 }}>
+        <div style={{ ...CARD, padding: 14, minWidth: 0, flex: '1 1 0' }}>
           <div style={{ height: 240, borderRadius: 12, overflow: 'hidden', background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {previewFile && inlineUrl && previewFile.mime_type?.startsWith('image/') ? (
               <img src={inlineUrl} alt={previewFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -238,7 +238,7 @@ export default function DocumentDetailClient({ document: doc, category, children
         </div>
 
         {/* Dados do documento */}
-        <div style={{ ...CARD, padding: 18, borderLeft: `4px solid ${meta.accent}` }}>
+        <div style={{ ...CARD, padding: 18, borderLeft: `4px solid ${meta.accent}`, minWidth: 0, flex: '1 1 0', overflow: 'hidden' }}>
           <div className="flex items-start gap-2 flex-wrap mb-3">
             <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 21, fontWeight: 700, color: '#1A2B1C', flex: 1, minWidth: 0 }}>
               {doc.title}
@@ -283,7 +283,7 @@ export default function DocumentDetailClient({ document: doc, category, children
       </div>
 
       {/* Arquivos */}
-      <div className="animate-fade-up" style={CARD}>
+      <div className="animate-fade-up" style={{ ...CARD, overflow: 'hidden' }}>
         <div className="flex items-center justify-between gap-2 p-4 pb-0 mb-3">
           <h2 className="font-bold text-sm flex-shrink-0" style={{ color: '#1A2B1C' }}>Arquivos ({files.length})</h2>
           {canEdit && (

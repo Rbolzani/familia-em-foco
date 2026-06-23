@@ -5,7 +5,8 @@ import { Activity, ActivityCategory, Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { DeadlineBadge } from '@/components/ui/Badge'
-import { Plus, Trash2, Pencil, Filter, Clock, MapPin } from 'lucide-react'
+import { Plus, Trash2, Pencil, Filter, Clock, MapPin, Sparkles } from 'lucide-react'
+import Link from 'next/link'
 import { mergeActivities } from '@/lib/merge-activities'
 import { useAccess } from '@/components/access/AccessContext'
 import { format } from 'date-fns'
@@ -181,13 +182,21 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
           </p>
         </div>
         {canEdit && (
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95 flex-shrink-0"
-            style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
-          >
-            <Plus size={16} /> Nova
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Captura com IA — apenas desktop (mobile já tem na topbar) */}
+            <Link href="/ia"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all hover:brightness-105 active:scale-95"
+              style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641', textDecoration: 'none' }}>
+              <Sparkles size={15} /> Captura com IA
+            </Link>
+            <button
+              onClick={openNew}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
+              style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
+            >
+              <Plus size={16} /> Nova
+            </button>
+          </div>
         )}
       </div>
 
