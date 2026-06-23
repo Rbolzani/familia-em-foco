@@ -163,8 +163,8 @@ export default function VaultClient({ children, documents: initialDocuments }: P
         )}
       </div>
 
-      {/* Farol de status */}
-      <div className="grid grid-cols-4 gap-2.5 animate-fade-up">
+      {/* Farol de status: 2 colunas no mobile, 4 no desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fade-up">
         {[
           { n: base.length,  label: 'Total',    emoji: '📁', bg: 'rgba(61,102,65,0.08)',   color: '#2C4A2E' },
           { n: counts.ok,    label: 'Em dia',   emoji: '🟢', bg: 'rgba(59,109,17,0.10)',   color: '#27500A' },
@@ -293,19 +293,19 @@ export default function VaultClient({ children, documents: initialDocuments }: P
                 return (
                   <Link key={d.id} href={`/vault/${d.category}/${d.id}`}
                     className="flex items-center gap-3 transition-all hover:-translate-y-[1px]"
-                    style={{ ...CARD, padding: '10px 12px', textDecoration: 'none' }}>
+                    style={{ ...CARD, padding: '10px 12px', textDecoration: 'none', minWidth: 0 }}>
                     <div className="w-9 h-9 rounded-[11px] flex items-center justify-center flex-shrink-0" style={{ background: cat?.iconBg }}>
                       {Icon && <Icon size={16} color={cat?.iconColor} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
+                      <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: '#1A2B1C' }}>{d.title}</div>
+                      <div className="truncate" style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
                         {cat?.label}{cn ? ` · ${cn}` : d.child_id === null ? ' · família' : ''}
                       </div>
+                      <span className="inline-block mt-0.5" style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: meta.bg, color: meta.color }}>
+                        {st === 'sem_data' ? 'sem validade' : expiryLabel(d.expires_at)}
+                      </span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 999, background: meta.bg, color: meta.color, whiteSpace: 'nowrap' }}>
-                      {st === 'sem_data' ? 'sem validade' : expiryLabel(d.expires_at)}
-                    </span>
                   </Link>
                 )
               })}
