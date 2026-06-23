@@ -238,8 +238,9 @@ export default function DocumentDetailClient({ document: doc, category, children
           )}
         </div>
 
-        {/* Dados do documento */}
-        <div style={{ ...CARD, padding: 18, borderLeft: `4px solid ${meta.accent}`, minWidth: 0, flex: '1 1 0', overflow: 'hidden' }}>
+        {/* Dados do documento — altura natural no mobile (flex-col); coluna igual só no desktop.
+            Sem overflow:hidden + flex:1 1 0 no eixo vertical (colapsava a altura no mobile). */}
+        <div className="w-full min-w-0 md:flex-1" style={{ ...CARD, padding: 18, borderLeft: `4px solid ${meta.accent}` }}>
           <div className="flex items-start gap-2 flex-wrap mb-3">
             <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 21, fontWeight: 700, color: '#1A2B1C', flex: 1, minWidth: 0 }}>
               {doc.title}
