@@ -21,11 +21,11 @@ export default function TermosPage() {
 
       <P>
         Estes Termos de Uso (&quot;Termos&quot;) regem o acesso e a utilização da plataforma
-        <strong> Família em Foco</strong> (&quot;Plataforma&quot;, &quot;Serviço&quot; ou &quot;App&quot;),
-        oferecida por {LEGAL_ENTITY.razaoSocial}, inscrita no CNPJ sob o nº {LEGAL_ENTITY.cnpj}
-        (&quot;Família em Foco&quot;, &quot;nós&quot;). Ao criar uma conta ou utilizar o Serviço, você
-        (&quot;Usuário&quot;) declara ter lido, compreendido e aceitado integralmente estes Termos e a
-        nossa Política de Privacidade.
+        <strong> {LEGAL_ENTITY.nomeFantasia}</strong> (&quot;Plataforma&quot;, &quot;Serviço&quot; ou &quot;App&quot;),
+        marca operada por {LEGAL_ENTITY.razaoSocial}, inscrita no CNPJ sob o nº {LEGAL_ENTITY.cnpj},
+        com sede em {LEGAL_ENTITY.endereco} (&quot;{LEGAL_ENTITY.nomeFantasia}&quot;, &quot;nós&quot;).
+        Ao criar uma conta ou utilizar o Serviço, você (&quot;Usuário&quot;) declara ter lido,
+        compreendido e aceitado integralmente estes Termos e a nossa Política de Privacidade.
       </P>
 
       <H>1. Objeto e descrição do serviço</H>

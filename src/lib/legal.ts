@@ -4,11 +4,11 @@
 export const LEGAL_VERSION = '2026-06-23'
 export const LEGAL_EFFECTIVE_DATE = '23 de junho de 2026'
 
-// ⚠️ PREENCHER com os dados reais da empresa antes do lançamento.
 export const LEGAL_ENTITY = {
-  razaoSocial: '[RAZÃO SOCIAL DA EMPRESA]',
-  cnpj: '[CNPJ]',
-  endereco: '[ENDEREÇO COMPLETO]',
+  razaoSocial: 'Bonju Serviços Ltda.',
+  nomeFantasia: 'Família em Foco',
+  cnpj: '49.111.234/0001-03',
+  endereco: 'Rua Conde do Pinhal, nº 1.762, caixa postal nº 73, Jardim São Carlos, São Carlos-SP, CEP 13560-648',
   email: 'contato@familiaemfoco.com.br',
-  dpoEmail: 'dpo@familiaemfoco.com.br', // Encarregado pelo Tratamento de Dados (LGPD)
+  dpoEmail: '[E-MAIL DO ENCARREGADO/DPO A DEFINIR]', // ⚠️ criar e-mail dedicado antes do lançamento
 }

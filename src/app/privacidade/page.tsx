@@ -20,16 +20,17 @@ export default function PrivacidadePage() {
       <P><em>Esta é uma minuta de trabalho e deve ser revisada por advogado antes do uso comercial.</em></P>
 
       <P>
-        Esta Política descreve como a <strong>Família em Foco</strong> ({LEGAL_ENTITY.razaoSocial},
-        CNPJ {LEGAL_ENTITY.cnpj}) trata dados pessoais, em conformidade com a Lei nº 13.709/2018
-        (Lei Geral de Proteção de Dados — LGPD). Ao usar o Serviço, você compreende as práticas aqui descritas.
+        Esta Política descreve como a <strong>{LEGAL_ENTITY.nomeFantasia}</strong>, marca operada por
+        {' '}{LEGAL_ENTITY.razaoSocial} (CNPJ {LEGAL_ENTITY.cnpj}), trata dados pessoais, em conformidade
+        com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados — LGPD). Ao usar o Serviço, você
+        compreende as práticas aqui descritas.
       </P>
 
       <H>1. Controlador e Encarregado (DPO)</H>
       <P>
-        O controlador dos dados é {LEGAL_ENTITY.razaoSocial}. O Encarregado pelo Tratamento de Dados Pessoais
-        pode ser contatado em <strong>{LEGAL_ENTITY.dpoEmail}</strong> para exercício de direitos e demais
-        questões de privacidade.
+        O controlador dos dados é {LEGAL_ENTITY.razaoSocial} (CNPJ {LEGAL_ENTITY.cnpj}), com sede em
+        {' '}{LEGAL_ENTITY.endereco}. O Encarregado pelo Tratamento de Dados Pessoais pode ser contatado em
+        {' '}<strong>{LEGAL_ENTITY.dpoEmail}</strong> para exercício de direitos e demais questões de privacidade.
       </P>
 
       <H>2. Dados que coletamos</H>
