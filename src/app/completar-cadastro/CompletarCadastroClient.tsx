@@ -13,9 +13,10 @@ const ACQUISITION_OPTIONS = [
 interface Props {
   email: string
   initialName: string
+  inviteToken?: string | null
 }
 
-export default function CompletarCadastroClient({ email, initialName }: Props) {
+export default function CompletarCadastroClient({ email, initialName, inviteToken }: Props) {
   const router = useRouter()
   const [fullName, setFullName] = useState(initialName)
   const [phone, setPhone]       = useState('')
@@ -56,7 +57,14 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Erro ao salvar.')
       clearAttribution()
-      router.push('/dashboard')
+      // Se o usuário chegou por um link de convite, vai para a tela de aceite
+      // (ambiente compartilhado) em vez do dashboard da própria conta.
+      if (inviteToken) {
+        document.cookie = 'pending_invite=; path=/; max-age=0'
+        router.push(`/convite/${inviteToken}`)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido.')
       setLoading(false)

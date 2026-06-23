@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import CompletarCadastroClient from './CompletarCadastroClient'
 
@@ -22,10 +23,17 @@ export default async function CompletarCadastroPage() {
     (user.user_metadata?.full_name as string | undefined) ??
     ''
 
+  // Convite capturado no middleware (cookie). Se existir, ao final do cadastro
+  // o usuário é levado para a tela de aceite em vez do dashboard — garantindo
+  // que ele entre no ambiente compartilhado, não numa família nova vazia.
+  const cookieStore = await cookies()
+  const inviteToken = cookieStore.get('pending_invite')?.value ?? null
+
   return (
     <CompletarCadastroClient
       email={user.email ?? ''}
       initialName={initialName}
+      inviteToken={inviteToken}
     />
   )
 }

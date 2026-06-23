@@ -77,6 +77,9 @@ export default function ConviteClient({
       return
     }
 
+    // Convite consumido — limpa o cookie de captura (se houver)
+    document.cookie = 'pending_invite=; path=/; max-age=0'
+
     // Mudar automaticamente para o ambiente da família compartilhada e redirecionar
     if (familyId) {
       await supabase.rpc('switch_active_family', { p_family_id: familyId })

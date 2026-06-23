@@ -35,7 +35,11 @@ export default function SignupPage() {
     if (data.session) {
       // Auto-confirm ativo — sessão criada imediatamente, ir direto para o app.
       // O layout cria a família com o nome escolhido no formulário (via user_metadata).
-      router.push('/dashboard')
+      // Honra o ?redirect= (ex.: link de convite) propagado pelo login → signup.
+      const params = new URLSearchParams(window.location.search)
+      const redirect = params.get('redirect')
+      const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
+      router.push(dest)
     } else {
       setSuccess(true)
     }
