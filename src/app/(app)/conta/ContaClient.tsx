@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Save, Lock } from 'lucide-react'
+import { Save, Lock, AlertTriangle, Trash2, Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { formatCPF, formatPhoneBR, isValidPhoneBR } from '@/lib/cpf'
 
@@ -11,15 +11,42 @@ interface Props {
   birthDate: string
   cpf: string
   marketingConsent: boolean
+  isOwner: boolean
+  hasPartners: boolean
 }
 
-export default function ContaClient({ email, fullName, phone, birthDate, cpf, marketingConsent }: Props) {
+export default function ContaClient({ email, fullName, phone, birthDate, cpf, marketingConsent, isOwner, hasPartners }: Props) {
   const [name, setName]       = useState(fullName)
   const [phoneV, setPhoneV]   = useState(phone ? formatPhoneBR(phone) : '')
   const [birth, setBirth]     = useState(birthDate)
   const [consent, setConsent] = useState(marketingConsent)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
+
+  // ── Exclusão de conta ─────────────────────────────────────────────────────
+  const [showDeleteModal,   setShowDeleteModal]   = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteLoading,     setDeleteLoading]     = useState(false)
+  const [deleteError,       setDeleteError]       = useState('')
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== 'EXCLUIR') return
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'EXCLUIR' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erro desconhecido')
+      window.location.href = '/auth/login'
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir conta. Tente novamente.')
+      setDeleteLoading(false)
+    }
+  }
 
   const phoneOk = phoneV.length === 0 || isValidPhoneBR(phoneV)
 
@@ -124,6 +151,118 @@ export default function ContaClient({ email, fullName, phone, birthDate, cpf, ma
           }
         </button>
       </form>
+
+      {/* ── Zona de perigo ─────────────────────────────────────────────── */}
+      <div className="animate-fade-up rounded-2xl p-6"
+        style={{ border: '1px solid rgba(220,38,38,0.20)', background: 'linear-gradient(160deg,#FFFFFF 0%,#FFF8F8 100%)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.10)' }}>
+            <AlertTriangle size={14} color="#DC2626" />
+          </div>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1A2B1C' }}>Zona de perigo</h2>
+        </div>
+        <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.55)', marginBottom: 16, lineHeight: 1.6 }}>
+          A exclusão é permanente e irreversível. Todos os seus dados serão removidos em conformidade com a LGPD.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 py-2.5 px-4 rounded-xl font-bold transition-all hover:brightness-95 active:scale-[0.98]"
+          style={{ background: 'rgba(220,38,38,0.09)', color: '#DC2626', border: '1px solid rgba(220,38,38,0.22)', fontSize: 13, cursor: 'pointer' }}>
+          <Trash2 size={14} />
+          Excluir minha conta permanentemente
+        </button>
+      </div>
+
+      {/* ── Modal de confirmação de exclusão ───────────────────────────────── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: 'rgba(10,18,11,0.70)', backdropFilter: 'blur(4px)' }}>
+          <div className="animate-scale-in" style={{
+            background: 'linear-gradient(160deg,#FFFFFF,#FFF8F8)', borderRadius: 20,
+            padding: '28px 24px', maxWidth: 420, width: '100%',
+            border: '1px solid rgba(220,38,38,0.18)', boxShadow: '0 24px 64px rgba(0,0,0,0.24)',
+          }}>
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.10)' }}>
+                <AlertTriangle size={28} color="#DC2626" />
+              </div>
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-lora)', fontSize: 19, fontWeight: 700, color: '#1A2B1C', textAlign: 'center', marginBottom: 14 }}>
+              Excluir conta permanentemente?
+            </h3>
+
+            {isOwner && hasPartners ? (
+              <div style={{ background: 'rgba(245,158,11,0.09)', border: '1px solid rgba(245,158,11,0.28)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12.5, lineHeight: 1.65, color: '#78350F', margin: 0 }}>
+                  <strong>Você tem parceiros ativos.</strong> A propriedade da família será transferida automaticamente para o parceiro mais antigo. Todos os dados (filhos, atividades, documentos) permanecem intactos para quem continuar.
+                </p>
+              </div>
+            ) : !isOwner ? (
+              <div style={{ background: 'rgba(245,158,11,0.09)', border: '1px solid rgba(245,158,11,0.28)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12.5, lineHeight: 1.65, color: '#78350F', margin: 0 }}>
+                  <strong>Você é parceiro nesta família.</strong> Seus marcadores de quem leva/busca serão liberados. Nenhum outro dado da família será perdido.
+                </p>
+              </div>
+            ) : (
+              <div style={{ background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.20)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12.5, lineHeight: 1.65, color: '#991B1B', margin: 0 }}>
+                  <strong>Atenção:</strong> você não tem parceiros. Todos os seus dados — filhos, atividades, documentos e arquivos — serão excluídos permanentemente. <strong>Esta ação não pode ser desfeita.</strong>
+                </p>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C', display: 'block', marginBottom: 7 }}>
+                Para confirmar, digite{' '}
+                <span style={{ color: '#DC2626', fontFamily: 'monospace', fontSize: 13 }}>EXCLUIR</span>:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="EXCLUIR"
+                autoFocus
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: 10,
+                  border: `1.5px solid ${deleteConfirmText === 'EXCLUIR' ? '#DC2626' : 'rgba(220,38,38,0.22)'}`,
+                  fontSize: 14, color: '#1A2B1C', outline: 'none', fontFamily: 'monospace',
+                  letterSpacing: '0.06em', background: '#fff', transition: 'border-color .15s',
+                }}
+              />
+            </div>
+
+            {deleteError && (
+              <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>{deleteError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); setDeleteError('') }}
+                disabled={deleteLoading}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '1.5px solid rgba(61,102,65,0.22)', background: '#fff', color: '#1A2B1C', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading || deleteConfirmText !== 'EXCLUIR'}
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700,
+                  cursor: deleteConfirmText === 'EXCLUIR' && !deleteLoading ? 'pointer' : 'not-allowed',
+                  transition: 'all .15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  background: deleteConfirmText === 'EXCLUIR' ? 'linear-gradient(140deg,#DC2626,#991B1B)' : 'rgba(220,38,38,0.25)',
+                  color: '#fff',
+                  boxShadow: deleteConfirmText === 'EXCLUIR' ? '0 4px 14px rgba(220,38,38,0.30)' : 'none',
+                  opacity: deleteLoading ? 0.7 : 1,
+                }}>
+                {deleteLoading
+                  ? <><Loader2 size={14} className="animate-spin" /> Excluindo...</>
+                  : 'Excluir conta'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

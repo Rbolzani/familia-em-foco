@@ -13,6 +13,20 @@ export default async function ContaPage() {
     .eq('user_id', user.id)
     .maybeSingle()
 
+  // Contexto para o aviso da exclusão de conta (owner com/sem parceiros).
+  const { data: familyId } = await supabase.rpc('auth_family_id')
+  let isOwner = true
+  let hasPartners = false
+  if (familyId) {
+    const { data: fam } = await supabase
+      .from('families').select('created_by').eq('id', familyId).maybeSingle()
+    isOwner = fam?.created_by === user.id
+    const { count } = await supabase
+      .from('family_members').select('id', { count: 'exact', head: true })
+      .eq('family_id', familyId).eq('role', 'partner')
+    hasPartners = (count ?? 0) > 0
+  }
+
   return (
     <ContaClient
       email={user.email ?? ''}
@@ -21,6 +35,8 @@ export default async function ContaPage() {
       birthDate={prof?.birth_date ?? ''}
       cpf={prof?.cpf ?? ''}
       marketingConsent={prof?.marketing_consent ?? false}
+      isOwner={isOwner}
+      hasPartners={hasPartners}
     />
   )
 }
