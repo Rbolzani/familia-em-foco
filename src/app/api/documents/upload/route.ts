@@ -12,6 +12,13 @@ export async function POST(req: NextRequest) {
   const child_id    = (form.get('child_id') as string) || null
   const description = (form.get('description') as string) || null
   const expires_at  = (form.get('expires_at') as string) || null
+  const doc_number  = (form.get('doc_number') as string) || null
+  const issuer      = (form.get('issuer') as string) || null
+  const issue_date  = (form.get('issue_date') as string) || null
+  const tagsRaw     = (form.get('tags') as string) || ''
+  const tags        = tagsRaw
+    ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
+    : null
   const files       = form.getAll('files') as File[]
 
   if (!title || !category) {
@@ -21,7 +28,8 @@ export async function POST(req: NextRequest) {
   // Create document record first
   const { data: doc, error: docErr } = await supabase
     .from('documents')
-    .insert({ user_id: user.id, child_id, category, title, description, expires_at })
+    .insert({ user_id: user.id, child_id, category, title, description, expires_at,
+              doc_number, issuer, issue_date, tags })
     .select()
     .single()
 

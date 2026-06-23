@@ -6,13 +6,7 @@ import { ChevronLeft, Plus, FileText, ChevronRight, X, Upload, Loader2 } from 'l
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
-
-const META: Record<DocumentCategory, { label: string; accent: string; desc: string }> = {
-  saude:        { label: 'Saúde',        accent: '#10B981', desc: 'Exames, receitas, histórico' },
-  identidade:   { label: 'Identidade',   accent: '#3B82F6', desc: 'RG, certidão, passaporte' },
-  contratos:    { label: 'Contratos',    accent: '#F59E0B', desc: 'Matrículas, planos de saúde' },
-  carteirinhas: { label: 'Carteirinhas', accent: '#8B5CF6', desc: 'Plano de saúde, estudante' },
-}
+import { getVaultCategory } from '@/lib/vault'
 
 function expiryStatus(expires_at: string | null): 'vencido' | 'a vencer' | 'valido' | null {
   if (!expires_at) return null
@@ -39,7 +33,8 @@ interface Props {
 export default function GavetaClient({ category, children, documents: initialDocs }: Props) {
   const router = useRouter()
   const { canEdit } = useAccess()
-  const meta = META[category]
+  const cat = getVaultCategory(category)
+  const meta = { label: cat?.label ?? category, accent: cat?.accent ?? '#3D6641', desc: cat?.desc ?? '' }
   const [docs, setDocs] = useState<AppDocument[]>(initialDocs)
   const [childFilter, setChildFilter] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
@@ -50,6 +45,10 @@ export default function GavetaClient({ category, children, documents: initialDoc
   const [description, setDescription] = useState('')
   const [childId, setChildId] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
+  const [docNumber, setDocNumber] = useState('')
+  const [issuer, setIssuer] = useState('')
+  const [issueDate, setIssueDate] = useState('')
+  const [tags, setTags] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -66,6 +65,10 @@ export default function GavetaClient({ category, children, documents: initialDoc
       if (childId) form.append('child_id', childId)
       if (description) form.append('description', description.trim())
       if (expiresAt) form.append('expires_at', expiresAt)
+      if (docNumber) form.append('doc_number', docNumber.trim())
+      if (issuer) form.append('issuer', issuer.trim())
+      if (issueDate) form.append('issue_date', issueDate)
+      if (tags.trim()) form.append('tags', tags.trim())
       files.forEach(f => form.append('files', f))
 
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
@@ -77,6 +80,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
       setDocs(prev => [{ ...json.document, child: childRef ? { id: childRef.id, name: childRef.name, avatar_color: childRef.avatar_color } : null, files: json.files }, ...prev])
       setShowUpload(false)
       setTitle(''); setDescription(''); setChildId(''); setExpiresAt(''); setFiles([])
+      setDocNumber(''); setIssuer(''); setIssueDate(''); setTags('')
     } catch {
       toast('Erro ao salvar documento', 'error')
     } finally {
@@ -266,11 +270,41 @@ export default function GavetaClient({ category, children, documents: initialDoc
                   onChange={e => setDescription(e.target.value)} placeholder="Informações adicionais..." />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                    Emissão
+                  </label>
+                  <input type="date" className="input-field w-full" value={issueDate} onChange={e => setIssueDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                    Vencimento
+                  </label>
+                  <input type="date" className="input-field w-full" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                    Nº do documento
+                  </label>
+                  <input className="input-field w-full" value={docNumber} onChange={e => setDocNumber(e.target.value)} placeholder="Ex: 12.345.678-9" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                    Órgão emissor
+                  </label>
+                  <input className="input-field w-full" value={issuer} onChange={e => setIssuer(e.target.value)} placeholder="Ex: SSP-SP" />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                  Data de vencimento
+                  Tags (separadas por vírgula)
                 </label>
-                <input type="date" className="input-field w-full" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+                <input className="input-field w-full" value={tags} onChange={e => setTags(e.target.value)} placeholder="Ex: viagem, escola" />
               </div>
 
               <div>

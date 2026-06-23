@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { DocumentCategory, AppDocument } from '@/lib/types'
+import { VAULT_CATEGORY_KEYS } from '@/lib/vault'
 import GavetaClient from './GavetaClient'
-
-const VALID: DocumentCategory[] = ['saude', 'identidade', 'contratos', 'carteirinhas']
 
 export default async function GavetaPage({
   params,
@@ -11,7 +10,7 @@ export default async function GavetaPage({
   params: Promise<{ category: string }>
 }) {
   const { category } = await params
-  if (!VALID.includes(category as DocumentCategory)) notFound()
+  if (!VAULT_CATEGORY_KEYS.includes(category as DocumentCategory)) notFound()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

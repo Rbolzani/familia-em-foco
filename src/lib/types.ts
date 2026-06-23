@@ -34,7 +34,9 @@ export interface Activity {
   child?: Child
 }
 
-export type DocumentCategory = 'saude' | 'identidade' | 'contratos' | 'carteirinhas'
+export type DocumentCategory =
+  | 'saude' | 'identidade' | 'contratos' | 'carteirinhas'
+  | 'escolar' | 'vacinacao' | 'autorizacoes' | 'financeiro' | 'outros'
 
 export type ChildRef = Pick<Child, 'id' | 'name' | 'avatar_color'>
 
@@ -46,6 +48,10 @@ export interface AppDocument {
   title: string
   description: string | null
   expires_at: string | null
+  doc_number: string | null
+  issuer: string | null
+  issue_date: string | null
+  tags: string[] | null
   created_at: string
   child?: ChildRef | null
   files?: DocumentFile[]

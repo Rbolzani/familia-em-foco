@@ -12,7 +12,8 @@ export default async function VaultPage() {
     // RLS escopa por família (family_id) — owner e partners veem os mesmos docs
     supabase
       .from('documents')
-      .select('id, category, child_id, expires_at'),
+      .select('id, category, child_id, title, expires_at')
+      .order('expires_at', { ascending: true, nullsFirst: false }),
   ])
 
   return (

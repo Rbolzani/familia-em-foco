@@ -2,17 +2,11 @@
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle, Eye } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentFile, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
-
-const META: Record<DocumentCategory, { label: string; accent: string }> = {
-  saude:        { label: 'Saúde',        accent: '#10B981' },
-  identidade:   { label: 'Identidade',   accent: '#3B82F6' },
-  contratos:    { label: 'Contratos',    accent: '#F59E0B' },
-  carteirinhas: { label: 'Carteirinhas', accent: '#8B5CF6' },
-}
+import { getVaultCategory } from '@/lib/vault'
 
 function fileIcon(mime: string | null) {
   if (!mime) return <File size={18} />
@@ -47,7 +41,8 @@ interface Props {
 export default function DocumentDetailClient({ document: doc, category, children }: Props) {
   const router = useRouter()
   const { canEdit } = useAccess()
-  const meta = META[category]
+  const cat = getVaultCategory(category)
+  const meta = { label: cat?.label ?? category, accent: cat?.accent ?? '#3D6641' }
   const [files, setFiles] = useState<DocumentFile[]>(doc.files ?? [])
   const [downloading, setDownloading] = useState<string | null>(null)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
@@ -56,7 +51,23 @@ export default function DocumentDetailClient({ document: doc, category, children
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [showAddFiles, setShowAddFiles] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [preview, setPreview] = useState<{ url: string; mime: string | null; name: string } | null>(null)
+  const [previewing, setPreviewing] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  async function viewFile(file: DocumentFile) {
+    setPreviewing(file.id)
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/signed-url?fileId=${file.id}`)
+      const json = await res.json()
+      if (!res.ok) { toast(json.error ?? 'Erro ao abrir', 'error'); return }
+      setPreview({ url: json.url, mime: file.mime_type, name: file.file_name })
+    } catch {
+      toast('Erro ao abrir arquivo', 'error')
+    } finally {
+      setPreviewing(null)
+    }
+  }
 
   const child = doc.child
   const status = expiryStatus(doc.expires_at)
@@ -189,6 +200,27 @@ export default function DocumentDetailClient({ document: doc, category, children
             Criado {new Date(doc.created_at).toLocaleDateString('pt-BR')}
           </span>
         </div>
+
+        {(doc.doc_number || doc.issuer || doc.issue_date || (doc.tags && doc.tags.length > 0)) && (
+          <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
+            {doc.doc_number && (
+              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.doc_number}</span></div>
+            )}
+            {doc.issuer && (
+              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.issuer}</span></div>
+            )}
+            {doc.issue_date && (
+              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{new Date(doc.issue_date).toLocaleDateString('pt-BR')}</span></div>
+            )}
+            {doc.tags && doc.tags.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                {doc.tags.map(t => (
+                  <span key={t} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Arquivos */}
@@ -226,6 +258,12 @@ export default function DocumentDetailClient({ document: doc, category, children
                   )}
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => viewFile(file)}
+                    disabled={previewing === file.id}
+                    className="p-1.5 rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50"
+                    title="Visualizar">
+                    {previewing === file.id ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} color="#3D6641" />}
+                  </button>
                   <button onClick={() => downloadFile(file)}
                     disabled={downloading === file.id}
                     className="p-1.5 rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50"
@@ -323,6 +361,39 @@ export default function DocumentDetailClient({ document: doc, category, children
                 {uploadingMore ? <><Loader2 size={15} className="animate-spin" /> Enviando...</> : 'Enviar arquivos'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Visualizador (lightbox) */}
+      {preview && (
+        <div className="fixed inset-0 z-[100] flex flex-col"
+          style={{ background: 'rgba(10,18,11,0.92)' }}
+          onClick={() => setPreview(null)}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ color: '#fff' }}>
+            <span className="text-sm font-medium truncate" style={{ maxWidth: '70%' }}>{preview.name}</span>
+            <div className="flex items-center gap-3">
+              <a href={preview.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                className="text-sm flex items-center gap-1" style={{ color: '#D4E8D5' }}>
+                <Download size={15} /> Baixar
+              </a>
+              <button onClick={() => setPreview(null)} aria-label="Fechar"><X size={22} color="#fff" /></button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+            {preview.mime?.startsWith('image/') ? (
+              <img src={preview.url} alt={preview.name}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+            ) : preview.mime === 'application/pdf' ? (
+              <iframe src={preview.url} title={preview.name}
+                style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8, background: '#fff' }} />
+            ) : (
+              <div className="text-center" style={{ color: '#D4E8D5' }}>
+                <File size={48} strokeWidth={1.2} className="mx-auto mb-3" />
+                <p className="text-sm">Pré-visualização não disponível para este tipo de arquivo.</p>
+                <a href={preview.url} target="_blank" rel="noreferrer" className="text-sm underline mt-2 inline-block">Abrir / baixar</a>
+              </div>
+            )}
           </div>
         </div>
       )}
