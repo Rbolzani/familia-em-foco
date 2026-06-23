@@ -23,6 +23,7 @@ Plataforma de gestão familiar para pais brasileiros. Centraliza agenda escolar,
 | Banco / Auth | Supabase (PostgreSQL + RLS) |
 | IA (extração) | Claude Haiku via @anthropic-ai/sdk |
 | IA (voz) | Groq Whisper via openai SDK (baseURL Groq) |
+| Pagamentos | Stripe (Checkout, Billing Portal, Webhooks, proração) |
 | Notificações | WhatsApp Cloud API (Twilio fallback) |
 | PWA | manifest.json — standalone, portrait-primary |
 
@@ -40,21 +41,28 @@ src/
       atividades/     # Extracurricular
       ia/             # Captura por IA — foto, texto ou voz
       calendario/     # Calendário mensal
+      planos/         # Assinaturas — planos, checkout, cancelar/reativar
     api/
       ai-extract/     # POST: imagem ou texto → atividades/lembretes/docs (Claude)
       voice-transcribe/ # POST: áudio → texto transcrito (Whisper)
       documents/      # Upload e gestão de documentos
-      whatsapp-daily/ # Cron 07h BRT — resumo diário via WhatsApp
+      whatsapp-daily/ # Cron — resumo diário via WhatsApp (agenda paga; grace sempre)
+      stripe/         # checkout, cancel, portal, webhook
+      cron/           # expire-trials — trial→free+grace (fase 1), remoção pós-grace (fase 2)
     auth/             # Login e cadastro
   components/
     activities/       # ActivitiesPage.tsx — modal de criação/edição
     layout/           # AppLayout.tsx — sidebar, topbar, tema
+    billing/          # TrialBanner.tsx, GraceBanner.tsx
     ui/               # Modal.tsx, VoiceInputButton.tsx, Toast.tsx, etc.
     access/           # AccessContext — controle de permissões
   hooks/
     useVoiceInput.ts  # MediaRecorder → Whisper → texto
   lib/
     supabase/         # client.ts e server.ts
+    billing.ts        # PLAN_LIMITS, getFamilyPlan, getEffectiveSubscription
+    stripe.ts         # cliente Stripe, planToPrice/priceToPlan
+    stripe-sync.ts    # syncSubscriptionToDb, reconcileUserFromStripe, grace (5 dias)
     types.ts          # Activity, Child, etc.
 ```
 
@@ -91,6 +99,25 @@ src/
 | avatar_color | text (hex) |
 | sort_order | int |
 
+### `subscriptions`
+| Campo | Tipo | Notas |
+|---|---|---|
+| user_id | uuid | PK / FK → auth.users |
+| stripe_customer_id | text | cliente no Stripe |
+| stripe_subscription_id | text \| null | assinatura vigente |
+| plan | enum | free \| familia \| plus |
+| status | text | free \| trialing \| active \| ... |
+| billing_interval | text \| null | month \| year |
+| trial_ends_at | timestamptz \| null | fim do trial original |
+| current_period_end | timestamptz \| null | |
+| cancel_at_period_end | bool | cancelando no fim do período |
+| partner_grace_until | timestamptz \| null | grace de 5 dias do parceiro |
+| ai_uses_this_month / ai_uses_reset_at | int / ts | uso de IA no plano free |
+
+> **Plano efetivo da família = plano do owner** (resolvido por `get_family_plan` / `getEffectiveSubscription` a partir de `families.created_by`). Parceiro herda; não tem assinatura própria no contexto compartilhado.
+
+Outras tabelas: `notification_settings` (whatsapp_number, daily_summary_enabled, summary_time), `logistics_suggestions` (sugestões de leva/busca entre membros).
+
 ---
 
 ## Features Existentes
@@ -117,19 +144,34 @@ src/
 - Mini calendário
 
 ### 5. WhatsApp Daily (`/api/whatsapp-daily`)
-- Cron às 07h BRT
-- Resumo das atividades do dia para todos os membros da família
+- Cron (Vercel) — resumo das atividades do dia + próximos 7 dias
 - Meta Cloud API com fallback Twilio
+- **A agenda diária é recurso pago** (plano free não recebe); o **aviso de grace** é notificação de conta e é entregue mesmo no free
 
 ### 6. Compartilhamento
 - Parceiro pode ter acesso completo, somente leitura ou somente logística
 - Controle via `AccessContext` + Supabase RLS
+- **Parceiro herda o plano do owner** (`get_family_plan`/`getEffectiveSubscription`)
 
 ### 7. Cofre de Documentos
 - Upload de arquivos (PDF, imagem)
 - Categorias: saúde, identidade, contratos, carteirinhas
 - Data de vencimento opcional
 - Imagem escaneada na IA é auto-anexada ao documento
+
+### 8. Assinaturas / Billing (`/planos`) — Stripe
+- Planos **Gratuito / Família / Família Plus**, mensal ou **anual (−20%)**
+- **Paywall por plano** (`lib/billing.ts` → `PLAN_LIMITS`): free = 2 filhos, IA 5/mês, sem voz/WhatsApp/compartilhamento
+- **Checkout** novo assinante; **troca de plano/intervalo sem novo cartão** (modifica a sub existente com proração + `billing_cycle_anchor:'now'`)
+- **Trial 14 dias server-enforced** (sem segundo trial); **cancelamento com motivo** + **reativação**; **portal** com cancelamento desabilitado
+- **Reconciliação on-page-load** (`reconcileUserFromStripe`) — robusto a webhook perdido
+- **Webhook** `/api/stripe/webhook` (checkout/subscription events → `syncSubscriptionToDb`)
+
+### 9. Grace Period (billing + compartilhamento)
+- Owner perde plano pago (pago/trial → grátis) **com parceiro conectado** → **grace de 5 dias** antes da desconexão (`partner_grace_until`)
+- Cron `/api/cron/expire-trials`: fase 1 (trial→free+grace), fase 2 (remove parceiro pós-grace)
+- Banners (`TrialBanner`/`GraceBanner`) para owner e parceiro; aviso de grace também via WhatsApp
+- Fichas de logística do ex-parceiro permanecem; slot órfão volta a ser editável (`LogChip.tsx`)
 
 ---
 

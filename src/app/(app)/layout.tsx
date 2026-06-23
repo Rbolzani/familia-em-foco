@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import AppLayout from '@/components/layout/AppLayout'
 import RealtimeSync from '@/components/layout/RealtimeSync'
@@ -16,6 +17,18 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   // Bootstrap: garante que todo usuário autenticado tem uma família com o nome correto.
   // Usuários com auto-confirm não passam por /auth/callback, então criamos aqui.
   // Também corrige o nome se a família foi criada com o nome padrão genérico.
+  // Gate de cadastro: todo usuário precisa completar os dados pessoais (LGPD/cobrança)
+  // antes de entrar no app. A página /completar-cadastro fica fora deste grupo (app),
+  // então não há loop de redirect.
+  if (user) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('profile_completed_at')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!prof?.profile_completed_at) redirect('/completar-cadastro')
+  }
+
   if (user) {
     const metaFamilyName = (user.user_metadata?.family_name as string | undefined)?.trim()
     const { data: familyId } = await supabase.rpc('auth_family_id')

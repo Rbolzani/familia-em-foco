@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getFamilyPlan, PLAN_LIMITS } from '@/lib/billing'
 
 interface ChildInput {
   name: string
@@ -45,6 +46,23 @@ export async function POST(request: Request) {
       access_role: 'owner',
     })
     family = newFamily
+  }
+
+  // Verificar limite de filhos do plano (existentes + os que serão inseridos).
+  // Fecha o furo de paywall: o onboarding antes inseria sem checar PLAN_LIMITS.
+  const plan = await getFamilyPlan()
+  const childLimit = PLAN_LIMITS[plan].children
+  if (childLimit !== Infinity) {
+    const { count } = await admin
+      .from('children')
+      .select('*', { count: 'exact', head: true })
+      .eq('family_id', family.id)
+    if ((count ?? 0) + children.length > childLimit) {
+      return NextResponse.json(
+        { error: 'LIMIT_CHILDREN', plan, current: count ?? 0, adding: children.length, limit: childLimit },
+        { status: 402 }
+      )
+    }
   }
 
   // Inserir filhos

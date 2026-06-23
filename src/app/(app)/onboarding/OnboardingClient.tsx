@@ -255,7 +255,12 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Erro ao salvar filhos.')
+      if (!res.ok) {
+        if (json.error === 'LIMIT_CHILDREN') {
+          throw new Error(`Seu plano permite até ${json.limit} ${json.limit === 1 ? 'filho' : 'filhos'}. Faça upgrade para adicionar mais.`)
+        }
+        throw new Error(json.error ?? 'Erro ao salvar filhos.')
+      }
 
       // Upload de fotos para os filhos inseridos
       const { data: { user } } = await supabase.auth.getUser()
