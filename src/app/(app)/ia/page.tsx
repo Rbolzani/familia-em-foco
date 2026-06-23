@@ -76,13 +76,22 @@ export default function IAPage() {
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
 
+  const [aiUsed,  setAiUsed]  = useState<number | null>(null)
+  const [aiLimit, setAiLimit] = useState<number | null>(null)
+  const [voiceBlocked, setVoiceBlocked] = useState(false)
+
   const hasResults = activities !== null || reminders !== null || documents !== null
+  const aiBlocked  = aiLimit !== null && aiUsed !== null && aiUsed >= aiLimit
 
   useEffect(() => {
     supabase.from('children').select('*').order('sort_order').then(({ data }) => {
       setChildren(data ?? [])
       if (data?.[0]) setSelectedChildIds([data[0].id])
     })
+    fetch('/api/billing/status').then(r => r.json()).then(d => {
+      if (d.ai) { setAiUsed(d.ai.used); setAiLimit(d.ai.limit) }
+      if (d.plan === 'free') setVoiceBlocked(true)
+    }).catch(() => {})
   }, [])
 
   function toggleDefaultChild(id: string) {
@@ -124,6 +133,10 @@ export default function IAPage() {
           fd.append('image', img)
           const res  = await fetch('/api/ai-extract', { method: 'POST', body: fd })
           const data = await res.json()
+          if (res.status === 402) {
+            setAiUsed(data.used ?? aiLimit ?? 5)
+            throw new Error(`Limite de ${data.limit} capturas por mês atingido. Faça upgrade para continuar.`)
+          }
           if (!res.ok) throw new Error(data.error || 'Erro ao processar imagem')
           allActs = [...allActs, ...(data.activities ?? []).map((a: any) => ({ ...a, selected: true, child_ids: selectedChildIds }))]
           allRems = [...allRems, ...(data.reminders  ?? []).map((r: any) => ({ ...r, selected: true, child_ids: selectedChildIds }))]
@@ -135,6 +148,10 @@ export default function IAPage() {
         fd.append('text', text)
         const res  = await fetch('/api/ai-extract', { method: 'POST', body: fd })
         const data = await res.json()
+        if (res.status === 402) {
+          setAiUsed(data.used ?? aiLimit ?? 5)
+          throw new Error(`Limite de ${data.limit} capturas por mês atingido. Faça upgrade para continuar.`)
+        }
         if (!res.ok) throw new Error(data.error || 'Erro desconhecido')
         allActs = (data.activities ?? []).map((a: any) => ({ ...a, selected: true, child_ids: selectedChildIds }))
         allRems = (data.reminders  ?? []).map((r: any) => ({ ...r, selected: true, child_ids: selectedChildIds }))
@@ -144,6 +161,8 @@ export default function IAPage() {
       setActivities(allActs)
       setReminders(allRems)
       setDocuments(allDocs)
+      // Atualiza contador local para feedback imediato
+      if (aiLimit !== null) setAiUsed(prev => (prev ?? 0) + 1)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -413,10 +432,20 @@ export default function IAPage() {
             <p className="text-xs font-bold uppercase tracking-[0.10em] mb-5" style={{ color: 'rgba(26,43,28,0.40)' }}>
               ou grave um áudio
             </p>
-            <VoiceInputButton
-              onTranscript={t => setText(prev => prev ? `${prev} ${t}` : t)}
-              onError={msg => setError(msg)}
-            />
+            {voiceBlocked ? (
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(107,114,128,0.10)' }}>
+                  <Lock size={20} color="rgba(107,114,128,0.60)" />
+                </div>
+                <p className="text-xs font-semibold" style={{ color: 'rgba(26,43,28,0.45)' }}>Entrada por voz disponível no plano Família</p>
+                <a href="/planos" className="text-xs font-bold underline" style={{ color: '#3D6641' }}>Ver planos</a>
+              </div>
+            ) : (
+              <VoiceInputButton
+                onTranscript={t => setText(prev => prev ? `${prev} ${t}` : t)}
+                onError={msg => setError(msg)}
+              />
+            )}
           </div>
         </div>
       )}
@@ -429,13 +458,63 @@ export default function IAPage() {
         </div>
       )}
 
+      {/* Badge de uso de IA (só plano free) */}
+      {aiLimit !== null && (
+        <div className="flex items-center justify-between px-1">
+          <span style={{ fontSize: 12, color: 'rgba(26,43,28,0.50)', fontWeight: 500 }}>
+            Capturas de IA este mês
+          </span>
+          <span style={{
+            fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+            background: aiBlocked ? 'rgba(220,38,38,0.10)' : 'rgba(61,102,65,0.10)',
+            color: aiBlocked ? '#DC2626' : '#3D6641',
+          }}>
+            {aiUsed ?? '–'} / {aiLimit}
+          </span>
+        </div>
+      )}
+
+      {/* Upgrade prompt quando IA bloqueada */}
+      {aiBlocked && (
+        <div className="rounded-2xl p-4 animate-fade-up" style={{
+          background: 'linear-gradient(135deg,rgba(196,154,108,0.12),rgba(61,102,65,0.08))',
+          border: '1px solid rgba(196,154,108,0.35)',
+        }}>
+          <div className="flex items-start gap-3">
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: 'linear-gradient(140deg,#C49A6C,#A07848)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Lock size={16} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A2B1C', margin: '0 0 4px' }}>
+                Limite de {aiLimit} capturas atingido
+              </p>
+              <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.60)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                Seu limite mensal de capturas por IA foi atingido. Faça upgrade para capturas ilimitadas.
+              </p>
+              <a href="/planos"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all hover:brightness-110"
+                style={{ background: 'linear-gradient(140deg,#C49A6C,#A07848)', textDecoration: 'none' }}>
+                Ver planos →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Extract button */}
-      <button onClick={handleExtract} disabled={loading || (mode === 'image' ? images.length === 0 : !text.trim())}
+      <button onClick={handleExtract}
+        disabled={loading || aiBlocked || (mode === 'image' ? images.length === 0 : !text.trim())}
         className="w-full flex items-center justify-center gap-2.5 py-4 rounded-[16px] text-base font-bold transition-all hover:brightness-105 active:scale-95 disabled:opacity-50"
         style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 6px 20px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
         {loading
           ? <><Loader2 size={18} className="animate-spin" /> Analisando{images.length > 1 ? ` ${images.length} imagens` : ''}...</>
-          : <><Sparkles size={18} /> Analisar e classificar com IA</>}
+          : aiBlocked
+            ? <><Lock size={18} /> Limite mensal atingido</>
+            : <><Sparkles size={18} /> Analisar e classificar com IA</>}
       </button>
 
       {/* Results */}

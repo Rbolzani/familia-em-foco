@@ -163,10 +163,49 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     seen.add(key)
     return true
   })
-  if (activities.length === 0) return null
-
   const todayActs = activities.filter(a => a.date === today)
   const nextActs = activities.filter(a => a.date > today)
+
+  // ── Aviso de grace period (independente de haver atividades) ────────────
+  // Verifica se o owner da família está com parceiro em período de graça.
+  // Calculado ANTES de decidir não enviar, para que o aviso saia mesmo quando
+  // a família não tem atividades no período.
+  const graceLines: string[] = []
+  if (familyIds.length > 0) {
+    const { data: families } = await admin
+      .from('families')
+      .select('id, created_by')
+      .in('id', familyIds)
+
+    for (const fam of families ?? []) {
+      const { data: ownerSub } = await admin
+        .from('subscriptions')
+        .select('partner_grace_until, plan')
+        .eq('user_id', fam.created_by)
+        .maybeSingle()
+
+      if (ownerSub?.partner_grace_until && ownerSub.plan === 'free') {
+        const graceEnd  = new Date(ownerSub.partner_grace_until)
+        const isExpired = graceEnd <= new Date()
+        if (!isExpired) {
+          const msLeft   = graceEnd.getTime() - Date.now()
+          const daysLeft = Math.max(0, Math.ceil(msLeft / 86_400_000))
+          const dayStr   = daysLeft <= 1 ? 'hoje' : `em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`
+
+          if (fam.created_by === userId) {
+            // Mensagem para o owner
+            graceLines.push(`⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: familia-em-foco.com.br/planos`)
+          } else {
+            // Mensagem para o parceiro
+            graceLines.push(`⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família.`)
+          }
+        }
+      }
+    }
+  }
+
+  // Nada a enviar: sem atividades E sem aviso de grace.
+  if (activities.length === 0 && graceLines.length === 0) return null
 
   const lines: string[] = []
   lines.push(`🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`)
@@ -200,6 +239,11 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
       lines.push(`• ${fmtShort(a.date)} — ${a.title}${childName}`)
     }
     if (nextActs.length > 8) lines.push(`… e mais ${nextActs.length - 8} atividades no app`)
+  }
+
+  if (graceLines.length > 0) {
+    lines.push('')
+    lines.push(...graceLines)
   }
 
   lines.push('')

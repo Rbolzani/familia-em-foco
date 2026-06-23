@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Child } from '@/lib/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
-import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, GraduationCap, Cake, Camera, X, AlertCircle, Check, Lock } from 'lucide-react'
+import type { PlanId } from '@/lib/billing'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAccess } from '@/components/access/AccessContext'
 import FamilySwitcher, { type FamilyOption } from '@/components/layout/FamilySwitcher'
@@ -156,9 +157,11 @@ interface Props {
   familyId: string | null
   familyCurrentName: string | null
   isOwner: boolean
+  plan: PlanId
+  childLimit: number
 }
 
-export default function ChildrenClient({ initialChildren, families, familyId, familyCurrentName, isOwner }: Props) {
+export default function ChildrenClient({ initialChildren, families, familyId, familyCurrentName, isOwner, plan, childLimit }: Props) {
   const { canEdit } = useAccess()
   const [children,     setChildren]     = useState<Child[]>(initialChildren)
   useEffect(() => { setChildren(initialChildren) }, [initialChildren])
@@ -168,6 +171,7 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
   const [nameSaved,    setNameSaved]    = useState(false)
   useEffect(() => { setFamilyName(familyCurrentName ?? '') }, [familyCurrentName])
   const [modal,        setModal]        = useState<{ mode:'new'|'edit'; child?: Child }|null>(null)
+  const [showUpgrade,  setShowUpgrade]  = useState(false)
   const [saving,       setSaving]       = useState(false)
   const [saveError,    setSaveError]    = useState<string|null>(null)
   const [deleteError,  setDeleteError]  = useState<string|null>(null)
@@ -202,7 +206,10 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
     setChildren(data ?? [])
   }
 
+  const atChildLimit = childLimit !== Infinity && children.length >= childLimit
+
   function openNew() {
+    if (atChildLimit) { setShowUpgrade(true); return }
     setForm({ name: '', birth_date: '', school_name: '', avatar_color: AVATAR_COLORS[0] })
     setPhotoFile(null)
     setPhotoPreview(null)
@@ -376,9 +383,14 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
         </div>
         {canEdit && (
           <button onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
-            <Plus size={16} /> Adicionar
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all hover:brightness-105 active:scale-95"
+            style={{
+              background: atChildLimit ? 'rgba(61,102,65,0.12)' : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+              color: atChildLimit ? '#3D6641' : 'white',
+              boxShadow: atChildLimit ? 'none' : '0 4px 16px rgba(44,74,46,0.30)',
+            }}>
+            {atChildLimit ? <Lock size={14} /> : <Plus size={16} />}
+            {atChildLimit ? 'Limite atingido' : 'Adicionar'}
           </button>
         )}
       </div>
@@ -439,6 +451,43 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
           </div>
         )}
       </div>
+
+      {/* Upgrade banner — limite de filhos atingido */}
+      {showUpgrade && (
+        <div className="animate-fade-up rounded-2xl p-4" style={{
+          background: 'linear-gradient(135deg,rgba(196,154,108,0.12),rgba(61,102,65,0.08))',
+          border: '1px solid rgba(196,154,108,0.35)',
+        }}>
+          <div className="flex items-start gap-3">
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: 'linear-gradient(140deg,#C49A6C,#A07848)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Lock size={16} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A2B1C', margin: '0 0 4px' }}>
+                Limite de {childLimit} filho{childLimit > 1 ? 's' : ''} atingido
+              </p>
+              <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.60)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                {plan === 'free'
+                  ? 'O plano Gratuito permite 1 filho. Faça upgrade para o plano Família (2 filhos) ou Plus (ilimitado).'
+                  : 'O plano Família permite até 2 filhos. Faça upgrade para o Plus e adicione filhos ilimitados.'}
+              </p>
+              <a href="/planos"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all hover:brightness-110"
+                style={{ background: 'linear-gradient(140deg,#C49A6C,#A07848)', textDecoration: 'none' }}>
+                Ver planos →
+              </a>
+            </div>
+            <button onClick={() => setShowUpgrade(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'rgba(26,43,28,0.40)', flexShrink: 0 }}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete error banner */}
       {deleteError && (

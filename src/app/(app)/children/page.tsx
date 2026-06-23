@@ -1,13 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import ChildrenClient from './ChildrenClient'
 import type { FamilyOption } from '@/components/layout/FamilySwitcher'
+import { getFamilyPlan, PLAN_LIMITS } from '@/lib/billing'
 
 export default async function ChildrenPage() {
   const supabase = await createClient()
-  const [{ data: children }, { data: familiesRaw }, { data: activeFamilyId }] = await Promise.all([
+  const [{ data: children }, { data: familiesRaw }, { data: activeFamilyId }, plan] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
     supabase.rpc('get_my_families'),
     supabase.rpc('auth_family_id'),
+    getFamilyPlan(),
   ])
 
   const families: FamilyOption[] = (familiesRaw ?? []).map((f: {
@@ -36,6 +38,8 @@ export default async function ChildrenPage() {
     isOwner = famRow?.created_by === user?.id
   }
 
+  const childLimit = PLAN_LIMITS[plan].children
+
   return (
     <ChildrenClient
       initialChildren={children ?? []}
@@ -43,6 +47,8 @@ export default async function ChildrenPage() {
       familyId={familyId}
       familyCurrentName={familyCurrentName}
       isOwner={isOwner}
+      plan={plan}
+      childLimit={childLimit}
     />
   )
 }

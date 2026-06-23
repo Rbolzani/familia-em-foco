@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Família em Foco — Oferta Comercial</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #1a1a1a; background: #f8f8f6; padding: 2.5rem; max-width: 960px; margin: 0 auto; line-height: 1.65; }
+  h1 { font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 2.5rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 13px; font-weight: 600; margin: 1.25rem 0 0.4rem; color: #333; text-transform: uppercase; letter-spacing: 0.04em; }
+  .meta { font-size: 12px; color: #888; margin-bottom: 0.5rem; }
+  .doc-desc { font-size: 13px; color: #555; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e5e5e5; }
+  p { margin-bottom: 0.75rem; color: #333; font-size: 13px; }
+  ul.bullets { padding-left: 1.1rem; margin: 0.5rem 0 1rem; color: #333; font-size: 13px; }
+  ul.bullets li { padding: 3px 0; line-height: 1.5; }
+  ul.bullets li + li { margin-top: 2px; }
+  .section { margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid #e5e5e5; }
+  .section:last-child { border-bottom: none; }
+  .section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #aaa; margin-bottom: 4px; }
+
+  /* Cards de planos */
+  .plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 1.25rem 0; max-width: 700px; }
+  @media (max-width: 700px) { .plans { grid-template-columns: 1fr; } }
+  .plan { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 18px; }
+  .plan.featured { border: 2px solid #185FA5; }
+  .plan-badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 6px; font-weight: 600; margin-bottom: 8px; }
+  .b-blue { background: #E6F1FB; color: #185FA5; }
+  .b-green { background: #EAF3DE; color: #3B6D11; }
+  .plan-name { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+  .plan-tagline { font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.4; }
+  .price-main { font-size: 26px; font-weight: 500; }
+  .price-period { font-size: 11px; color: #888; }
+  .price-annual { font-size: 11px; color: #3B6D11; font-weight: 500; margin: 3px 0 12px; }
+  .divider { border: none; border-top: 1px solid #f0f0f0; margin: 10px 0; }
+  .feat-list { list-style: none; }
+  .feat-list li { font-size: 12px; padding: 3px 0; display: flex; gap: 7px; align-items: flex-start; line-height: 1.4; color: #333; }
+  .ok { color: #3B6D11; flex-shrink: 0; }
+  .hi { color: #185FA5; font-weight: 500; }
+
+  /* Métricas */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 14px; }
+  .metric-label { font-size: 11px; color: #888; margin-bottom: 3px; }
+  .metric-value { font-size: 20px; font-weight: 500; }
+  .metric-sub { font-size: 10px; color: #aaa; margin-top: 2px; }
+
+  /* Tabelas */
+  .table-wrap { overflow-x: auto; margin: 0.75rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border-radius: 8px; border: 1px solid #e5e5e5; overflow: hidden; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #888; background: #fafafa; border-bottom: 1px solid #e5e5e5; white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; line-height: 1.45; }
+  tr:last-child td { border-bottom: none; }
+  tr.total td { font-weight: 500; background: #fafafa; border-top: 2px solid #e5e5e5; }
+
+  /* Caixas de destaque */
+  .box { border-radius: 8px; padding: 12px 16px; margin: 0.75rem 0; font-size: 13px; line-height: 1.6; }
+  .box-amber { background: #FAEEDA; border: 1px solid #EF9F27; color: #633806; }
+  .box-green { background: #EAF3DE; border: 1px solid #97C459; color: #27500A; }
+  .box-blue { background: #E6F1FB; border: 1px solid #85B7EB; color: #0C447C; }
+  .box-gray { background: #F1EFE8; border: 1px solid #B4B2A9; color: #444441; }
+  .box strong { font-weight: 600; }
+
+  /* Cores em tabela */
+  .green { color: #3B6D11; font-weight: 500; }
+  .red { color: #A32D2D; font-weight: 500; }
+  .blue { color: #185FA5; font-weight: 500; }
+
+  /* Cenário header */
+  .scenario-tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 6px; margin-bottom: 8px; }
+  .tag-amber { background: #FAEEDA; color: #633806; }
+  .tag-blue { background: #E6F1FB; color: #0C447C; }
+  .tag-green { background: #EAF3DE; color: #27500A; }
+  .tag-purple { background: #EEEDFE; color: #3C3489; }
+  .tag-teal { background: #E1F5EE; color: #085041; }
+
+  /* Benchmark grid */
+  .benchmark-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0.75rem 0; }
+  @media (max-width: 700px) { .benchmark-grid { grid-template-columns: 1fr; } }
+  .benchmark-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 14px; }
+  .benchmark-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .benchmark-price { font-size: 17px; font-weight: 500; color: #185FA5; margin-bottom: 3px; }
+  .benchmark-note { font-size: 11px; color: #888; line-height: 1.45; }
+
+  /* TOC */
+  .toc { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px 20px; margin-bottom: 2rem; }
+  .toc-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 10px; }
+  .toc ol { padding-left: 16px; }
+  .toc li { font-size: 12px; padding: 2px 0; color: #333; }
+  .toc a { color: #185FA5; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .col-box { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px 16px; }
+  .col-box-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Família em Foco — Oferta Comercial</h1>
+<p class="meta">Versão 2.0 · 2026-06-18</p>
+<p class="doc-desc">Estratégia de precificação, racional de cada decisão comercial, benchmarks e análise financeira completa com cenários de margem e break-even.</p>
+
+<!-- DIFERENCIAIS -->
+<div class="section" style="margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:1px solid #e5e5e5;">
+  <div class="section-label">Contexto</div>
+  <h2>O que os diferenciais valem na prática</h2>
+  <p>O produto combina funcionalidades inexistentes em qualquer app de gestão familiar hoje:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Diferencial</th><th>O que resolve</th><th>Percepção de valor</th></tr></thead>
+      <tbody>
+        <tr><td><strong>IA com foto/voz</strong></td><td>Elimina digitação manual da agenda escolar</td><td class="green">Alto — economiza 10–20 min/semana</td></tr>
+        <tr><td><strong>Resumo diário no WhatsApp</strong></td><td>Zero fricção — informação chega onde o pai já está</td><td class="green">Muito alto — WhatsApp é canal primário no BR</td></tr>
+        <tr><td><strong>Compartilhamento real-time</strong></td><td>Coordenação entre pais sem grupo de WhatsApp</td><td class="green">Alto</td></tr>
+        <tr><td><strong>Cofre de documentos</strong></td><td>Centralização de docs sensíveis dos filhos</td><td style="color:#555;">Médio</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Índice</div>
+  <ol>
+    <li><a href="#estrutura">Estrutura de planos</a></li>
+    <li><a href="#racional-precos">Racional dos preços e análise preço × demanda</a></li>
+    <li><a href="#ancoragem">Ancoragem e psicologia de preço</a></li>
+    <li><a href="#benchmarks">Benchmarks de mercado</a></li>
+    <li><a href="#desconto-anual">Desconto anual</a></li>
+    <li><a href="#freemium-vs-trial">Modelo de acesso: trial + Grátis</a></li>
+    <li><a href="#trial-14">Trial de 14 dias</a></li>
+    <li><a href="#fundadores">30 fundadores</a></li>
+    <li><a href="#financeiro">Análise financeira</a></li>
+    <li><a href="#cenarios">Cenários de margem e break-even</a></li>
+    <li><a href="#comparativo">Comparativo consolidado</a></li>
+  </ol>
+</div>
+
+<!-- 1. ESTRUTURA DE PLANOS -->
+<div class="section" id="estrutura">
+  <div class="section-label">Seção 1</div>
+  <h2>Estrutura de planos</h2>
+
+  <div class="plans">
+    <div class="plan featured">
+      <span class="plan-badge b-blue">Mais popular</span>
+      <div class="plan-name">Família</div>
+      <div class="plan-tagline">Para famílias que querem organização real com IA e parceiro</div>
+      <div class="price-main">R$39,90</div>
+      <div class="price-period">/mês</div>
+      <div class="price-annual">Anual: R$31,90/mês · 2 meses grátis</div>
+      <hr class="divider">
+      <ul class="feat-list">
+        <li><span class="ok">✓</span> Até 2 filhos</li>
+        <li><span class="ok hi">✓</span> <span class="hi">IA texto + foto ilimitado</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Entrada por voz ilimitado</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Cofre de documentos (5 GB)</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Resumo diário via WhatsApp</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">1 parceiro com acesso compartilhado</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Logística leva/busca</span></li>
+        <li><span class="ok">✓</span> Alertas de vencimento de documentos</li>
+      </ul>
+      <hr class="divider">
+      <div style="background:#FAEEDA; border-radius:6px; padding:9px 11px; font-size:11px; color:#854F0B; line-height:1.5;">
+        <strong style="display:block; margin-bottom:2px;">🎯 Oferta de lançamento · 30 vagas</strong>
+        Primeiros 30 assinantes pagam <strong>R$29,90/mês</strong> para sempre + badge de Fundador.
+      </div>
+    </div>
+
+    <div class="plan">
+      <span class="plan-badge b-green">Premium</span>
+      <div class="plan-name">Família Plus</div>
+      <div class="plan-tagline">Famílias maiores ou com avós, babá e escola no mesmo ambiente</div>
+      <div class="price-main">R$59,90</div>
+      <div class="price-period">/mês</div>
+      <div class="price-annual">Anual: R$47,90/mês · 2 meses grátis</div>
+      <hr class="divider">
+      <ul class="feat-list">
+        <li><span class="ok">✓</span> <strong>Tudo do plano Família</strong></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Filhos ilimitados</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Parceiros ilimitados</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Cofre de documentos (20 GB)</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Export de dados (PDF/CSV)</span></li>
+        <li><span class="ok hi">✓</span> <span class="hi">Suporte prioritário</span></li>
+        <li><span class="ok">✓</span> Histórico completo de atividades</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Plano</th><th>Mensal</th><th>Anual (por mês)</th><th>Desconto anual</th><th>Trimestral / Semestral</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Família — oferta Fundador (30 vagas)</td><td>R$29,90 vitalício</td><td>—</td><td>—</td><td>não se aplica</td></tr>
+        <tr><td>Família</td><td>R$39,90</td><td>R$31,90</td><td>20% · 2 meses grátis</td><td>não oferecer</td></tr>
+        <tr><td>Família Plus</td><td>R$59,90</td><td>R$47,90</td><td>20% · 2 meses grátis</td><td>não oferecer</td></tr>
+        <tr style="color:#aaa; font-style:italic;"><td>Grátis (fallback pós-trial)</td><td>R$0</td><td>—</td><td>—</td><td>não promovido como entrada</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 2. RACIONAL DOS PREÇOS -->
+<div class="section" id="racional-precos">
+  <div class="section-label">Seção 2</div>
+  <h2>Racional dos preços e análise preço × demanda</h2>
+
+  <h3>Público-alvo e disposição a pagar</h3>
+  <p>Pais e mães brasileiros, classe B/C+, filhos em idade escolar. Já pagam mensalmente por Spotify (R$22–34), Netflix (R$22–55), iCloud (R$6–35), apps de saúde e nutrição (R$30–80). Disposição a pagar por apps que economizam tempo situa-se em <strong>R$20–R$60/mês</strong>.</p>
+
+  <h3>Por que R$39,90 para o plano Família</h3>
+  <ul class="bullets">
+    <li><strong>Sinalização de categoria:</strong> rompe o limiar de R$30 intencionalmente — comunica "ferramenta com IA", não "app de agenda". Usuário com expectativa correta compra e fica.</li>
+    <li><strong>Valor por dia:</strong> R$1,33/dia — menos que um café. Economiza 15–20 min/semana em digitação manual + resumo matinal no WhatsApp todos os dias.</li>
+    <li><strong>Margem:</strong> custo variável R$0,90/usuário → margem de contribuição R$39,00. Break-even em 8 assinantes.</li>
+    <li><strong>Posição competitiva:</strong> apps com IA real cobram R$48–R$204/mês. R$39,90 é o melhor custo-benefício da categoria com IA.</li>
+    <li><strong>Elasticidade aceitável:</strong> queda de ~20–25% na conversão vs. R$29,90 — absorvível com o diferencial de IA e WhatsApp (ver tabela de elasticidade abaixo).</li>
+  </ul>
+
+  <h3>Por que R$59,90 para o Família Plus</h3>
+  <ul class="bullets">
+    <li>50% acima do Família — justificado por filhos ilimitados, parceiros ilimitados e storage 4× maior.</li>
+    <li>Âncora: usuário que vê o Plus avalia o Família como "a escolha inteligente da maioria".</li>
+    <li>Resultado esperado: distribuição 70–80% Família / 20–30% Plus.</li>
+  </ul>
+
+  <h3>Análise de elasticidade de preço</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Faixa de preço</th><th>Percepção</th><th>Estimativa de conversão relativa</th></tr></thead>
+      <tbody>
+        <tr><td>R$19,90</td><td>"Barato demais — será que é bom?"</td><td>Alta, mas âncora de valor baixo</td></tr>
+        <tr><td>R$24,90</td><td>Confortável, sem atrito</td><td>Alta</td></tr>
+        <tr><td>R$29,90</td><td>"Razoável — menos de R$1/dia"</td><td>Alta</td></tr>
+        <tr><td>R$34,90</td><td>"Ainda OK para o que entrega"</td><td>Queda leve (~10–15%)</td></tr>
+        <tr style="background:#EAF3DE;"><td><strong>R$39,90 ← escolhido</strong></td><td>"Caro, mas justificado se eu usar"</td><td class="green"><strong>Queda moderada (~20–25%) — absorvível com diferencial claro</strong></td></tr>
+        <tr><td>R$49,90</td><td>"Preciso ter certeza antes de assinar"</td><td style="color:#A32D2D;">Queda significativa como plano base</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box box-gray">Curva de demanda para SaaS com diferencial claro tem um "cotovelo" entre R$34,90 e R$39,90 — ponto onde a percepção de valor sustenta o preço antes de cair. R$39,90 é o teto sustentável da faixa.</div>
+
+  <div class="box box-blue" style="margin-top:0.75rem;">
+    <strong>Síntese:</strong> R$39,90 e R$59,90 são os preços que o produto vale, dado o diferencial de IA + WhatsApp. Não são preços inflados para descontar depois — são preços de mercado para a categoria. A oferta de lançamento (R$29,90 para 30 fundadores) recompensa quem aposta cedo, não quem espera.
+  </div>
+</div>
+
+<!-- 3. ANCORAGEM -->
+<div class="section" id="ancoragem">
+  <div class="section-label">Seção 3</div>
+  <h2>Ancoragem e psicologia de preço</h2>
+
+  <div class="two-col">
+    <div class="col-box">
+      <div class="col-box-title">1. Efeito de contraste</div>
+      <ul class="bullets">
+        <li>Plus (R$59,90) existe para fazer o Família (R$39,90) parecer a escolha óbvia.</li>
+        <li>R$39,90 não é avaliado em termos absolutos — é "33% a menos que o Plus, com tudo que preciso".</li>
+        <li>Presença de opção mais cara aumenta conversão do plano do meio em até 30%.</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">2. Custo por dia</div>
+      <ul class="bullets">
+        <li>R$39,90/mês = R$1,33/dia.</li>
+        <li>Comunicação: "menos de um café por dia para organizar a vida dos seus filhos com IA".</li>
+        <li>Remove percepção de comprometimento mensal — ancora em referencial cotidiano de baixo valor.</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">3. Economia visível no anual</div>
+      <ul class="bullets">
+        <li>Sempre comunicar como "2 meses grátis", nunca como "20% de desconto".</li>
+        <li>"2 meses grátis" é concreto e imediato — remove cálculo mental.</li>
+        <li>UI: mostrar R$31,90/mês em destaque com nota "equivale a 2 meses grátis".</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">4. Só mensal e anual — sem trimestral</div>
+      <ul class="bullets">
+        <li>Cada opção de período adicional cria atrito cognitivo na decisão.</li>
+        <li>+2 opções de período reduz taxa de conversão global em SaaS.</li>
+        <li>Toda a energia de comunicação direcionada para converter mensal → anual.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 4. BENCHMARKS -->
+<div class="section" id="benchmarks">
+  <div class="section-label">Seção 4</div>
+  <h2>Benchmarks de mercado</h2>
+
+  <h3>Apps de família e agenda — mercado direto</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>App</th><th>IA</th><th>WhatsApp</th><th>Preço</th></tr></thead>
+      <tbody>
+        <tr><td>Cozi Family</td><td style="color:#ccc;">✗</td><td style="color:#ccc;">✗</td><td>US$29,99/ano ≈ R$15/mês</td></tr>
+        <tr><td>OurFamilyWizard</td><td style="color:#ccc;">✗</td><td style="color:#ccc;">✗</td><td>US$12–17/mês ≈ R$72–102/mês</td></tr>
+        <tr><td>FamilyWall</td><td style="color:#ccc;">✗</td><td style="color:#ccc;">✗</td><td>€2,99/mês ≈ R$18/mês</td></tr>
+        <tr><td>Agenda escolar BR (média)</td><td style="color:#ccc;">✗</td><td style="color:#ccc;">✗</td><td>R$15–39/mês</td></tr>
+        <tr style="background:#EAF3DE;"><td><strong>Família em Foco</strong></td><td class="green">✅</td><td class="green">✅</td><td><strong>R$39,90/mês</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box box-amber">
+    <strong>Conclusão:</strong> entre os apps de família, o Família em Foco é o mais caro — mas é o único com IA e WhatsApp. A comparação direta não é justa: são produtos de categorias diferentes.
+  </div>
+
+  <h3>Apps com IA real — referência de categoria</h3>
+  <div class="benchmark-grid">
+    <div class="benchmark-card">
+      <div class="benchmark-name">Motion (agenda IA)</div>
+      <div class="benchmark-price">US$19–34/mês ≈ R$114–204</div>
+      <div class="benchmark-note">IA que reorganiza agenda. Sem família, sem WhatsApp.</div>
+    </div>
+    <div class="benchmark-card">
+      <div class="benchmark-name">Otter.ai (transcrição)</div>
+      <div class="benchmark-price">US$8–20/mês ≈ R$48–120</div>
+      <div class="benchmark-note">Só transcrição de voz. Cobra mais que o Família em Foco entregando menos.</div>
+    </div>
+    <div class="benchmark-card">
+      <div class="benchmark-name">Mem.ai (notas IA)</div>
+      <div class="benchmark-price">US$14,99/mês ≈ R$90</div>
+      <div class="benchmark-note">Notas com IA. Sem família, sem WhatsApp, sem cofre.</div>
+    </div>
+    <div class="benchmark-card">
+      <div class="benchmark-name">Notion AI (add-on)</div>
+      <div class="benchmark-price">US$10/mês ≈ R$60</div>
+      <div class="benchmark-note">IA cobrada à parte. Valida que usuários pagam bem por IA em ferramentas de organização.</div>
+    </div>
+    <div class="benchmark-card">
+      <div class="benchmark-name">Reclaim.ai</div>
+      <div class="benchmark-price">US$8–16/mês ≈ R$48–96</div>
+      <div class="benchmark-note">Agenda inteligente para profissionais. Sem família, sem documentos, sem WhatsApp.</div>
+    </div>
+    <div class="benchmark-card">
+      <div class="benchmark-name" style="color:#3B6D11;">Família em Foco</div>
+      <div class="benchmark-price" style="color:#3B6D11;">R$39,90/mês</div>
+      <div class="benchmark-note"><strong>IA (foto/texto/voz) + WhatsApp + cofre + compartilhamento + logística.</strong> Melhor custo-benefício da categoria.</div>
+    </div>
+  </div>
+
+  <h3>Apps que usam WhatsApp como canal principal (BR)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Produto</th><th>Tipo</th><th>Preço</th></tr></thead>
+      <tbody>
+        <tr><td>Ferramentas de notificação WA (B2B)</td><td>Envio de alerts para clientes</td><td>R$99–499/mês</td></tr>
+        <tr><td>Apps de saúde com WA</td><td>Lembretes de medicamento</td><td>R$19–49/mês</td></tr>
+        <tr><td>Tutoring/EAD com WA</td><td>Acompanhamento de alunos</td><td>R$49–199/mês</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box box-green">
+    <strong>Dado relevante:</strong> WhatsApp tem penetração de 93% dos usuários de smartphone no BR. Produtos que entregam valor via WhatsApp têm custo cognitivo zero — o usuário não abre outro app. Isso aumenta o valor percebido de forma desproporcional ao custo real da funcionalidade.
+  </div>
+
+  <div class="box box-blue">
+    <strong>Conclusão:</strong> R$39,90 está abaixo de todos os apps com IA real (R$48–R$204) e no teto dos apps de agenda familiar sem IA (R$15–R$39). É o preço correto para um produto que entrega as duas categorias combinadas.
+  </div>
+</div>
+
+<!-- 5. DESCONTO ANUAL -->
+<div class="section" id="desconto-anual">
+  <div class="section-label">Seção 5</div>
+  <h2>Desconto anual de 20%</h2>
+
+  <div class="two-col">
+    <div class="col-box">
+      <div class="col-box-title">Por que 20%</div>
+      <ul class="bullets">
+        <li><strong>Abaixo de 15%:</strong> não move comportamento — ganho insuficiente para comprometer 12 meses.</li>
+        <li><strong>20%:</strong> mínimo que muda decisão de mensal → anual em SaaS B2C. R$96/ano economizados no Família.</li>
+        <li><strong>Acima de 25%:</strong> desvaloriza percepção do preço cheio e comprime margem sem necessidade.</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">Benefícios operacionais</div>
+      <ul class="bullets">
+        <li><strong>Caixa upfront:</strong> R$382,80 (Família) ou R$574,80 (Plus) no ato. 20 assinantes anuais do Família = R$7.656 no dia 1.</li>
+        <li><strong>Churn próximo de zero:</strong> billing anual dá 12 meses para consolidar hábito antes de reavaliar.</li>
+        <li><strong>Receita previsível:</strong> base anual facilita decisões de investimento.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box box-green">
+    <strong>Comunicação:</strong> nunca "20% de desconto". Sempre <strong>"2 meses grátis"</strong> — concreto, imediato, sem cálculo mental.
+  </div>
+</div>
+
+<!-- 6. FREEMIUM VS TRIAL -->
+<div class="section" id="freemium-vs-trial">
+  <div class="section-label">Seção 6</div>
+  <h2>Modelo de acesso: trial único como porta de entrada</h2>
+
+  <h3>Funil</h3>
+  <div class="box box-blue" style="margin-bottom:0.75rem;">
+    <strong>Cadastro → 14 dias Família completo (sem cartão) → decisão → assina (Família ou Plus) ou downgrade automático para acesso básico sem perder dados.</strong> Não há escolha de plano na entrada. O acesso básico não é apresentado como plano — aparece apenas como nota de rodapé na tela de preços.
+  </div>
+
+  <div class="two-col">
+    <div class="col-box">
+      <div class="col-box-title">Por que sem cartão</div>
+      <ul class="bullets">
+        <li>Exigir cartão na entrada reduz topo do funil em 40–60% no BR.</li>
+        <li>Desconfiança em cobranças automáticas é culturalmente elevada.</li>
+        <li>Objetivo: maximizar volume de usuários que chegam ao momento "uau".</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">Por que Grátis não aparece como plano na tela de preços</div>
+      <ul class="bullets">
+        <li>Card Grátis ao lado dos planos pagos ancora a comparação errada: usuário avalia Família vs. Grátis e R$39,90 parece caro — em vez de Família vs. Plus, onde R$39,90 é a escolha óbvia.</li>
+        <li>Cria saída fácil antes do usuário entrar no trial: "já sei que posso ficar de graça" reduz intenção de assinar.</li>
+        <li>O Grátis é rede de segurança, não produto — existe para não perder o usuário do banco após o trial.</li>
+        <li>Referência: Notion, Linear e Superhuman não exibem o plano gratuito como coluna na tela de preços.</li>
+        <li><strong>O que fica visível:</strong> nota de rodapé discreta — "Após os 14 dias, você pode assinar ou continuar com acesso básico (até 2 filhos, IA limitada a 5 usos/mês, sem entrada por voz, sem resumo diário no WhatsApp e sem compartilhamento com parceiro). Seus dados nunca somem."</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">IA no Grátis: texto+foto até 5x/mês · sem voz</div>
+      <ul class="bullets">
+        <li>IA é o principal diferencial — sem experimentá-la, usuário não entende o valor.</li>
+        <li>5x/mês cobre uso casual (teste) mas é insuficiente para uso ativo → gatilho de upgrade.</li>
+        <li>Voz exclusivo no Família: custo real (Groq Whisper) + diferenciador qualitativo claro.</li>
+        <li>WhatsApp exclusivo no Família: principal canal de engajamento diário → gatilho de upgrade mais forte.</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">Logística no Grátis: não</div>
+      <ul class="bullets">
+        <li>Sem parceiro compartilhado, logística não tem utilidade — usuário marcaria a si mesmo.</li>
+        <li>Só faz sentido com dois responsáveis coordenando, o que requer o plano Família.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 7. TRIAL DE 14 DIAS -->
+<div class="section" id="trial-14">
+  <div class="section-label">Seção 7</div>
+  <h2>Trial de 14 dias</h2>
+
+  <h3>Por que 14 e não 7 ou 30</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Duração</th><th>Problema</th></tr></thead>
+      <tbody>
+        <tr><td>7 dias</td><td>Cobre só uma semana escolar. Sem tempo para IA, parceiro, WhatsApp. Conversão inferior.</td></tr>
+        <tr style="background:#EAF3DE;"><td><strong>14 dias ← escolhido</strong></td><td>Duas semanas escolares. Tempo para: cadastrar filhos, capturar agenda por IA, convidar parceiro, receber 10+ resumos no WhatsApp.</td></tr>
+        <tr><td>30 dias</td><td>Decisão adiada, esquecida. Atrai usuários sem intenção de pagar. Churn de inércia.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Fluxo do trial</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dia</th><th>Ação</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Cadastro → acesso imediato ao Família por 14 dias. Banner: "Período de avaliação — 14 dias restantes."</td></tr>
+        <tr><td>10</td><td>Notificação: "Faltam 4 dias. Assine o plano Família por R$39,90/mês e continue com tudo."</td></tr>
+        <tr><td>13</td><td>Urgência: "Último dia amanhã. Assine agora e ganhe 2 meses grátis (R$31,90/mês)."</td></tr>
+        <tr><td>14</td><td>Downgrade automático → acesso básico (até 2 filhos, IA limitada a 5 usos/mês, sem entrada por voz, sem resumo diário no WhatsApp, sem compartilhamento com parceiro). Dados preservados. Banner: "Ative o Família para recuperar a IA ilimitada, o WhatsApp e o compartilhamento."</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box box-blue">
+    <strong>Princípio central:</strong> perder dados gera raiva e abandono definitivo. Perder funcionalidades gera saudade e eventual conversão. O usuário nunca perde o acesso ao app — perde as funcionalidades premium.
+  </div>
+</div>
+
+<!-- 8. FUNDADORES -->
+<div class="section" id="fundadores">
+  <div class="section-label">Seção 8</div>
+  <h2>30 primeiros como fundadores</h2>
+
+  <p>Os primeiros 30 assinantes pagam R$29,90/mês para sempre — R$10 de desconto permanente sobre o preço regular de R$39,90.</p>
+
+  <div class="two-col">
+    <div class="col-box">
+      <div class="col-box-title">Por que oferecer</div>
+      <ul class="bullets">
+        <li><strong>Validação financeira:</strong> quem paga acredita no produto e usa ativamente. Os 30 primeiros são o feedback mais valioso.</li>
+        <li><strong>Prova social:</strong> primeiros depoimentos, avaliações e casos de uso. No início de um SaaS, prova social vale mais que margem.</li>
+        <li><strong>Urgência genuína:</strong> quando as 30 vagas acabam, o preço sobe de verdade — não é gatilho artificial.</li>
+        <li><strong>Badge de Fundador:</strong> status permanente no perfil → embaixadores naturais nas redes, custo zero.</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <div class="col-box-title">Por que 30 e não 20 ou 50</div>
+      <ul class="bullets">
+        <li>Break-even no plano Fundador (R$29,90, margem R$29,00): <strong>10 usuários</strong>. Aos 30: margem de 66% — financeiramente saudável.</li>
+        <li>30 vagas geram validação mais ampla que 20 sem criar proporção excessiva de vitalícios.</li>
+        <li>Com 200 usuários totais, 30 fundadores = 15% da base — gerenciável.</li>
+        <li>50 fundadores em 200 usuários = 25% sempre pagando menos — comprime margem média estruturalmente.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box box-amber">
+    <strong>Os 30 fundadores não maximizam caixa — geram capital social.</strong> A análise de escala usa os planos regulares (R$39,90 mensal / R$31,90 anual). O plano Fundador tem break-even em 10 e 66% de margem aos 30 — não é prejuízo, é custo de aquisição de prova social.
+  </div>
+</div>
+
+<!-- 9. ANÁLISE FINANCEIRA -->
+<div class="section" id="financeiro">
+  <div class="section-label">Seção 9</div>
+  <h2>Análise financeira — base de custo</h2>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Custo fixo/mês</div>
+      <div class="metric-value">R$278</div>
+      <div class="metric-sub">Supabase Pro + Vercel Pro + domínio</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Custo variável/usuário</div>
+      <div class="metric-value" style="color:#3B6D11;">R$0,90</div>
+      <div class="metric-sub">IA R$0,24 + WhatsApp R$0,60 + Voz R$0,06</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Margem de contribuição</div>
+      <div class="metric-value" style="color:#185FA5;">R$39,00</div>
+      <div class="metric-sub">por usuário no plano Família mensal</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Break-even mínimo</div>
+      <div class="metric-value">8 usuários</div>
+      <div class="metric-sub">plano Família mensal R$39,90</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Componente</th><th>Tipo</th><th>Custo/mês</th><th>Custo/usuário</th></tr></thead>
+      <tbody>
+        <tr><td>Supabase Pro (banco + auth + storage + realtime)</td><td>Fixo</td><td>R$150</td><td>—</td></tr>
+        <tr><td>Vercel Pro (hospedagem + cron)</td><td>Fixo</td><td>R$120</td><td>—</td></tr>
+        <tr><td>Domínio</td><td>Fixo</td><td>R$8</td><td>—</td></tr>
+        <tr><td>Claude Haiku (IA de extração)</td><td>Variável</td><td>—</td><td>R$0,24</td></tr>
+        <tr><td>Meta WhatsApp Cloud API (resumo diário)</td><td>Variável</td><td>—</td><td>R$0,60</td></tr>
+        <tr><td>Groq Whisper (transcrição de voz)</td><td>Variável</td><td>—</td><td>R$0,06</td></tr>
+        <tr class="total"><td>Total</td><td></td><td>R$278/mês</td><td>R$0,90/usuário</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box box-gray">
+    <strong>Nota:</strong> custo variável assume 10 capturas IA/mês, 30 msgs WhatsApp/mês e 5 min voz/mês. Margem absorve até 3× no uso sem comprometer rentabilidade.
+  </div>
+</div>
+
+<!-- 10. CENÁRIOS -->
+<div class="section" id="cenarios">
+  <div class="section-label">Seção 10</div>
+  <h2>Cenários de margem e break-even</h2>
+
+  <h3>Cenário A — Família Fundador (R$29,90/mês · primeiros 30 assinantes)</h3>
+  <div class="scenario-tag tag-amber">Margem de contribuição: R$29,00/usuário · Break-even: 10 usuários</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Usuários</th><th>Receita/mês</th><th>Custo fixo</th><th>Custo variável</th><th>Custo total</th><th>Lucro/mês</th><th>Margem</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>R$150</td><td>R$278</td><td>R$4,50</td><td>R$283</td><td class="red">−R$133</td><td class="red">negativo</td></tr>
+        <tr><td><strong>10</strong></td><td>R$299</td><td>R$278</td><td>R$9,00</td><td>R$287</td><td class="green"><strong>+R$12 ✓</strong></td><td class="green"><strong>break-even</strong></td></tr>
+        <tr><td>20</td><td>R$598</td><td>R$278</td><td>R$18,00</td><td>R$296</td><td class="green">+R$302</td><td class="green">50%</td></tr>
+        <tr><td><strong>30 (limite)</strong></td><td><strong>R$897</strong></td><td>R$278</td><td>R$27,00</td><td>R$305</td><td class="green"><strong>+R$592</strong></td><td class="green"><strong>66%</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.25rem;">Cenário B — Família mensal (R$39,90/mês)</h3>
+  <div class="scenario-tag tag-blue">Margem de contribuição: R$39,00/usuário · Break-even: 8 usuários</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Usuários</th><th>Receita/mês</th><th>Custo fixo</th><th>Custo variável</th><th>Custo total</th><th>Lucro/mês</th><th>Margem</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>R$200</td><td>R$278</td><td>R$4,50</td><td>R$283</td><td class="red">−R$83</td><td class="red">negativo</td></tr>
+        <tr><td><strong>8</strong></td><td>R$319</td><td>R$278</td><td>R$7,20</td><td>R$285</td><td class="green"><strong>+R$34 ✓</strong></td><td class="green"><strong>break-even</strong></td></tr>
+        <tr><td>20</td><td>R$798</td><td>R$278</td><td>R$18,00</td><td>R$296</td><td class="green">+R$502</td><td class="green">63%</td></tr>
+        <tr><td>50</td><td>R$1.995</td><td>R$278</td><td>R$45,00</td><td>R$323</td><td class="green">+R$1.672</td><td class="green">84%</td></tr>
+        <tr><td>100</td><td>R$3.990</td><td>R$278</td><td>R$90,00</td><td>R$368</td><td class="green">+R$3.622</td><td class="green">91%</td></tr>
+        <tr><td>200</td><td>R$7.980</td><td>R$278</td><td>R$180,00</td><td>R$458</td><td class="green">+R$7.522</td><td class="green">94%</td></tr>
+        <tr><td>500</td><td>R$19.950</td><td>R$278</td><td>R$450,00</td><td>R$728</td><td class="green">+R$19.222</td><td class="green">96%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.25rem;">Cenário C — Família anual (R$31,90/mês)</h3>
+  <div class="scenario-tag tag-green">Margem de contribuição: R$31,00/usuário · Break-even: 9 usuários · Caixa upfront: R$382,80/assinante</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Usuários</th><th>Receita/mês</th><th>Custo total</th><th>Lucro/mês</th><th>Margem</th><th>Caixa upfront total</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>R$160</td><td>R$283</td><td class="red">−R$123</td><td class="red">negativo</td><td>R$1.914</td></tr>
+        <tr><td><strong>9</strong></td><td>R$287</td><td>R$286</td><td class="green"><strong>+R$1 ✓</strong></td><td class="green"><strong>break-even</strong></td><td>R$3.445</td></tr>
+        <tr><td>50</td><td>R$1.595</td><td>R$323</td><td class="green">+R$1.272</td><td class="green">80%</td><td>R$19.140</td></tr>
+        <tr><td>100</td><td>R$3.190</td><td>R$368</td><td class="green">+R$2.822</td><td class="green">88%</td><td>R$38.280</td></tr>
+        <tr><td>200</td><td>R$6.380</td><td>R$458</td><td class="green">+R$5.922</td><td class="green">93%</td><td>R$76.560</td></tr>
+        <tr><td>500</td><td>R$15.950</td><td>R$728</td><td class="green">+R$15.222</td><td class="green">95%</td><td>R$191.400</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.25rem;">Cenário D — Mix realista (60% mensal + 40% anual)</h3>
+  <div class="scenario-tag tag-purple">Preço médio ponderado: R$36,70 · Margem de contribuição: R$35,80 · Break-even: 8 usuários</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Usuários totais</th><th>Receita/mês</th><th>Custo total</th><th>Lucro/mês</th><th>Margem</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>R$184</td><td>R$283</td><td class="red">−R$99</td><td class="red">negativo</td></tr>
+        <tr><td><strong>8</strong></td><td>R$294</td><td>R$285</td><td class="green"><strong>+R$9 ✓ break-even</strong></td><td class="green">3%</td></tr>
+        <tr><td>50</td><td>R$1.835</td><td>R$323</td><td class="green">+R$1.512</td><td class="green">82%</td></tr>
+        <tr><td>100</td><td>R$3.670</td><td>R$368</td><td class="green">+R$3.302</td><td class="green">90%</td></tr>
+        <tr><td>200</td><td>R$7.340</td><td>R$458</td><td class="green">+R$6.882</td><td class="green">94%</td></tr>
+        <tr><td>500</td><td>R$18.350</td><td>R$728</td><td class="green">+R$17.622</td><td class="green">96%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box box-gray" style="font-size:12px;">Preço médio ponderado = 0,6 × R$39,90 + 0,4 × R$31,90 = R$36,70/mês. Mix 60/40 é o cenário mais provável no primeiro ano.</div>
+
+  <h3 style="margin-top:1.25rem;">Cenário E — Família Plus mensal (R$59,90/mês)</h3>
+  <div class="scenario-tag tag-teal">Margem de contribuição: R$59,00/usuário · Break-even: apenas 5 usuários</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Usuários Plus</th><th>Receita/mês</th><th>Custo total</th><th>Lucro/mês</th><th>Margem</th></tr></thead>
+      <tbody>
+        <tr><td>4</td><td>R$240</td><td>R$282</td><td class="red">−R$42</td><td class="red">negativo</td></tr>
+        <tr><td><strong>5</strong></td><td>R$300</td><td>R$283</td><td class="green"><strong>+R$17 ✓</strong></td><td class="green"><strong>break-even</strong></td></tr>
+        <tr><td>20</td><td>R$1.198</td><td>R$296</td><td class="green">+R$902</td><td class="green">75%</td></tr>
+        <tr><td>50</td><td>R$2.995</td><td>R$323</td><td class="green">+R$2.672</td><td class="green">89%</td></tr>
+        <tr><td>100</td><td>R$5.990</td><td>R$368</td><td class="green">+R$5.622</td><td class="green">94%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 11. COMPARATIVO FINAL -->
+<div class="section" id="comparativo">
+  <div class="section-label">Seção 11</div>
+  <h2>Comparativo consolidado</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Plano / Preço</th><th>Margem/usuário</th><th>Break-even</th><th>Margem c/ 50u</th><th>Margem c/ 100u</th><th>Margem c/ 500u</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fundador R$29,90</td><td>R$29,00</td><td>10 usuários</td><td>78%</td><td>88%</td><td>95%</td></tr>
+        <tr><td>Família anual R$31,90</td><td>R$31,00</td><td>9 usuários</td><td>80%</td><td>88%</td><td>95%</td></tr>
+        <tr><td>Mix 60/40 R$36,70</td><td>R$35,80</td><td>8 usuários</td><td>82%</td><td>90%</td><td>96%</td></tr>
+        <tr style="background:#E6F1FB;"><td><strong>Família mensal R$39,90</strong></td><td><strong>R$39,00</strong></td><td class="green"><strong>8 usuários</strong></td><td class="green"><strong>84%</strong></td><td class="green"><strong>91%</strong></td><td class="green"><strong>96%</strong></td></tr>
+        <tr><td>Plus anual R$47,90</td><td>R$47,00</td><td>6 usuários</td><td>87%</td><td>92%</td><td>97%</td></tr>
+        <tr><td>Plus mensal R$59,90</td><td>R$59,00</td><td>5 usuários</td><td>89%</td><td>94%</td><td>97%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box box-green" style="margin-top:0.75rem;">
+    <strong>Conclusão financeira:</strong> custo variável de R$0,90/usuário → margem bruta de 96–97% em escala. Break-even em 8 usuários para o plano principal. O produto se paga com menos de duas semanas de vendas ativas. O aumento de R$29,90 → R$39,90 reduziu o break-even de 10 para 8 usuários e melhorou a margem em 3–6 pp em todos os cenários.
+  </div>
+
+  <p style="margin-top:1.25rem; font-size:11px; color:#aaa;">Elaborado em 2026-06-18. Custos: Supabase Pro R$150 + Vercel Pro R$120 + domínio R$8 = R$278/mês fixo. Variável: Claude Haiku 4.5 R$0,24 + Meta WhatsApp R$0,60 + Groq Whisper R$0,06 = R$0,90/usuário/mês. Câmbio: US$1 = R$6,00.</p>
+</div>
+
+</body>
+</html>

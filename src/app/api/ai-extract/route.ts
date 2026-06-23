@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { getFamilyPlan, getAiUsageThisMonth, incrementAiUsage, PLAN_LIMITS } from '@/lib/billing'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -99,6 +100,19 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+    // Verificar limite de IA do plano
+    const plan = await getFamilyPlan()
+    const aiLimit = PLAN_LIMITS[plan].aiPerMonth
+    if (aiLimit !== Infinity) {
+      const used = await getAiUsageThisMonth(user.id)
+      if (used >= aiLimit) {
+        return NextResponse.json(
+          { error: 'LIMIT_AI', plan, used, limit: aiLimit },
+          { status: 402 }
+        )
+      }
+    }
+
     const formData = await req.formData()
     const text = formData.get('text') as string | null
     const file = formData.get('image') as File | null
@@ -148,6 +162,9 @@ export async function POST(req: NextRequest) {
     const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
     const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
     const parsed = JSON.parse(jsonStr)
+
+    // Registrar uso de IA (não bloqueia a resposta se falhar)
+    incrementAiUsage(user.id).catch(err => console.error('[ai-extract] incrementAiUsage error', err))
 
     return NextResponse.json({
       activities: parsed.activities ?? [],

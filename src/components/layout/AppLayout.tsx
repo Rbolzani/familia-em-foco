@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, HeartPulse, Trophy,
   CalendarDays, FolderLock, Sparkles, Leaf,
   ChevronRight, Palette, Moon, Sun, SlidersHorizontal,
-  Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock,
+  Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -391,6 +391,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               </div>
               <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
               <NavItem href="/alertas"       label="Alertas"             icon={Bell} tourId="nav-alertas" />
+              <NavItem href="/planos"        label="Planos"              icon={Star} />
             </div>
 
             {/* Sair + Tweaks */}
@@ -602,6 +603,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber tourId="nav-children" />
           <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber tourId="nav-invite" />
           <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber tourId="nav-alertas" />
+          <MobileNavItem href="/planos"        icon={Star}     label="Planos"              amber />
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
             style={{ display:'flex', flexDirection:'row', alignItems:'center',

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getFamilyPlan, PLAN_LIMITS } from '@/lib/billing'
 
 async function getVerifiedContext() {
   const supabase = await createClient()
@@ -42,6 +43,22 @@ export async function POST(request: Request) {
   const ctx = await getVerifiedContext()
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { user, admin, familyId } = ctx
+
+  // Verificar limite de filhos do plano
+  const plan = await getFamilyPlan()
+  const childLimit = PLAN_LIMITS[plan].children
+  if (childLimit !== Infinity) {
+    const { count } = await admin
+      .from('children')
+      .select('*', { count: 'exact', head: true })
+      .eq('family_id', familyId)
+    if ((count ?? 0) >= childLimit) {
+      return NextResponse.json(
+        { error: 'LIMIT_CHILDREN', plan, current: count, limit: childLimit },
+        { status: 402 }
+      )
+    }
+  }
 
   const body = await request.json()
   const { name, birth_date, school_name, avatar_color, sort_order } = body

@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageCircle, Send } from 'lucide-react'
+import { MessageCircle, Send, Lock } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -11,9 +11,10 @@ interface Props {
   whatsapp: { number: string; enabled: boolean; time: string }
   twilioMode?: boolean
   twilioKeyword?: string
+  whatsappBlocked?: boolean
 }
 
-export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode, twilioKeyword }: Props) {
+export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode, twilioKeyword, whatsappBlocked }: Props) {
   const supabase = createClient()
 
   const [waNumber, setWaNumber]   = useState(whatsapp.number)
@@ -165,6 +166,32 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
       })()}
 
       {/* Resumo matinal no WhatsApp */}
+      {whatsappBlocked ? (
+        <div style={{ ...cardStyle, background: 'linear-gradient(160deg,#FAFAF7,#F3F4F6)' }} className="animate-fade-up">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(107,114,128,0.10)' }}>
+              <MessageCircle size={14} color="rgba(107,114,128,0.50)" />
+            </div>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'rgba(26,43,28,0.40)' }}>Resumo matinal no WhatsApp</h2>
+          </div>
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(107,114,128,0.10)' }}>
+              <Lock size={20} color="rgba(107,114,128,0.50)" />
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(26,43,28,0.50)' }}>
+              Disponível no plano Família
+            </p>
+            <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.40)', maxWidth: 280, lineHeight: 1.5 }}>
+              Receba o resumo diário das atividades dos seus filhos direto no WhatsApp — provas, consultas, quem leva e quem busca.
+            </p>
+            <a href="/planos"
+              className="mt-1 px-5 py-2.5 rounded-xl font-bold text-white text-sm transition-all hover:brightness-105 active:scale-95"
+              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+              Ver planos
+            </a>
+          </div>
+        </div>
+      ) : (
       <div style={cardStyle} className="animate-fade-up">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(61,102,65,0.10)' }}>
@@ -250,6 +277,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, twilioMode,
           {waTesting ? 'Enviando teste...' : 'Enviar resumo de teste agora'}
         </button>
       </div>
+      )}
     </div>
   )
 }

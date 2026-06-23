@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Família em Foco — Análise de Custos de Produção</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #1a1a1a; background: #f8f8f6; padding: 2rem; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .meta { font-size: 12px; color: #888; margin-bottom: 2rem; }
+  .section { margin-bottom: 2.5rem; }
+  .section-title { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #e5e5e5; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  .card { background: #fff; border-radius: 8px; border: 1px solid #e5e5e5; padding: 14px 16px; }
+  .card-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .card-value { font-size: 22px; font-weight: 500; }
+  .card-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 8px; border: 1px solid #e5e5e5; overflow: hidden; }
+  th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 500; color: #888; background: #fafafa; border-bottom: 1px solid #e5e5e5; white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; line-height: 1.4; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 500; white-space: nowrap; }
+  .badge-green { background: #EAF3DE; color: #3B6D11; }
+  .badge-amber { background: #FAEEDA; color: #854F0B; }
+  .badge-red { background: #FCEBEB; color: #A32D2D; }
+  .badge-gray { background: #F1EFE8; color: #5F5E5A; }
+  .alert { background: #FAEEDA; border: 1px solid #EF9F27; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: #633806; line-height: 1.6; }
+  .breakeven-box { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px 18px; font-size: 13px; line-height: 1.9; }
+  tfoot td { font-weight: 500; border-top: 2px solid #e5e5e5; }
+</style>
+</head>
+<body>
+
+<h1>Família em Foco — Análise de Custos de Produção</h1>
+<p class="meta">Gerado em 2026-06-17 · Referência para decisão de go-live</p>
+
+<div class="section">
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Custo atual/mês</div>
+      <div class="card-value" style="color: #3B6D11;">R$0</div>
+      <div class="card-sub">100% em planos gratuitos</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Custo mínimo produção</div>
+      <div class="card-value" style="color: #854F0B;">R$278</div>
+      <div class="card-sub">custo fixo/mês (0 usuários)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Custo variável</div>
+      <div class="card-value" style="color: #185FA5;">R$0,90</div>
+      <div class="card-sub">por usuário ativo/mês (IA + WhatsApp + Voz)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Break-even</div>
+      <div class="card-value">~10</div>
+      <div class="card-sub">usuários pagando R$29,90/mês</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Todos os parceiros — mapeamento completo</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Parceiro / Serviço</th>
+          <th>Para que serve</th>
+          <th>Hoje (plano atual)</th>
+          <th>Produção (obrigatório)</th>
+          <th>Custo/mês produção</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vercel</strong></td>
+          <td>Hospedagem Next.js + deploy automático + cron jobs</td>
+          <td><span class="badge badge-green">Hobby (grátis)</span></td>
+          <td>Pro — cron a cada minuto, domínio custom, SLA</td>
+          <td>US$20 ≈ R$120</td>
+          <td><span class="badge badge-red">Migrar obrigatório</span></td>
+        </tr>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Banco de dados PostgreSQL + Auth + Storage + Realtime</td>
+          <td><span class="badge badge-green">Free (grátis)</span></td>
+          <td>Pro — sem pausa automática, 8 GB DB, 100 GB storage</td>
+          <td>US$25 ≈ R$150</td>
+          <td><span class="badge badge-red">Migrar obrigatório</span></td>
+        </tr>
+        <tr>
+          <td><strong>GitHub</strong></td>
+          <td>Repositório de código + CI via webhook Vercel</td>
+          <td><span class="badge badge-green">Free (grátis)</span></td>
+          <td>Free — repositórios privados são gratuitos para indivíduos</td>
+          <td>R$0</td>
+          <td><span class="badge badge-green">Nenhuma ação</span></td>
+        </tr>
+        <tr>
+          <td><strong>Anthropic (Claude Haiku 4.5)</strong></td>
+          <td>Extração de atividades/documentos por IA (texto + imagem)</td>
+          <td><span class="badge badge-green">Pay-as-you-go</span></td>
+          <td>Pay-as-you-go — US$1,00/M tokens input, US$5,00/M output</td>
+          <td>~R$0,24/usuário</td>
+          <td><span class="badge badge-green">Já em produção</span></td>
+        </tr>
+        <tr>
+          <td><strong>Groq (Whisper)</strong></td>
+          <td>Transcrição de áudio para texto (entrada por voz)</td>
+          <td><span class="badge badge-green">Free tier</span></td>
+          <td>Pay-as-you-go — $0,006/min de áudio</td>
+          <td>~R$0,06/usuário</td>
+          <td><span class="badge badge-amber">Verificar limites</span></td>
+        </tr>
+        <tr>
+          <td><strong>Meta WhatsApp Cloud API</strong></td>
+          <td>Envio de resumo diário e notificações via WhatsApp</td>
+          <td><span class="badge badge-amber">Sandbox/teste</span></td>
+          <td>Produção — conta Business Meta + template aprovado</td>
+          <td>~R$0,60/usuário</td>
+          <td><span class="badge badge-red">Setup obrigatório</span></td>
+        </tr>
+        <tr>
+          <td><strong>Twilio</strong></td>
+          <td>Fallback WhatsApp (código já presente, não é primário)</td>
+          <td><span class="badge badge-amber">Sandbox (grátis)</span></td>
+          <td>Opcional — pode manter como fallback ou remover</td>
+          <td>~R$5/mês fixo + uso</td>
+          <td><span class="badge badge-gray">Opcional / avaliar</span></td>
+        </tr>
+        <tr>
+          <td><strong>Domínio (.com.br ou .app)</strong></td>
+          <td>URL própria para o app (ex: familiaemfoco.com.br)</td>
+          <td><span class="badge badge-gray">Não contratado</span></td>
+          <td>Necessário para produção — qualquer registrador</td>
+          <td>~R$8/mês (≈R$100/ano)</td>
+          <td><span class="badge badge-amber">Contratar</span></td>
+        </tr>
+        <tr>
+          <td><strong>Resend (ou similar)</strong></td>
+          <td>Envio de emails transacionais (confirmação, convite por email)</td>
+          <td><span class="badge badge-gray">Não implementado</span></td>
+          <td>MVP usa apenas link + WhatsApp — email planejado para v2</td>
+          <td>R$0 (grátis até 3k/mês)</td>
+          <td><span class="badge badge-green">V2 — não urgente</span></td>
+        </tr>
+        <tr>
+          <td><strong>Stripe (ou Hotmart/Kiwify)</strong></td>
+          <td>Cobrança de assinatura dos usuários (SaaS)</td>
+          <td><span class="badge badge-gray">Não implementado</span></td>
+          <td>Necessário para monetizar — % sobre vendas</td>
+          <td>2–5% por transação</td>
+          <td><span class="badge badge-amber">Contratar na monetização</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">O que fazer e em que ordem</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Ação</th>
+          <th>Quando</th>
+          <th>Custo</th>
+          <th>Impacto se não fizer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Migrar Supabase Free → Pro</td>
+          <td>Antes de abrir para usuários reais</td>
+          <td>US$25/mês</td>
+          <td>Banco pausa automaticamente após 7 dias sem uso — app cai</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Migrar Vercel Hobby → Pro</td>
+          <td>Antes de abrir para usuários reais</td>
+          <td>US$20/mês</td>
+          <td>Cron do WhatsApp não respeita horário; sem domínio custom; sem SLA</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Ativar WhatsApp Cloud API (Meta Business)</td>
+          <td>Antes de abrir para usuários reais</td>
+          <td>~R$0,60/usuário</td>
+          <td>Resumo diário não chega — funcionalidade principal quebrada</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Registrar domínio</td>
+          <td>Junto com Vercel Pro</td>
+          <td>~R$100/ano</td>
+          <td>Link de convite fica como vercel.app — não passa profissionalismo</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>Verificar limites Groq (voz)</td>
+          <td>Antes de escalar usuários</td>
+          <td>Grátis até 28,8k min/mês</td>
+          <td>Erros de rate limit na funcionalidade de voz</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>Contratar Stripe / Hotmart para cobrar assinaturas</td>
+          <td>Na virada para monetização</td>
+          <td>2–5% por venda</td>
+          <td>App funciona mas sem receita</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Custo total consolidado por cenário</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Tipo</th>
+          <th>0 usuários</th>
+          <th>50 usuários</th>
+          <th>200 usuários</th>
+          <th>500 usuários</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Supabase Pro</td>
+          <td>Fixo</td>
+          <td>R$150</td>
+          <td>R$150</td>
+          <td>R$150</td>
+          <td>R$150 +extras</td>
+        </tr>
+        <tr>
+          <td>Vercel Pro</td>
+          <td>Fixo</td>
+          <td>R$120</td>
+          <td>R$120</td>
+          <td>R$120</td>
+          <td>R$120</td>
+        </tr>
+        <tr>
+          <td>Domínio</td>
+          <td>Fixo</td>
+          <td>R$8</td>
+          <td>R$8</td>
+          <td>R$8</td>
+          <td>R$8</td>
+        </tr>
+        <tr>
+          <td>Claude Haiku (IA)</td>
+          <td>Variável</td>
+          <td>R$0</td>
+          <td>R$12</td>
+          <td>R$48</td>
+          <td>R$120</td>
+        </tr>
+        <tr>
+          <td>WhatsApp (Meta)</td>
+          <td>Variável</td>
+          <td>R$0</td>
+          <td>R$30</td>
+          <td>R$120</td>
+          <td>R$300</td>
+        </tr>
+        <tr>
+          <td>Groq (voz)</td>
+          <td>Variável</td>
+          <td>R$0</td>
+          <td>R$3</td>
+          <td>R$12</td>
+          <td>R$30</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td><strong>Total/mês</strong></td>
+          <td></td>
+          <td>R$278</td>
+          <td>R$323</td>
+          <td>R$458</td>
+          <td>R$728</td>
+        </tr>
+        <tr style="font-size:12px; color:#888;">
+          <td>Receita bruta (R$29,90/mês)</td>
+          <td></td>
+          <td>R$0</td>
+          <td>R$1.495</td>
+          <td>R$5.980</td>
+          <td>R$14.950</td>
+        </tr>
+        <tr style="font-size:12px;">
+          <td><strong>Margem bruta</strong></td>
+          <td></td>
+          <td style="color:#A32D2D;">—</td>
+          <td style="color:#3B6D11;">78%</td>
+          <td style="color:#3B6D11;">92%</td>
+          <td style="color:#3B6D11;">95%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Cálculo do break-even</div>
+  <div class="breakeven-box">
+    Custo fixo mensal: <strong>R$278</strong> &nbsp;|&nbsp;
+    Preço por usuário: <strong>R$29,90</strong> &nbsp;|&nbsp;
+    Custo variável/usuário: <strong>R$5,50</strong><br>
+    Margem de contribuição: R$29,90 − R$5,50 = <strong>R$24,40/usuário</strong><br>
+    Break-even: R$278 ÷ R$24,40 = <strong>≈ 12 usuários pagantes</strong>
+  </div>
+</div>
+
+<div class="alert">
+  <strong>Bloqueadores reais antes de qualquer usuário pagar:</strong>
+  (1) Supabase Pro — sem isso o banco pausa e o app cai.
+  (2) Vercel Pro — sem isso o cron do WhatsApp não funciona em horários configurados.
+  (3) Meta WhatsApp Business — sem aprovação do template, o resumo diário não é entregue.
+  Esses três juntos custam R$278/mês fixo e são inegociáveis para produção.
+</div>
+
+</body>
+</html>

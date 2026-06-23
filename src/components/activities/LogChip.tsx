@@ -84,7 +84,13 @@ export default function LogChip({
     if (!userId) return ''
     if (userId === currentUserId) return 'Você'
     const m = familyMembers.find(fm => fm.user_id === userId)
-    return m?.display_name ?? 'Parceiro(a)'
+    if (m) return m.display_name ?? 'Parceiro(a)'
+    return 'Ex-parceiro(a)'
+  }
+
+  function isOrphaned(userId: string | null | undefined): boolean {
+    if (!userId || userId === currentUserId) return false
+    return !familyMembers.some(fm => fm.user_id === userId)
   }
 
   const canSuggestTo = (targetId: string) => {
@@ -94,7 +100,7 @@ export default function LogChip({
     return target?.role === 'owner'
   }
 
-  const confirmedByOther = value && value !== currentUserId && !pendingSug
+  const confirmedByOther = value && value !== currentUserId && !pendingSug && !isOrphaned(value)
 
   async function handleSelect(targetUserId: string | null) {
     setOpen(false)
@@ -106,7 +112,8 @@ export default function LogChip({
           await supabase.from('logistics_suggestions').delete().eq('id', pendingSug.id)
           onUpdate(actId, field, null, pendingSug.id)
           toast('Sugestão cancelada')
-        } else if (!pendingSug && value === currentUserId) {
+        } else if (!pendingSug && (value === currentUserId || isOrphaned(value))) {
+          // Libera o próprio slot OU um slot deixado por ex-parceiro desconectado.
           await supabase.from('activities').update({ [field]: null }).eq('id', actId)
           onUpdate(actId, field, null)
           toast(field === 'takes_user_id' ? 'Você liberou quem leva' : 'Você liberou quem busca')
@@ -257,15 +264,17 @@ export default function LogChip({
   // ── LEITURA APENAS ─────────────────────────────────────────────────────
   if (!canLogistics) {
     let s: React.CSSProperties
+    const orphaned = isOrphaned(value)
     if (!value) s = { background: 'rgba(61,102,65,0.05)', border: '1.5px dashed rgba(61,102,65,0.25)', color: 'rgba(26,43,28,0.40)' }
     else if (value === currentUserId) s = { background: 'rgba(61,102,65,0.10)', border: '1.5px solid rgba(61,102,65,0.30)', color: '#2D6A35' }
+    else if (orphaned) s = { background: 'rgba(107,114,128,0.08)', border: '1.5px dashed rgba(107,114,128,0.35)', color: 'rgba(26,43,28,0.45)' }
     else s = { background: 'rgba(99,102,241,0.08)', border: '1.5px solid rgba(99,102,241,0.25)', color: '#4338CA' }
     return (
       <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg"
         style={{ fontSize: 11, fontWeight: 600, cursor: 'default', ...s }}>
         {icon}
         {!compact && <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65 }}>{slotLabel}</span>}
-        {value ? memberName(value) : '—'}
+        <span>{value ? memberName(value) : '—'}</span>
       </div>
     )
   }
@@ -297,6 +306,7 @@ export default function LogChip({
   }
 
   // ── ESTILO NORMAL ─────────────────────────────────────────────────────
+  const orphanedValue = isOrphaned(value)
   let chipStyle: React.CSSProperties
   if (!value) chipStyle = { background: 'rgba(61,102,65,0.05)', border: '1.5px dashed rgba(61,102,65,0.25)', color: 'rgba(26,43,28,0.40)' }
   else if (value === currentUserId) chipStyle = { background: 'rgba(61,102,65,0.10)', border: '1.5px solid rgba(61,102,65,0.30)', color: '#2D6A35' }
@@ -352,6 +362,34 @@ export default function LogChip({
     document.body
   ) : null
 
+  // ── SLOT ÓRFÃO (ex-parceiro desconectado) — editável p/ quem tem logística ──
+  // Estilo cinza tracejado deixa claro que é um vínculo de alguém que saiu;
+  // o dropdown permite assumir (Você), liberar (Nenhum) ou sugerir a outro membro.
+  if (orphanedValue) {
+    const orphanStyle: React.CSSProperties = {
+      background: 'rgba(107,114,128,0.08)',
+      border: '1.5px dashed rgba(107,114,128,0.35)',
+      color: 'rgba(26,43,28,0.55)',
+    }
+    return (
+      <div className="relative">
+        <button
+          ref={btnRef}
+          onClick={() => setOpen(o => !o)}
+          disabled={loading}
+          title="Ex-parceiro(a) desconectado — você pode reatribuir ou liberar este slot"
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg w-full hover:brightness-95 active:scale-95"
+          style={{ fontSize: 11, fontWeight: 600, cursor: 'pointer', ...orphanStyle }}>
+          {icon}
+          {!compact && <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65 }}>{slotLabel}</span>}
+          <span className="flex-1 text-left truncate">{memberName(value)}</span>
+          <ChevronDown size={9} style={{ flexShrink: 0, opacity: 0.55, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
+        </button>
+        {dropdown}
+      </div>
+    )
+  }
+
   return (
     <div className="relative">
       <button
@@ -362,7 +400,9 @@ export default function LogChip({
         style={{ fontSize: 11, fontWeight: 600, cursor: 'pointer', ...chipStyle }}>
         {icon}
         {!compact && <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.65 }}>{slotLabel}</span>}
-        <span className="flex-1 text-left truncate">{value ? memberName(value) : 'Definir'}</span>
+        <span className="flex-1 text-left truncate">
+          {value ? memberName(value) : 'Definir'}
+        </span>
         <ChevronDown size={9} style={{ flexShrink: 0, opacity: 0.55, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
       </button>
       {dropdown}

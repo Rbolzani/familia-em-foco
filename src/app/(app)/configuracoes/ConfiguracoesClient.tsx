@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle, AlertTriangle, Loader2 } from 'lucide-react'
+import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle, AlertTriangle, Loader2, Lock } from 'lucide-react'
+import type { PlanId } from '@/lib/billing'
 
 type AccessRole = 'read_only' | 'logistics_editor' | 'full_editor'
 
@@ -32,6 +33,8 @@ interface Props {
   baseUrl: string
   members: Member[]
   pendingInvites: PendingInvite[]
+  plan: PlanId
+  partnerLimit: number
 }
 
 const ROLES: { key: AccessRole; label: string; short: string; desc: string; icon: React.ElementType }[] = [
@@ -44,6 +47,7 @@ const roleMeta = (r: string) => ROLES.find(x => x.key === r) ?? ROLES[1]
 export default function ConfiguracoesClient({
   userId, userEmail, familyId, isOwner, ownerId, ownerDisplayName, ownerEmail, baseUrl,
   members: initialMembers, pendingInvites: initialInvites,
+  plan, partnerLimit,
 }: Props) {
   const supabase = createClient()
   const router = useRouter()
@@ -75,19 +79,22 @@ export default function ConfiguracoesClient({
     }
     if (!fid) { setError('Não foi possível criar a família.'); setGenerating(false); return }
 
-    // Expire prior pending invites for the same email (only if email given)
-    if (mail) {
-      await supabase.from('family_invites')
-        .update({ status: 'expired' })
-        .eq('family_id', fid).eq('status', 'pending').eq('invited_email', mail)
+    const res = await fetch('/api/invites/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ invited_email: mail, access_role: role, family_id: fid }),
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      if (res.status === 402) {
+        setError(data.message ?? 'Limite de parceiros atingido. Faça upgrade do plano.')
+      } else {
+        setError(data.error ?? 'Erro ao gerar o convite.')
+      }
+      setGenerating(false)
+      return
     }
-
-    const { data, error: insErr } = await supabase.from('family_invites')
-      .insert({ family_id: fid, invited_by: userId, invited_email: mail, access_role: role })
-      .select('id, token, invited_email, access_role, expires_at')
-      .single()
-
-    if (insErr || !data) { setError('Erro ao gerar o convite.'); setGenerating(false); return }
 
     setInvites(prev => [data as PendingInvite, ...prev])
     setEmail('')
@@ -152,6 +159,8 @@ export default function ConfiguracoesClient({
 
   const partners = members.filter(m => m.role === 'partner')
   const me = members.find(m => m.user_id === userId)
+  const sharingBlocked = partnerLimit === 0
+  const atPartnerLimit = partnerLimit !== Infinity && partners.length >= partnerLimit
 
   const cardStyle: React.CSSProperties = {
     background: 'linear-gradient(160deg,#FFFFFF 0%,#F8F3EA 100%)',
@@ -293,45 +302,74 @@ export default function ConfiguracoesClient({
             <div style={{ height: 1, background: 'rgba(61,102,65,0.12)', marginBottom: 16 }} />
             <div style={{ fontSize: 12, fontWeight: 700, color: '#2D6A35', marginBottom: 10 }}>Convidar parceiro(a)</div>
 
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="email@exemplo.com (opcional)"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 4, outline: 'none', background: '#fff' }}
-            />
-            <p style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginBottom: 10 }}>
-              Deixe em branco para gerar um link sem email — qualquer pessoa com o link pode aceitar.
-            </p>
+            {/* Banner de upgrade — plano gratuito ou limite atingido */}
+            {(sharingBlocked || atPartnerLimit) && (
+              <div style={{ background: 'rgba(245,158,11,0.09)', border: '1px solid rgba(245,158,11,0.30)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
+                <div className="flex items-start gap-2">
+                  <Lock size={14} style={{ color: '#92400E', flexShrink: 0, marginTop: 1 }} />
+                  <div>
+                    <p style={{ fontSize: 12.5, fontWeight: 700, color: '#78350F', margin: '0 0 4px' }}>
+                      {sharingBlocked
+                        ? 'Compartilhamento não disponível no plano gratuito'
+                        : `Limite de ${partnerLimit} parceiro(s) atingido`}
+                    </p>
+                    <p style={{ fontSize: 12, color: '#92400E', margin: '0 0 8px', lineHeight: 1.5 }}>
+                      {sharingBlocked
+                        ? 'Faça upgrade para o plano Família e compartilhe o app com seu parceiro(a).'
+                        : 'Faça upgrade para o plano Família Plus e adicione parceiros ilimitados.'}
+                    </p>
+                    <a href="/planos"
+                      style={{ display: 'inline-block', background: 'linear-gradient(140deg,#C49A6C,#A07840)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, textDecoration: 'none' }}>
+                      Ver planos
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div className="space-y-2 mb-3">
-              {ROLES.map(r => {
-                const sel = role === r.key
-                return (
-                  <button key={r.key} onClick={() => setRole(r.key)}
-                    className="w-full text-left flex items-start gap-2.5 p-2.5 rounded-xl transition-all"
-                    style={{ background: sel ? 'rgba(61,102,65,0.10)' : '#fff', border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.15)'}`, cursor: 'pointer' }}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-none" style={{ marginTop: 1, border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.35)'}`, background: sel ? '#3D6641' : '#fff' }}>
-                      {sel && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <r.icon size={13} style={{ color: '#2D6A35' }} />
-                        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C' }}>{r.label}</span>
-                      </div>
-                      <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.55)', marginTop: 2, lineHeight: 1.4 }}>{r.desc}</div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+            {!sharingBlocked && !atPartnerLimit && (
+              <>
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="email@exemplo.com (opcional)"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 4, outline: 'none', background: '#fff' }}
+                />
+                <p style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginBottom: 10 }}>
+                  Deixe em branco para gerar um link sem email — qualquer pessoa com o link pode aceitar.
+                </p>
 
-            {error && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 10 }}>{error}</p>}
+                <div className="space-y-2 mb-3">
+                  {ROLES.map(r => {
+                    const sel = role === r.key
+                    return (
+                      <button key={r.key} onClick={() => setRole(r.key)}
+                        className="w-full text-left flex items-start gap-2.5 p-2.5 rounded-xl transition-all"
+                        style={{ background: sel ? 'rgba(61,102,65,0.10)' : '#fff', border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.15)'}`, cursor: 'pointer' }}>
+                        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-none" style={{ marginTop: 1, border: `1.5px solid ${sel ? '#3D6641' : 'rgba(61,102,65,0.35)'}`, background: sel ? '#3D6641' : '#fff' }}>
+                          {sel && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <r.icon size={13} style={{ color: '#2D6A35' }} />
+                            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#1A2B1C' }}>{r.label}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: 'rgba(26,43,28,0.55)', marginTop: 2, lineHeight: 1.4 }}>{r.desc}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
 
-            <button onClick={generateInvite} disabled={generating}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
-              <UserPlus size={16} />
-              {generating ? 'Gerando...' : 'Gerar link de convite'}
-            </button>
+                {error && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 10 }}>{error}</p>}
+
+                <button onClick={generateInvite} disabled={generating}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
+                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
+                  <UserPlus size={16} />
+                  {generating ? 'Gerando...' : 'Gerar link de convite'}
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ fontSize: 13, color: 'rgba(26,43,28,0.50)', padding: '8px 12px', background: 'rgba(61,102,65,0.05)', borderRadius: 10, fontStyle: 'italic' }}>

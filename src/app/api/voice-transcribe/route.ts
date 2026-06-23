@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
+import { getFamilyPlan } from '@/lib/billing'
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 const ALLOWED_AUDIO_TYPES = [
@@ -19,6 +20,14 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  const plan = await getFamilyPlan()
+  if (plan === 'free') {
+    return NextResponse.json(
+      { error: 'LIMIT_VOICE', message: 'Entrada por voz disponível nos planos Família e Plus.' },
+      { status: 402 }
+    )
+  }
 
   const groq = new OpenAI({
     apiKey: process.env.GROQ_API_KEY,

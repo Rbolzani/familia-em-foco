@@ -1,11 +1,19 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getFamilyPlan, PLAN_LIMITS } from '@/lib/billing'
+import { reconcileUserFromStripe } from '@/lib/stripe-sync'
 import ConfiguracoesClient from './ConfiguracoesClient'
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
+
+  // Reconcilia a assinatura direto do Stripe (checkout redireciona pra cá).
+  await reconcileUserFromStripe(user.id)
+
+  const plan = await getFamilyPlan()
+  const partnerLimit = PLAN_LIMITS[plan].partners
 
   // Família ATIVA do usuário (respeitando o seletor de família, não apenas "qual família ele criou")
   const { data: activeFamilyId } = await supabase.rpc('auth_family_id')
@@ -95,6 +103,8 @@ export default async function ConfiguracoesPage() {
       baseUrl={baseUrl}
       members={members}
       pendingInvites={pendingInvites}
+      plan={plan}
+      partnerLimit={partnerLimit}
     />
   )
 }
