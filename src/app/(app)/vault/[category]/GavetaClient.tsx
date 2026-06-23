@@ -96,7 +96,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-5 py-8 space-y-5">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5 overflow-x-hidden">
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 animate-fade-up">

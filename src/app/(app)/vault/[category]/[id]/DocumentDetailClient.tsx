@@ -166,19 +166,19 @@ export default function DocumentDetailClient({ document: doc, category, children
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-5 py-8 space-y-5">
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-4 overflow-x-hidden">
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm animate-fade-up">
-        <Link href="/vault" style={{ color: '#3D6641', textDecoration: 'none' }} className="hover:opacity-70 transition-opacity">
+      {/* Breadcrumb — links fixos, título truncado */}
+      <div className="flex items-center gap-1.5 text-sm animate-fade-up min-w-0 overflow-hidden">
+        <Link href="/vault" style={{ color: '#3D6641', textDecoration: 'none', flexShrink: 0 }} className="hover:opacity-70 transition-opacity">
           Documentos
         </Link>
-        <span style={{ color: 'rgba(26,43,28,0.30)' }}>/</span>
-        <Link href={`/vault/${category}`} style={{ color: '#3D6641', textDecoration: 'none' }} className="hover:opacity-70 transition-opacity">
+        <span style={{ color: 'rgba(26,43,28,0.30)', flexShrink: 0 }}>/</span>
+        <Link href={`/vault/${category}`} style={{ color: '#3D6641', textDecoration: 'none', flexShrink: 0 }} className="hover:opacity-70 transition-opacity">
           {meta.label}
         </Link>
-        <span style={{ color: 'rgba(26,43,28,0.30)' }}>/</span>
-        <span className="font-bold truncate" style={{ color: '#1A2B1C' }}>{doc.title}</span>
+        <span style={{ color: 'rgba(26,43,28,0.30)', flexShrink: 0 }}>/</span>
+        <span className="font-bold truncate" style={{ color: '#1A2B1C', minWidth: 0 }}>{doc.title}</span>
       </div>
 
       {/* Hero — 2 colunas: preview à esquerda, dados à direita */}
@@ -252,32 +252,43 @@ export default function DocumentDetailClient({ document: doc, category, children
           {doc.description && (
             <p className="text-sm mb-3 italic" style={{ color: 'rgba(26,43,28,0.55)' }}>{doc.description}</p>
           )}
-          <table className="w-full text-sm" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
-            <tbody>
-              <tr><td className="py-2 align-top" style={{ color: 'rgba(26,43,28,0.50)' }}>Categoria</td><td className="py-2 text-right" style={{ color: meta.accent, fontWeight: 600 }}>{meta.label}</td></tr>
-              <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Filho</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{child?.name ?? 'Família'}</td></tr>
-              {doc.doc_number && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.doc_number}</td></tr>}
-              {doc.issuer && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.issuer}</td></tr>}
-              {doc.issue_date && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{new Date(doc.issue_date).toLocaleDateString('pt-BR')}</td></tr>}
-              {doc.expires_at && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Vencimento</td><td className="py-2 text-right" style={{ color: status?.color ?? '#1A2B1C', fontWeight: 600 }}>{new Date(doc.expires_at).toLocaleDateString('pt-BR')}</td></tr>}
-              {doc.tags && doc.tags.length > 0 && (
-                <tr><td className="py-2 align-top" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags</td>
-                  <td className="py-2 text-right">
-                    {doc.tags.map(t => <span key={t} className="text-[11px] px-2 py-0.5 rounded-full ml-1 inline-block" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>{t}</span>)}
-                  </td></tr>
-              )}
-            </tbody>
-          </table>
+          {/* Metadados — flex rows (sem table para evitar overflow no mobile) */}
+          <div className="text-sm" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
+            {([
+              { label: 'Categoria',      value: meta.label,   color: meta.accent },
+              { label: 'Filho',          value: child?.name ?? 'Família', color: '#1A2B1C' },
+              doc.doc_number ? { label: 'Nº documento', value: doc.doc_number, color: '#1A2B1C' } : null,
+              doc.issuer     ? { label: 'Órgão emissor', value: doc.issuer,    color: '#1A2B1C' } : null,
+              doc.issue_date ? { label: 'Emissão',       value: new Date(doc.issue_date).toLocaleDateString('pt-BR'), color: '#1A2B1C' } : null,
+              doc.expires_at ? { label: 'Vencimento',    value: new Date(doc.expires_at).toLocaleDateString('pt-BR'), color: status?.color ?? '#1A2B1C' } : null,
+            ] as Array<{ label: string; value: string; color: string } | null>)
+              .filter(Boolean)
+              .map(row => (
+                <div key={row!.label} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid rgba(61,102,65,0.06)' }}>
+                  <span className="flex-shrink-0" style={{ color: 'rgba(26,43,28,0.50)' }}>{row!.label}</span>
+                  <span className="text-right font-semibold break-words" style={{ color: row!.color, maxWidth: '55%', wordBreak: 'break-word' }}>{row!.value}</span>
+                </div>
+              ))
+            }
+            {doc.tags && doc.tags.length > 0 && (
+              <div className="flex items-start justify-between gap-3 py-2">
+                <span className="flex-shrink-0" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags</span>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {doc.tags.map(t => <span key={t} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>{t}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Arquivos */}
       <div className="animate-fade-up" style={CARD}>
-        <div className="flex items-center justify-between p-4 pb-0 mb-3">
-          <h2 className="font-bold text-sm" style={{ color: '#1A2B1C' }}>Arquivos ({files.length})</h2>
+        <div className="flex items-center justify-between gap-2 p-4 pb-0 mb-3">
+          <h2 className="font-bold text-sm flex-shrink-0" style={{ color: '#1A2B1C' }}>Arquivos ({files.length})</h2>
           {canEdit && (
             <button onClick={() => setShowAddFiles(true)}
-              className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95"
+              className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95 flex-shrink-0"
               style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
               <Plus size={13} />
               Adicionar
