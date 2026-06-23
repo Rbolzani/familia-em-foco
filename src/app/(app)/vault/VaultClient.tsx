@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Sparkles, Search, Users, Home, X, Plus, Upload, Loader2 } from 'lucide-react'
+import { ChevronRight, Sparkles, Search, X, Plus, Upload, Loader2 } from 'lucide-react'
 import { Child } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
 import { VAULT_CATEGORIES, VAULT_CATEGORY_KEYS, getVaultCategory, expiryStatus, EXPIRY_META, expiryLabel } from '@/lib/vault'
@@ -30,7 +30,6 @@ export default function VaultClient({ children, documents: initialDocuments }: P
   const [documents, setDocuments] = useState<DocSummary[]>(initialDocuments)
   const [status, setStatus]     = useState<StatusFilter>('todos')
   const [childId, setChildId]   = useState<string | 'fam' | null>(null) // null = todos
-  const [showChild, setShowChild] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [query, setQuery]       = useState('')
 
@@ -150,7 +149,8 @@ export default function VaultClient({ children, documents: initialDocuments }: P
         </p>
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            <Link href="/ia" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+            {/* Captura IA: oculto no mobile pois já aparece na topbar */}
+            <Link href="/ia" className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
               style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 4px 14px rgba(44,74,46,0.25)', textDecoration: 'none' }}>
               <Sparkles size={14} /> Captura com IA
             </Link>
@@ -179,36 +179,57 @@ export default function VaultClient({ children, documents: initialDocuments }: P
       </div>
 
       {/* Barra de filtros */}
-      <div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button style={pill(status === 'todos')} onClick={() => setStatus('todos')}>Todos</button>
+      <div className="animate-fade-up space-y-2.5">
+        {/* Linha 1: chips de status + busca */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button style={pill(status === 'todos')}    onClick={() => setStatus('todos')}>Todos</button>
           <button style={pill(status === 'a_vencer')} onClick={() => setStatus('a_vencer')}>A vencer</button>
-          <button style={pill(status === 'vencido')} onClick={() => setStatus('vencido')}>Vencidos</button>
-          <button style={pill(childId !== null)} onClick={() => setShowChild(v => !v)}>
-            <Users size={13} /> {childId && childId !== 'fam' ? childName(childId) : childId === 'fam' ? 'Família' : 'Por filho'}
-          </button>
+          <button style={pill(status === 'vencido')}  onClick={() => setStatus('vencido')}>Vencidos</button>
           <button style={pill(showSearch || !!query)} onClick={() => setShowSearch(v => !v)}>
             <Search size={13} /> Buscar
           </button>
         </div>
 
-        {showChild && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button style={pill(childId === null)} onClick={() => { setChildId(null); setShowChild(false) }}>Todos</button>
-            {children.map(c => (
-              <button key={c.id} style={pill(childId === c.id)} onClick={() => { setChildId(c.id); setShowChild(false) }}>
-                <span style={{ width: 18, height: 18, borderRadius: '50%', background: c.avatar_color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
-                  {c.name.charAt(0).toUpperCase()}
-                </span>
-                {c.name}
+        {/* Linha 2: combobox de filho (sempre visível se houver filhos) */}
+        {children.length > 0 && (
+          <div className="flex items-center gap-2">
+            <select
+              value={childId ?? ''}
+              onChange={e => {
+                const v = e.target.value
+                setChildId(v === '' ? null : v === 'fam' ? 'fam' : v)
+              }}
+              style={{
+                fontSize: 12.5, fontWeight: 600, padding: '6px 28px 6px 10px',
+                borderRadius: 999, cursor: 'pointer', appearance: 'none',
+                border: childId !== null ? '1px solid transparent' : '1px solid rgba(61,102,65,0.22)',
+                background: childId !== null
+                  ? 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+                  : '#fff',
+                color: childId !== null ? '#fff' : 'rgba(26,43,28,0.65)',
+                outline: 'none',
+                backgroundImage: childId !== null
+                  ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"), linear-gradient(140deg,%233D6641,%232C4A2E)`
+                  : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233D6641' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"), %23ffffff`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 10px center, center',
+                backgroundSize: '12px, cover',
+              }}>
+              <option value="">Todos os filhos</option>
+              {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="fam">Documentos da família</option>
+            </select>
+            {childId !== null && (
+              <button onClick={() => setChildId(null)}
+                className="p-1 rounded-full hover:bg-black/10 transition-colors"
+                title="Limpar filtro">
+                <X size={14} color="rgba(26,43,28,0.50)" />
               </button>
-            ))}
-            <button style={pill(childId === 'fam')} onClick={() => { setChildId('fam'); setShowChild(false) }}>
-              <Home size={12} /> Família
-            </button>
+            )}
           </div>
         )}
 
+        {/* Campo de busca */}
         {showSearch && (
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(26,43,28,0.40)' }} />
