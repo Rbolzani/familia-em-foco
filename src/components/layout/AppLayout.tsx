@@ -259,10 +259,10 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
   `
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative overflow-x-hidden">
 
       {/* ══ APP WRAP ══ */}
-      <div ref={appRef} className="app-wrap flex min-h-screen" data-dark={darkMode ? '1' : undefined}>
+      <div ref={appRef} className="app-wrap flex min-h-screen overflow-x-hidden" data-dark={darkMode ? '1' : undefined}>
 
         {/* ══ SIDEBAR (desktop only) ══ */}
         <aside className="hidden md:flex flex-col w-[256px] flex-shrink-0 fixed z-40"

@@ -69,7 +69,11 @@
 
 /* ─── Base Reset ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden; /* prevents horizontal scroll at root level */
+  max-width: 100%;
+}
 
 body {
   background-color: #F8F3EA;
@@ -80,8 +84,8 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
-  /* overflow-x: clip prevents horizontal scroll WITHOUT breaking position:fixed */
-  overflow-x: clip;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 button { font-family: inherit; cursor: pointer; }
