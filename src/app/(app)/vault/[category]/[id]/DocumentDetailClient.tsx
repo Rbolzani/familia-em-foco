@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle, Eye } from 'lucide-react'
@@ -53,7 +53,21 @@ export default function DocumentDetailClient({ document: doc, category, children
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [preview, setPreview] = useState<{ url: string; mime: string | null; name: string } | null>(null)
   const [previewing, setPreviewing] = useState<string | null>(null)
+  const [inlineUrl, setInlineUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Carrega o preview inline do arquivo principal (primeiro arquivo).
+  const primaryFile = files[0] ?? null
+  useEffect(() => {
+    if (!primaryFile) { setInlineUrl(null); return }
+    let active = true
+    fetch(`/api/documents/${doc.id}/signed-url?fileId=${primaryFile.id}`)
+      .then(r => r.json())
+      .then(j => { if (active && j.url) setInlineUrl(j.url) })
+      .catch(() => {})
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primaryFile?.id])
 
   async function viewFile(file: DocumentFile) {
     setPreviewing(file.id)
@@ -142,7 +156,7 @@ export default function DocumentDetailClient({ document: doc, category, children
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-5 py-8 space-y-5">
+    <div className="max-w-4xl mx-auto px-5 py-8 space-y-5">
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm animate-fade-up">
@@ -157,70 +171,71 @@ export default function DocumentDetailClient({ document: doc, category, children
         <span className="font-bold truncate" style={{ color: '#1A2B1C' }}>{doc.title}</span>
       </div>
 
-      {/* Header card */}
-      <div className="animate-fade-up" style={{ ...CARD, padding: '20px', borderLeft: `4px solid ${meta.accent}` }}>
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 22, fontWeight: 700, color: '#1A2B1C' }}>
-              {doc.title}
-            </h1>
-            {doc.description && (
-              <p className="text-sm mt-1 italic" style={{ color: 'rgba(26,43,28,0.55)' }}>{doc.description}</p>
-            )}
-          </div>
-          {status && (
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
-              style={{ background: status.bg, color: status.color }}>
-              {status.label}
-            </span>
-          )}
-        </div>
+      {/* Hero — 2 colunas: preview à esquerda, dados à direita */}
+      <div className="animate-fade-up grid md:grid-cols-2 gap-4">
 
-        <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
-          {child && (
-            <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: `${child.avatar_color}22`, color: child.avatar_color }}>
-              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
-                style={{ background: child.avatar_color, color: '#fff' }}>
-                {child.name[0]}
-              </span>
-              {child.name}
-            </span>
-          )}
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-            style={{ background: `${meta.accent}18`, color: meta.accent }}>
-            {meta.label}
-          </span>
-          {doc.expires_at && (
-            <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(26,43,28,0.06)', color: 'rgba(26,43,28,0.55)' }}>
-              Vence {new Date(doc.expires_at).toLocaleDateString('pt-BR')}
-            </span>
-          )}
-          <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(26,43,28,0.06)', color: 'rgba(26,43,28,0.55)' }}>
-            Criado {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-          </span>
-        </div>
-
-        {(doc.doc_number || doc.issuer || doc.issue_date || (doc.tags && doc.tags.length > 0)) && (
-          <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
-            {doc.doc_number && (
-              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.doc_number}</span></div>
-            )}
-            {doc.issuer && (
-              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.issuer}</span></div>
-            )}
-            {doc.issue_date && (
-              <div className="flex justify-between text-xs"><span style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</span><span style={{ color: '#1A2B1C', fontWeight: 600 }}>{new Date(doc.issue_date).toLocaleDateString('pt-BR')}</span></div>
-            )}
-            {doc.tags && doc.tags.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                {doc.tags.map(t => (
-                  <span key={t} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>{t}</span>
-                ))}
+        {/* Preview inline do arquivo principal */}
+        <div style={{ ...CARD, padding: 14 }}>
+          <div style={{ height: 240, borderRadius: 12, overflow: 'hidden', background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {primaryFile && inlineUrl && primaryFile.mime_type?.startsWith('image/') ? (
+              <img src={inlineUrl} alt={primaryFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : primaryFile && inlineUrl && primaryFile.mime_type === 'application/pdf' ? (
+              <iframe src={inlineUrl} title={primaryFile.file_name} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+            ) : (
+              <div className="flex flex-col items-center gap-2" style={{ color: 'rgba(26,43,28,0.35)' }}>
+                {primaryFile ? <Loader2 size={28} className="animate-spin" /> : <FileText size={40} strokeWidth={1.2} />}
+                <span className="text-xs">{primaryFile ? 'Carregando…' : 'Sem arquivo anexado'}</span>
               </div>
             )}
           </div>
-        )}
+          {primaryFile && (
+            <div className="flex gap-2 mt-3">
+              <button onClick={() => viewFile(primaryFile)} disabled={previewing === primaryFile.id}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
+                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                {previewing === primaryFile.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Visualizar
+              </button>
+              <button onClick={() => downloadFile(primaryFile)} disabled={downloading === primaryFile.id}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all hover:brightness-95"
+                style={{ background: '#fff', border: '1px solid rgba(61,102,65,0.22)', color: '#3D6641' }}>
+                {downloading === primaryFile.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Baixar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Dados do documento */}
+        <div style={{ ...CARD, padding: 18, borderLeft: `4px solid ${meta.accent}` }}>
+          <div className="flex items-start gap-2 flex-wrap mb-3">
+            <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 21, fontWeight: 700, color: '#1A2B1C', flex: 1, minWidth: 0 }}>
+              {doc.title}
+            </h1>
+            {status && (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: status.bg, color: status.color }}>
+                {status.label}
+              </span>
+            )}
+          </div>
+          {doc.description && (
+            <p className="text-sm mb-3 italic" style={{ color: 'rgba(26,43,28,0.55)' }}>{doc.description}</p>
+          )}
+          <table className="w-full text-sm" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
+            <tbody>
+              <tr><td className="py-2 align-top" style={{ color: 'rgba(26,43,28,0.50)' }}>Categoria</td><td className="py-2 text-right" style={{ color: meta.accent, fontWeight: 600 }}>{meta.label}</td></tr>
+              <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Filho</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{child?.name ?? 'Família'}</td></tr>
+              {doc.doc_number && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.doc_number}</td></tr>}
+              {doc.issuer && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{doc.issuer}</td></tr>}
+              {doc.issue_date && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</td><td className="py-2 text-right" style={{ color: '#1A2B1C', fontWeight: 600 }}>{new Date(doc.issue_date).toLocaleDateString('pt-BR')}</td></tr>}
+              {doc.expires_at && <tr><td className="py-2" style={{ color: 'rgba(26,43,28,0.50)' }}>Vencimento</td><td className="py-2 text-right" style={{ color: status?.color ?? '#1A2B1C', fontWeight: 600 }}>{new Date(doc.expires_at).toLocaleDateString('pt-BR')}</td></tr>}
+              {doc.tags && doc.tags.length > 0 && (
+                <tr><td className="py-2 align-top" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags</td>
+                  <td className="py-2 text-right">
+                    {doc.tags.map(t => <span key={t} className="text-[11px] px-2 py-0.5 rounded-full ml-1 inline-block" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>{t}</span>)}
+                  </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Arquivos */}

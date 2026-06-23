@@ -31,30 +31,36 @@ export default function VaultClient({ children, documents }: Props) {
 
   const childName = (id: string | null) => children.find(c => c.id === id)?.name ?? null
 
+  // Base: aplica filtro de FILHO + BUSCA (não o de status). Farol, gavetas e
+  // lista derivam daqui — assim a contagem das gavetas respeita o filtro de filho.
+  const base = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return documents.filter(d => {
+      if (childId === 'fam' && d.child_id !== null) return false
+      if (childId && childId !== 'fam' && d.child_id !== childId) return false
+      if (q && !d.title.toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [documents, childId, query])
+
   const counts = useMemo(() => {
     let ok = 0, soon = 0, late = 0
-    for (const d of documents) {
+    for (const d of base) {
       const s = expiryStatus(d.expires_at)
       if (s === 'vencido') late++
       else if (s === 'a_vencer') soon++
       else ok++ // valido + sem_data contam como "em dia"
     }
     return { ok, soon, late }
-  }, [documents])
+  }, [base])
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return documents.filter(d => {
-      if (status === 'a_vencer' && expiryStatus(d.expires_at) !== 'a_vencer') return false
-      if (status === 'vencido' && expiryStatus(d.expires_at) !== 'vencido') return false
-      if (childId === 'fam' && d.child_id !== null) return false
-      if (childId && childId !== 'fam' && d.child_id !== childId) return false
-      if (q && !d.title.toLowerCase().includes(q)) return false
-      return true
-    })
-  }, [documents, status, childId, query])
+  const filtered = useMemo(() => base.filter(d => {
+    if (status === 'a_vencer') return expiryStatus(d.expires_at) === 'a_vencer'
+    if (status === 'vencido') return expiryStatus(d.expires_at) === 'vencido'
+    return true
+  }), [base, status])
 
-  const countByCategory = (cat: string) => documents.filter(d => d.category === cat).length
+  const countByCategory = (cat: string) => base.filter(d => d.category === cat).length
 
   const CARD: React.CSSProperties = {
     background: 'linear-gradient(160deg,#FFFFFF 0%,#F5F0E8 100%)',
@@ -71,7 +77,7 @@ export default function VaultClient({ children, documents }: Props) {
   })
 
   return (
-    <div className="max-w-2xl mx-auto px-5 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-5 py-8 space-y-6">
 
       {/* Header */}
       <div className="animate-fade-up">
@@ -150,7 +156,7 @@ export default function VaultClient({ children, documents }: Props) {
       </div>
 
       {/* Gavetas */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {VAULT_CATEGORIES.map((cat, i) => {
           const count = countByCategory(cat.key)
           return (
