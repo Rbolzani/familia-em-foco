@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isValidCPF, isValidPhoneBR, onlyDigits } from '@/lib/cpf'
+import { LEGAL_VERSION } from '@/lib/legal'
 
 // Salva o cadastro inicial de dados pessoais (LGPD / cobrança) e marca
 // profile_completed_at. Validação no servidor — o cliente é só conveniência.
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
   let body: {
     full_name?: string; phone?: string; cpf?: string; birth_date?: string
     marketing_consent?: boolean; acquisition_source?: string
-    attribution?: Record<string, unknown>
+    attribution?: Record<string, unknown>; terms_accepted?: boolean
   }
   try {
     body = await request.json()
@@ -37,9 +38,21 @@ export async function POST(request: Request) {
   // se já houver CPF salvo, ignora o do cliente; senão, valida e grava o novo.
   const { data: existing } = await supabase
     .from('profiles')
-    .select('cpf, profile_completed_at, marketing_consent, marketing_consent_at, acquisition_source, signup_attribution')
+    .select('cpf, profile_completed_at, marketing_consent, marketing_consent_at, acquisition_source, signup_attribution, terms_accepted_at, terms_version')
     .eq('user_id', user.id)
     .maybeSingle()
+
+  // Aceite dos Termos/Privacidade: obrigatório na primeira conclusão do cadastro.
+  // Em edições posteriores (já aceito), preserva o aceite original.
+  const alreadyAccepted = !!existing?.terms_accepted_at
+  if (!alreadyAccepted && body.terms_accepted !== true) {
+    return NextResponse.json(
+      { error: 'É necessário aceitar os Termos de Uso e a Política de Privacidade.' },
+      { status: 400 },
+    )
+  }
+  const termsAcceptedAt = existing?.terms_accepted_at ?? new Date().toISOString()
+  const termsVersion = existing?.terms_version ?? LEGAL_VERSION
 
   let cpf = existing?.cpf as string | null | undefined
   if (!cpf) {
@@ -70,6 +83,8 @@ export async function POST(request: Request) {
     marketing_consent_at: consentAt,
     acquisition_source: acquisitionSource,
     signup_attribution: attribution,
+    terms_accepted_at: termsAcceptedAt,
+    terms_version: termsVersion,
     // Carimba a conclusão só na primeira vez; edições preservam o original.
     profile_completed_at: existing?.profile_completed_at ?? now,
     updated_at: now,

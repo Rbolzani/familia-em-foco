@@ -23,6 +23,7 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
   const [birthDate, setBirth]   = useState('')
   const [source, setSource]     = useState('')
   const [consent, setConsent]   = useState(false)
+  const [terms, setTerms]       = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
 
@@ -37,6 +38,7 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
     if (!isValidCPF(cpf))           { setError('CPF inválido.'); return }
     if (!birthDate)                 { setError('Informe sua data de nascimento.'); return }
     if (!source)                    { setError('Conte como você nos conheceu.'); return }
+    if (!terms)                     { setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.'); return }
 
     setLoading(true)
     try {
@@ -47,6 +49,7 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
           full_name: fullName, phone, cpf, birth_date: birthDate,
           acquisition_source: source,
           marketing_consent: consent,
+          terms_accepted: terms,
           attribution: readAttribution(),
         }),
       })
@@ -121,6 +124,17 @@ export default function CompletarCadastroClient({ email, initialName }: Props) {
                 {ACQUISITION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
+
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={terms} onChange={e => setTerms(e.target.checked)}
+                className="mt-0.5" style={{ accentColor: '#3D6641', width: 16, height: 16 }} />
+              <span className="text-xs leading-relaxed" style={{ color: 'rgba(26,43,28,0.70)' }}>
+                Li e aceito os{' '}
+                <a href="/termos" target="_blank" className="font-semibold underline" style={{ color: '#3D6641' }}>Termos de Uso</a>
+                {' '}e a{' '}
+                <a href="/privacidade" target="_blank" className="font-semibold underline" style={{ color: '#3D6641' }}>Política de Privacidade</a>.
+              </span>
+            </label>
 
             <label className="flex items-start gap-2.5 cursor-pointer select-none">
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
