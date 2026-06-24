@@ -23,7 +23,7 @@ export async function PATCH(
         ? body.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
         : null)
 
-  const update = {
+  const update: Record<string, unknown> = {
     title,
     description: body.description?.trim() || null,
     child_id:   body.child_id || null,
@@ -34,6 +34,9 @@ export async function PATCH(
     issue_date: body.issue_date || null,
     tags,
   }
+  // Natureza + campos específicos (v1c) — só sobrescreve se enviados.
+  if ('doc_type' in body) update.doc_type = body.doc_type || null
+  if (body.metadata && typeof body.metadata === 'object') update.metadata = body.metadata
 
   const { data, error } = await supabase
     .from('documents')

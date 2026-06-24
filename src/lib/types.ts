@@ -52,6 +52,8 @@ export interface AppDocument {
   issuer: string | null
   issue_date: string | null
   tags: string[] | null
+  doc_type: string | null                 // natureza (v1c) — ver lib/docTypes
+  metadata: Record<string, unknown> | null // campos específicos do tipo (v1c)
   created_at: string
   child?: ChildRef | null
   files?: DocumentFile[]

@@ -7,7 +7,9 @@ import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
 import { getVaultCategory } from '@/lib/vault'
-import { ocrDocument, isOcrable } from '@/lib/ocr'
+import { ocrDocument } from '@/lib/ocr'
+import { getDocType } from '@/lib/docTypes'
+import type { DocType } from '@/lib/docTypes'
 
 function expiryStatus(expires_at: string | null): 'vencido' | 'a vencer' | 'valido' | null {
   if (!expires_at) return null
@@ -53,27 +55,29 @@ export default function GavetaClient({ category, children, documents: initialDoc
   const [tags, setTags] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
-  // OCR (cofre inteligente): texto extraído + estado de auto-preenchimento
+  // OCR (cofre inteligente): texto extraído + natureza + estado de auto-preench.
   const [ocrText, setOcrText] = useState<string | null>(null)
+  const [docType, setDocType] = useState<DocType | null>(null)
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({})
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrApplied, setOcrApplied] = useState(false)
 
   const filtered = childFilter ? docs.filter(d => d.child_id === childFilter) : docs
 
-  // Ao selecionar arquivos: roda OCR no 1º arquivo "ocrável" e auto-preenche os
-  // campos vazios (não sobrescreve o que a pessoa já digitou). Conveniência —
-  // qualquer falha é silenciosa e o upload manual segue normal.
+  // Ao selecionar arquivos (frente+verso): roda OCR, classifica a natureza e
+  // auto-preenche os campos vazios. Conveniência — falha é silenciosa.
   async function handleFilesSelected(selected: File[]) {
     setFiles(selected)
     if (!canOcr) return
-    const target = selected.find(isOcrable)
-    if (!target) return
     setOcrLoading(true); setOcrApplied(false)
-    const r = await ocrDocument(target)
+    const r = await ocrDocument(selected)
     setOcrLoading(false)
     if (!r) return
     setOcrText(r.ocr_text || null)
+    setDocType(r.doc_type ?? null)
+    setMetadata(r.metadata ?? {})
     setTitle(prev => prev.trim() ? prev : (r.title ?? ''))
+    setDescription(prev => prev.trim() ? prev : (r.description ?? ''))
     setDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
     setIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
     setIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
@@ -97,6 +101,8 @@ export default function GavetaClient({ category, children, documents: initialDoc
       if (issueDate) form.append('issue_date', issueDate)
       if (tags.trim()) form.append('tags', tags.trim())
       if (ocrText) form.append('ocr_text', ocrText)
+      if (docType) form.append('doc_type', docType)
+      if (Object.keys(metadata).length) form.append('metadata', JSON.stringify(metadata))
       files.forEach(f => form.append('files', f))
 
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
@@ -109,7 +115,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
       setShowUpload(false)
       setTitle(''); setDescription(''); setChildId(''); setExpiresAt(''); setFiles([])
       setDocNumber(''); setIssuer(''); setIssueDate(''); setTags('')
-      setOcrText(null); setOcrApplied(false)
+      setOcrText(null); setOcrApplied(false); setDocType(null); setMetadata({})
     } catch {
       toast('Erro ao salvar documento', 'error')
     } finally {
@@ -348,6 +354,11 @@ export default function GavetaClient({ category, children, documents: initialDoc
                   <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
                     <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
                   </p>
+                )}
+                {docType && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(61,102,65,0.12)', color: '#2C4A2E' }}>
+                    Natureza detectada: {getDocType(docType).label}
+                  </div>
                 )}
                 {files.length > 0 && (
                   <div className="mt-2 space-y-1">

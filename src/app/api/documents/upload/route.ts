@@ -20,18 +20,22 @@ export async function POST(req: NextRequest) {
     ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
     : null
   const ocr_text    = (form.get('ocr_text') as string) || null
+  const doc_type    = (form.get('doc_type') as string) || null
+  let metadata: Record<string, unknown> = {}
+  const metaRaw = form.get('metadata') as string | null
+  if (metaRaw) { try { const m = JSON.parse(metaRaw); if (m && typeof m === 'object') metadata = m } catch {} }
   const files       = form.getAll('files') as File[]
 
   if (!title || !category) {
     return NextResponse.json({ error: 'Título e categoria são obrigatórios' }, { status: 400 })
   }
 
-  // Create document record first. ocr_text (extraído no upload pela IA) alimenta
-  // a busca full-text via trigger search_tsv.
+  // Create document record first. ocr_text + metadata (extraídos no upload pela
+  // IA) alimentam a busca via trigger search_tsv; doc_type guarda a natureza.
   const { data: doc, error: docErr } = await supabase
     .from('documents')
     .insert({ user_id: user.id, child_id, category, title, description, expires_at,
-              doc_number, issuer, issue_date, tags, ocr_text })
+              doc_number, issuer, issue_date, tags, ocr_text, doc_type, metadata })
     .select()
     .single()
 

@@ -8,7 +8,9 @@ import { useAccess } from '@/components/access/AccessContext'
 import { VAULT_CATEGORIES, VAULT_CATEGORY_KEYS, getVaultCategory, expiryStatus, EXPIRY_META, expiryLabel } from '@/lib/vault'
 import type { DocumentCategory } from '@/lib/types'
 import { toast } from '@/components/ui/Toast'
-import { ocrDocument, isOcrable } from '@/lib/ocr'
+import { ocrDocument } from '@/lib/ocr'
+import { getDocType } from '@/lib/docTypes'
+import type { DocType } from '@/lib/docTypes'
 import { createClient } from '@/lib/supabase/client'
 
 interface DocSummary {
@@ -55,27 +57,31 @@ export default function VaultClient({ children, documents: initialDocuments, can
   const fileRef = useRef<HTMLInputElement>(null)
   // OCR (cofre inteligente) no modal de upload
   const [uOcrText, setUOcrText]     = useState<string | null>(null)
+  const [uDocType, setUDocType]     = useState<DocType | null>(null)
+  const [uMetadata, setUMetadata]   = useState<Record<string, unknown>>({})
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrApplied, setOcrApplied] = useState(false)
 
   function resetUploadForm() {
     setUTitle(''); setUCategory(VAULT_CATEGORIES[0].key); setUChildId(''); setUDescription('')
     setUExpiresAt(''); setUDocNumber(''); setUIssuer(''); setUIssueDate(''); setUTags(''); setUFiles([])
-    setUOcrText(null); setOcrApplied(false)
+    setUOcrText(null); setUDocType(null); setUMetadata({}); setOcrApplied(false)
   }
 
-  // Auto-preenchimento por OCR ao escolher arquivo (preenche só campos vazios).
+  // Auto-preenchimento por OCR ao escolher arquivo (frente+verso). Classifica a
+  // natureza, sugere a gaveta e preenche só os campos vazios.
   async function handleUFilesSelected(selected: File[]) {
     setUFiles(selected)
     if (!canOcr) return
-    const target = selected.find(isOcrable)
-    if (!target) return
     setOcrLoading(true); setOcrApplied(false)
-    const r = await ocrDocument(target)
+    const r = await ocrDocument(selected)
     setOcrLoading(false)
     if (!r) return
     setUOcrText(r.ocr_text || null)
+    if (r.doc_type) { setUDocType(r.doc_type); setUCategory(getDocType(r.doc_type).category) }
+    setUMetadata(r.metadata ?? {})
     setUTitle(prev => prev.trim() ? prev : (r.title ?? ''))
+    setUDescription(prev => prev.trim() ? prev : (r.description ?? ''))
     setUDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
     setUIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
     setUIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
@@ -134,6 +140,8 @@ export default function VaultClient({ children, documents: initialDocuments, can
       if (uIssueDate) form.append('issue_date', uIssueDate)
       if (uTags.trim()) form.append('tags', uTags.trim())
       if (uOcrText) form.append('ocr_text', uOcrText)
+      if (uDocType) form.append('doc_type', uDocType)
+      if (Object.keys(uMetadata).length) form.append('metadata', JSON.stringify(uMetadata))
       uFiles.forEach(f => form.append('files', f))
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
       const json = await res.json()
@@ -532,6 +540,11 @@ export default function VaultClient({ children, documents: initialDocuments, can
                   <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
                     <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
                   </p>
+                )}
+                {uDocType && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(61,102,65,0.12)', color: '#2C4A2E' }}>
+                    Natureza detectada: {getDocType(uDocType).label}
+                  </div>
                 )}
                 {uFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
