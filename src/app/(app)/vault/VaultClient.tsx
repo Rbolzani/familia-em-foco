@@ -153,18 +153,26 @@ export default function VaultClient({ children, documents: initialDocuments, can
 
   const childName = (id: string | null) => children.find(c => c.id === id)?.name ?? null
 
-  // Base: aplica filtro de FILHO + BUSCA (não o de status). Farol, gavetas e
-  // lista derivam daqui — assim a contagem das gavetas respeita o filtro de filho.
+  function goToDoc(d: DocSummary) { router.push(`/vault/${d.category}/${d.id}`) }
+
+  // Base: SÓ o filtro de FILHO (não busca de texto, não status). Farol, gavetas
+  // e a lista de vencimentos derivam daqui — a busca por texto virou seção
+  // própria (searchResults) e NÃO substitui mais os cards de vencimento.
   const base = useMemo(() => {
-    const q = query.trim().toLowerCase()
     return (documents as DocSummary[]).filter(d => {
       if (childId === 'fam' && d.child_id !== null) return false
       if (childId && childId !== 'fam' && d.child_id !== childId) return false
-      // casa por título (instantâneo) OU por conteúdo via full-text do servidor
-      if (q && !(d.title.toLowerCase().includes(q) || (ftsIds?.has(d.id) ?? false))) return false
       return true
     })
-  }, [documents, childId, query, ftsIds])
+  }, [documents, childId])
+
+  // Resultados da busca por texto (título ou conteúdo). Respeita o filtro de
+  // filho; ignora o filtro de status (acha o documento independente da validade).
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+    return base.filter(d => d.title.toLowerCase().includes(q) || (ftsIds?.has(d.id) ?? false))
+  }, [base, query, ftsIds])
 
   const counts = useMemo(() => {
     let ok = 0, soon = 0, late = 0
@@ -301,12 +309,64 @@ export default function VaultClient({ children, documents: initialDocuments, can
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(26,43,28,0.40)' }} />
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (searchResults.length > 0) goToDoc(searchResults[0]) } }}
               placeholder={canSearch ? 'Buscar por título ou conteúdo do documento…' : 'Buscar por título…'}
               style={{ width: '100%', padding: '10px 34px', borderRadius: 12, border: '1px solid rgba(61,102,65,0.22)', fontSize: 14, outline: 'none', background: '#fff', color: '#1A2B1C' }} />
             {query && <X size={15} onClick={() => setQuery('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(26,43,28,0.40)', cursor: 'pointer' }} />}
           </div>
         )}
       </div>
+
+      {/* Resultados da busca — seção própria e destacada (não mexe nos vencimentos abaixo) */}
+      {query.trim() && (
+        <div className="animate-fade-up rounded-2xl p-3"
+          style={{ background: 'linear-gradient(160deg,#EAF3EA,#DDEDDE)', border: '1.5px solid rgba(61,102,65,0.38)', boxShadow: '0 8px 24px rgba(44,74,46,0.14)' }}>
+          <div className="flex items-center justify-between gap-2 px-1 mb-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] flex items-center gap-1.5" style={{ color: '#2C4A2E' }}>
+              <Search size={12} /> {searchResults.length} resultado{searchResults.length === 1 ? '' : 's'} para “{query.trim()}”
+            </span>
+            {searchResults.length > 0 && (
+              <span className="text-[10px] font-semibold hidden sm:inline" style={{ color: 'rgba(26,43,28,0.50)' }}>↵ Enter abre o 1º</span>
+            )}
+          </div>
+          {searchResults.length === 0 ? (
+            <p className="text-sm italic px-1 py-2" style={{ color: 'rgba(26,43,28,0.55)' }}>
+              Nenhum documento encontrado{canSearch ? ' (por título ou conteúdo)' : ''}.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {searchResults.slice(0, 12).map((d, idx) => {
+                const cat = getVaultCategory(d.category)
+                const st = expiryStatus(d.expires_at)
+                const meta = EXPIRY_META[st]
+                const cn = childName(d.child_id)
+                const Icon = cat?.icon
+                return (
+                  <Link key={d.id} href={`/vault/${d.category}/${d.id}`}
+                    className="flex items-center gap-3 transition-all hover:-translate-y-[1px]"
+                    style={{ background: '#fff', border: idx === 0 ? '1.5px solid rgba(61,102,65,0.50)' : '1px solid rgba(61,102,65,0.15)', borderRadius: 12, padding: '10px 12px', textDecoration: 'none', minWidth: 0, boxShadow: '0 2px 8px rgba(44,74,46,0.06)' }}>
+                    <div className="w-9 h-9 rounded-[11px] flex items-center justify-center flex-shrink-0" style={{ background: cat?.iconBg }}>
+                      {Icon && <Icon size={16} color={cat?.iconColor} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate" style={{ fontSize: 14, fontWeight: 700, color: '#1A2B1C' }}>{d.title}</div>
+                      <div className="truncate" style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
+                        {cat?.label}{cn ? ` · ${cn}` : d.child_id === null ? ' · família' : ''}
+                      </div>
+                    </div>
+                    {st !== 'sem_data' && (
+                      <span className="flex-shrink-0" style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: meta.bg, color: meta.color }}>
+                        {expiryLabel(d.expires_at)}
+                      </span>
+                    )}
+                    <ChevronRight size={15} color="rgba(26,43,28,0.30)" className="flex-shrink-0" />
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Gavetas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -341,7 +401,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
       {/* Lista filtrada */}
       <div className="animate-fade-up">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(26,43,28,0.40)' }}>
-          {status === 'todos' && childId === null && !query ? 'Próximos vencimentos' : `Resultados · ${filtered.length}`}
+          {status === 'todos' && childId === null ? 'Próximos vencimentos' : `Resultados · ${filtered.length}`}
         </p>
         {filtered.length === 0 ? (
           <p className="text-sm italic" style={{ color: 'rgba(26,43,28,0.40)' }}>Nenhum documento encontrado com esses filtros.</p>
