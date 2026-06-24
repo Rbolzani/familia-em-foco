@@ -8,8 +8,9 @@ import { Child, AppDocument, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
 import { getVaultCategory } from '@/lib/vault'
 import { ocrDocument } from '@/lib/ocr'
-import { getDocType } from '@/lib/docTypes'
+import { getDocType, seedDocValues, splitDocValues, DOC_TYPE_KEYS } from '@/lib/docTypes'
 import type { DocType } from '@/lib/docTypes'
+import DocFormFields from '@/components/vault/DocFormFields'
 
 function expiryStatus(expires_at: string | null): 'vencido' | 'a vencer' | 'valido' | null {
   if (!expires_at) return null
@@ -48,24 +49,32 @@ export default function GavetaClient({ category, children, documents: initialDoc
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [childId, setChildId] = useState('')
-  const [expiresAt, setExpiresAt] = useState('')
-  const [docNumber, setDocNumber] = useState('')
-  const [issuer, setIssuer] = useState('')
-  const [issueDate, setIssueDate] = useState('')
   const [tags, setTags] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
-  // OCR (cofre inteligente): texto extraído + natureza + estado de auto-preench.
+  // OCR / cofre inteligente: natureza + valores por campo (modelo unificado v1c)
   const [ocrText, setOcrText] = useState<string | null>(null)
-  const [docType, setDocType] = useState<DocType | null>(null)
-  const [metadata, setMetadata] = useState<Record<string, unknown>>({})
+  const [docType, setDocType] = useState<DocType>('outro')
+  const [values, setValues]   = useState<Record<string, unknown>>(() => seedDocValues('outro', {}))
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrApplied, setOcrApplied] = useState(false)
 
   const filtered = childFilter ? docs.filter(d => d.child_id === childFilter) : docs
 
+  // Troca manual de natureza: re-seeda preservando os valores comuns.
+  function changeDocType(nt: DocType) {
+    setValues(prev => seedDocValues(nt, {
+      doc_number: prev.doc_number as string ?? null,
+      issuer: prev.issuer as string ?? null,
+      issue_date: prev.issue_date as string ?? null,
+      expires_at: prev.expires_at as string ?? null,
+      metadata: prev,
+    }))
+    setDocType(nt)
+  }
+
   // Ao selecionar arquivos (frente+verso): roda OCR, classifica a natureza e
-  // auto-preenche os campos vazios. Conveniência — falha é silenciosa.
+  // semeia os campos do tipo. Conveniência — falha é silenciosa.
   async function handleFilesSelected(selected: File[]) {
     setFiles(selected)
     if (!canOcr) return
@@ -73,15 +82,15 @@ export default function GavetaClient({ category, children, documents: initialDoc
     const r = await ocrDocument(selected)
     setOcrLoading(false)
     if (!r) return
+    const nt = r.doc_type ?? 'outro'
     setOcrText(r.ocr_text || null)
-    setDocType(r.doc_type ?? null)
-    setMetadata(r.metadata ?? {})
+    setDocType(nt)
+    setValues(seedDocValues(nt, {
+      doc_number: r.doc_number, issuer: r.issuer, issue_date: r.issue_date,
+      expires_at: r.expires_at, metadata: r.metadata,
+    }))
     setTitle(prev => prev.trim() ? prev : (r.title ?? ''))
     setDescription(prev => prev.trim() ? prev : (r.description ?? ''))
-    setDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
-    setIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
-    setIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
-    setExpiresAt(prev => prev ? prev : (r.expires_at ?? ''))
     setOcrApplied(true)
   }
 
@@ -90,18 +99,19 @@ export default function GavetaClient({ category, children, documents: initialDoc
     if (!title.trim()) { toast('Informe o título do documento', 'error'); return }
     setUploading(true)
     try {
+      const { columns, metadata } = splitDocValues(docType, values)
       const form = new FormData()
       form.append('title', title.trim())
       form.append('category', category)
       if (childId) form.append('child_id', childId)
       if (description) form.append('description', description.trim())
-      if (expiresAt) form.append('expires_at', expiresAt)
-      if (docNumber) form.append('doc_number', docNumber.trim())
-      if (issuer) form.append('issuer', issuer.trim())
-      if (issueDate) form.append('issue_date', issueDate)
+      if (columns.doc_number) form.append('doc_number', columns.doc_number)
+      if (columns.issuer) form.append('issuer', columns.issuer)
+      if (columns.issue_date) form.append('issue_date', columns.issue_date)
+      if (columns.expires_at) form.append('expires_at', columns.expires_at)
       if (tags.trim()) form.append('tags', tags.trim())
       if (ocrText) form.append('ocr_text', ocrText)
-      if (docType) form.append('doc_type', docType)
+      form.append('doc_type', docType)
       if (Object.keys(metadata).length) form.append('metadata', JSON.stringify(metadata))
       files.forEach(f => form.append('files', f))
 
@@ -113,9 +123,8 @@ export default function GavetaClient({ category, children, documents: initialDoc
       const childRef = children.find(c => c.id === childId)
       setDocs(prev => [{ ...json.document, child: childRef ? { id: childRef.id, name: childRef.name, avatar_color: childRef.avatar_color } : null, files: json.files }, ...prev])
       setShowUpload(false)
-      setTitle(''); setDescription(''); setChildId(''); setExpiresAt(''); setFiles([])
-      setDocNumber(''); setIssuer(''); setIssueDate(''); setTags('')
-      setOcrText(null); setOcrApplied(false); setDocType(null); setMetadata({})
+      setTitle(''); setDescription(''); setChildId(''); setTags(''); setFiles([])
+      setOcrText(null); setOcrApplied(false); setDocType('outro'); setValues(seedDocValues('outro', {}))
     } catch {
       toast('Erro ao salvar documento', 'error')
     } finally {
@@ -269,6 +278,15 @@ export default function GavetaClient({ category, children, documents: initialDoc
             <form onSubmit={handleUpload} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                  Natureza do documento
+                </label>
+                <select className="input-field w-full" value={docType} onChange={e => changeDocType(e.target.value as DocType)}>
+                  {DOC_TYPE_KEYS.map(k => <option key={k} value={k}>{getDocType(k).label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
                   Título *
                 </label>
                 <input className="input-field w-full" value={title} onChange={e => setTitle(e.target.value)}
@@ -278,7 +296,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
               {children.length > 0 && (
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                    Filho
+                    {getDocType(docType).childLabel}
                   </label>
                   <select className="input-field w-full" value={childId} onChange={e => setChildId(e.target.value)}>
                     <option value="">Todos os filhos</option>
@@ -295,35 +313,8 @@ export default function GavetaClient({ category, children, documents: initialDoc
                   onChange={e => setDescription(e.target.value)} placeholder="Informações adicionais..." />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                    Emissão
-                  </label>
-                  <input type="date" className="input-field w-full" value={issueDate} onChange={e => setIssueDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                    Vencimento
-                  </label>
-                  <input type="date" className="input-field w-full" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                    Nº do documento
-                  </label>
-                  <input className="input-field w-full" value={docNumber} onChange={e => setDocNumber(e.target.value)} placeholder="Ex: 12.345.678-9" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                    Órgão emissor
-                  </label>
-                  <input className="input-field w-full" value={issuer} onChange={e => setIssuer(e.target.value)} placeholder="Ex: SSP-SP" />
-                </div>
-              </div>
+              {/* Campos específicos da natureza (dinâmico) */}
+              <DocFormFields docType={docType} values={values} onChange={(k, v) => setValues(prev => ({ ...prev, [k]: v }))} />
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
@@ -352,13 +343,8 @@ export default function GavetaClient({ category, children, documents: initialDoc
                 )}
                 {ocrApplied && !ocrLoading && (
                   <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
-                    <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
+                    <Sparkles size={12} /> Natureza detectada e campos preenchidos pela IA — confira antes de salvar.
                   </p>
-                )}
-                {docType && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(61,102,65,0.12)', color: '#2C4A2E' }}>
-                    Natureza detectada: {getDocType(docType).label}
-                  </div>
                 )}
                 {files.length > 0 && (
                   <div className="mt-2 space-y-1">

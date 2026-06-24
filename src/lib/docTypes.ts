@@ -82,7 +82,6 @@ export const DOC_TYPES: Record<DocType, DocTypeDef> = {
   boleto: {
     type: 'boleto', label: 'Boleto / financeiro', category: 'financeiro', childLabel: 'Referente a',
     fields: [
-      { key: 'description', label: 'Descrição', format: 'texto', column: 'description' },
       { key: 'beneficiario', label: 'Beneficiário / cedente', format: 'texto' },
       { key: 'valor', label: 'Valor', format: 'valor' },
       { key: 'expires_at', label: 'Vencimento', format: 'data', column: 'expires_at' },
@@ -169,4 +168,56 @@ export function getDocType(type: string | null | undefined): DocTypeDef {
 // Campos que vão para o jsonb metadata (os que NÃO mapeiam a coluna existente).
 export function metadataFields(type: DocType): DocField[] {
   return DOC_TYPES[type].fields.filter(f => !f.column)
+}
+
+type ColumnKey = 'doc_number' | 'issuer' | 'issue_date' | 'expires_at' | 'description'
+
+interface DocSource {
+  doc_number?: string | null
+  issuer?: string | null
+  issue_date?: string | null
+  expires_at?: string | null
+  description?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+// Valor inicial de um campo conforme o formato.
+function emptyFor(f: DocField): unknown {
+  if (f.format === 'vacinas') return [] as VacinaItem[]
+  if (f.format === 'sim_nao') return false
+  return ''
+}
+
+// Monta o mapa de valores (keyed por field.key) a partir de uma fonte (resultado
+// do OCR ou um AppDocument). Campos de coluna vêm de source[column]; campos de
+// metadata vêm de source.metadata[key].
+export function seedDocValues(type: DocType, source: DocSource): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const f of DOC_TYPES[type].fields) {
+    if (f.column) out[f.key] = (source[f.column] ?? '') as unknown
+    else out[f.key] = source.metadata?.[f.key] ?? emptyFor(f)
+  }
+  return out
+}
+
+// Separa os valores em colunas de `documents` e metadata (jsonb).
+export function splitDocValues(type: DocType, values: Record<string, unknown>): {
+  columns: Partial<Record<ColumnKey, string | null>>
+  metadata: Record<string, unknown>
+} {
+  const columns: Partial<Record<ColumnKey, string | null>> = {}
+  const metadata: Record<string, unknown> = {}
+  for (const f of DOC_TYPES[type].fields) {
+    const v = values[f.key]
+    if (f.column) {
+      columns[f.column] = (v == null || v === '') ? null : String(v)
+    } else if (f.format === 'sim_nao') {
+      metadata[f.key] = !!v
+    } else if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) {
+      continue
+    } else {
+      metadata[f.key] = v
+    }
+  }
+  return { columns, metadata }
 }

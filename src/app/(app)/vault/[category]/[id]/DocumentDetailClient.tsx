@@ -6,7 +6,9 @@ import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X,
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentFile, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
-import { getVaultCategory, VAULT_CATEGORIES } from '@/lib/vault'
+import { getVaultCategory, VAULT_CATEGORIES, expiryStatus as vaultExpiryStatus, EXPIRY_META, expiryLabel } from '@/lib/vault'
+import { getDocType, seedDocValues, splitDocValues, DOC_TYPE_KEYS, type DocType, type VacinaItem } from '@/lib/docTypes'
+import DocFormFields from '@/components/vault/DocFormFields'
 
 function fileIcon(mime: string | null) {
   if (!mime) return <File size={18} />
@@ -30,6 +32,52 @@ function expiryStatus(expires_at: string | null): { label: string; bg: string; c
   const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   if (diff <= 30) return { label: 'Vence em breve', bg: 'rgba(245,158,11,0.12)', color: '#92400E' }
   return { label: 'Válido', bg: 'rgba(16,185,129,0.12)', color: '#065F46' }
+}
+
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return ''
+  return new Date(String(s) + 'T00:00:00').toLocaleDateString('pt-BR')
+}
+
+function Row({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid rgba(61,102,65,0.06)' }}>
+      <span className="flex-shrink-0" style={{ color: 'rgba(26,43,28,0.50)' }}>{label}</span>
+      <span className="text-right font-semibold break-words" style={{ color: color ?? '#1A2B1C', maxWidth: '55%', wordBreak: 'break-word' }}>{value}</span>
+    </div>
+  )
+}
+
+// Lista de vacinas com status da PRÓXIMA DOSE (alerta de agendamento por vacina).
+function VacinasView({ items }: { items: VacinaItem[] }) {
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Vacinas</p>
+      <div className="space-y-2">
+        {items.map((v, i) => {
+          const m = EXPIRY_META[vaultExpiryStatus(v.proxima_dose)]
+          return (
+            <div key={i} className="rounded-xl p-2.5" style={{ background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)' }}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-sm" style={{ color: '#1A2B1C' }}>{v.nome || 'Vacina'}</span>
+                {v.dose && <span className="text-[11px]" style={{ color: 'rgba(26,43,28,0.50)' }}>{v.dose}</span>}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 flex-wrap">
+                <span className="text-[11.5px]" style={{ color: 'rgba(26,43,28,0.55)' }}>
+                  {v.data_aplicacao ? `Aplicada em ${fmtDate(v.data_aplicacao)}` : 'Sem data de aplicação'}
+                </span>
+                {v.proxima_dose && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: m.bg, color: m.color }}>
+                    Próxima dose: {fmtDate(v.proxima_dose)} · {expiryLabel(v.proxima_dose)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 interface Props {
@@ -64,23 +112,33 @@ export default function DocumentDetailClient({ document: doc, category, children
   const [eDescription, setEDescription] = useState(doc.description ?? '')
   const [eChildId, setEChildId]       = useState(doc.child?.id ?? '')
   const [eCategory, setECategory]     = useState<DocumentCategory>(category)
-  const [eExpiresAt, setEExpiresAt]   = useState(doc.expires_at ?? '')
-  const [eDocNumber, setEDocNumber]   = useState(doc.doc_number ?? '')
-  const [eIssuer, setEIssuer]         = useState(doc.issuer ?? '')
-  const [eIssueDate, setEIssueDate]   = useState(doc.issue_date ?? '')
   const [eTags, setETags]             = useState((doc.tags ?? []).join(', '))
+  const [eDocType, setEDocType]       = useState<DocType>((doc.doc_type as DocType) ?? 'outro')
+  const [eValues, setEValues]         = useState<Record<string, unknown>>(() => seedDocValues((doc.doc_type as DocType) ?? 'outro', doc))
 
   function openEdit() {
     setETitle(doc.title)
     setEDescription(doc.description ?? '')
     setEChildId(doc.child?.id ?? '')
     setECategory(category)
-    setEExpiresAt(doc.expires_at ?? '')
-    setEDocNumber(doc.doc_number ?? '')
-    setEIssuer(doc.issuer ?? '')
-    setEIssueDate(doc.issue_date ?? '')
     setETags((doc.tags ?? []).join(', '))
+    const t = (doc.doc_type as DocType) ?? 'outro'
+    setEDocType(t)
+    setEValues(seedDocValues(t, doc))
     setShowEdit(true)
+  }
+
+  // Troca de natureza na edição: re-seeda preservando comuns + ajusta a gaveta.
+  function changeEDocType(nt: DocType) {
+    setEValues(prev => seedDocValues(nt, {
+      doc_number: prev.doc_number as string ?? null,
+      issuer: prev.issuer as string ?? null,
+      issue_date: prev.issue_date as string ?? null,
+      expires_at: prev.expires_at as string ?? null,
+      metadata: prev,
+    }))
+    setEDocType(nt)
+    setECategory(getDocType(nt).category)
   }
 
   async function handleEditSave(e: React.FormEvent) {
@@ -88,13 +146,16 @@ export default function DocumentDetailClient({ document: doc, category, children
     if (!eTitle.trim()) { toast('Informe o título do documento', 'error'); return }
     setSavingEdit(true)
     try {
+      const { columns, metadata } = splitDocValues(eDocType, eValues)
       const res = await fetch(`/api/documents/${doc.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: eTitle, description: eDescription, child_id: eChildId,
-          category: eCategory, expires_at: eExpiresAt, doc_number: eDocNumber,
-          issuer: eIssuer, issue_date: eIssueDate, tags: eTags,
+          category: eCategory, tags: eTags, doc_type: eDocType,
+          doc_number: columns.doc_number ?? null, issuer: columns.issuer ?? null,
+          issue_date: columns.issue_date ?? null, expires_at: columns.expires_at ?? null,
+          metadata,
         }),
       })
       const json = await res.json()
@@ -140,6 +201,18 @@ export default function DocumentDetailClient({ document: doc, category, children
 
   const child = doc.child
   const status = expiryStatus(doc.expires_at)
+
+  // Campos para exibição, derivados da natureza do documento (v1c).
+  const typeDef = getDocType(doc.doc_type)
+  const metaRows: { label: string; value: string }[] = []
+  let vacinas: VacinaItem[] = []
+  for (const f of typeDef.fields) {
+    if (f.format === 'vacinas') { vacinas = (doc.metadata?.[f.key] as VacinaItem[]) ?? []; continue }
+    const raw = f.column ? (doc as unknown as Record<string, unknown>)[f.column] : doc.metadata?.[f.key]
+    if (raw == null || raw === '') continue
+    const value = f.format === 'data' ? fmtDate(String(raw)) : f.format === 'sim_nao' ? (raw ? 'Sim' : 'Não') : String(raw)
+    metaRows.push({ label: f.label, value })
+  }
 
   async function downloadFile(file: DocumentFile) {
     setDownloading(file.id)
@@ -308,24 +381,12 @@ export default function DocumentDetailClient({ document: doc, category, children
           {doc.description && (
             <p className="text-sm mb-3 italic" style={{ color: 'rgba(26,43,28,0.55)' }}>{doc.description}</p>
           )}
-          {/* Metadados — flex rows (sem table para evitar overflow no mobile) */}
+          {/* Metadados — dinâmico por natureza (v1c) */}
           <div className="text-sm" style={{ borderTop: '1px solid rgba(61,102,65,0.10)' }}>
-            {([
-              { label: 'Categoria',      value: meta.label,   color: meta.accent },
-              { label: 'Filho',          value: child?.name ?? 'Família', color: '#1A2B1C' },
-              doc.doc_number ? { label: 'Nº documento', value: doc.doc_number, color: '#1A2B1C' } : null,
-              doc.issuer     ? { label: 'Órgão emissor', value: doc.issuer,    color: '#1A2B1C' } : null,
-              doc.issue_date ? { label: 'Emissão',       value: new Date(doc.issue_date).toLocaleDateString('pt-BR'), color: '#1A2B1C' } : null,
-              doc.expires_at ? { label: 'Vencimento',    value: new Date(doc.expires_at).toLocaleDateString('pt-BR'), color: status?.color ?? '#1A2B1C' } : null,
-            ] as Array<{ label: string; value: string; color: string } | null>)
-              .filter(Boolean)
-              .map(row => (
-                <div key={row!.label} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid rgba(61,102,65,0.06)' }}>
-                  <span className="flex-shrink-0" style={{ color: 'rgba(26,43,28,0.50)' }}>{row!.label}</span>
-                  <span className="text-right font-semibold break-words" style={{ color: row!.color, maxWidth: '55%', wordBreak: 'break-word' }}>{row!.value}</span>
-                </div>
-              ))
-            }
+            <Row label="Categoria" value={meta.label} color={meta.accent} />
+            <Row label="Natureza" value={typeDef.label} />
+            <Row label={typeDef.childLabel} value={child?.name ?? 'Família'} />
+            {metaRows.map(r => <Row key={r.label} label={r.label} value={r.value} color={r.label.toLowerCase().includes('vencimento') || r.label.toLowerCase().includes('validade') ? (status?.color ?? '#1A2B1C') : '#1A2B1C'} />)}
             {doc.tags && doc.tags.length > 0 && (
               <div className="flex items-start justify-between gap-3 py-2">
                 <span className="flex-shrink-0" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags</span>
@@ -335,6 +396,7 @@ export default function DocumentDetailClient({ document: doc, category, children
               </div>
             )}
           </div>
+          {vacinas.length > 0 && <VacinasView items={vacinas} />}
           {canEdit && (
             <button onClick={openEdit}
               className="mt-3 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95"
@@ -505,6 +567,13 @@ export default function DocumentDetailClient({ document: doc, category, children
 
             <form onSubmit={handleEditSave} className="space-y-3">
               <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Natureza do documento</label>
+                <select className="input-field w-full" value={eDocType} onChange={e => changeEDocType(e.target.value as DocType)}>
+                  {DOC_TYPE_KEYS.map(k => <option key={k} value={k}>{getDocType(k).label}</option>)}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Gaveta *</label>
                 <select className="input-field w-full" value={eCategory} onChange={e => setECategory(e.target.value as DocumentCategory)}>
                   {VAULT_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
@@ -518,7 +587,7 @@ export default function DocumentDetailClient({ document: doc, category, children
 
               {children.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Filho</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>{getDocType(eDocType).childLabel}</label>
                   <select className="input-field w-full" value={eChildId} onChange={e => setEChildId(e.target.value)}>
                     <option value="">Todos os filhos</option>
                     {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -531,27 +600,8 @@ export default function DocumentDetailClient({ document: doc, category, children
                 <textarea className="input-field w-full resize-none" rows={2} value={eDescription} onChange={e => setEDescription(e.target.value)} />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</label>
-                  <input type="date" className="input-field w-full" value={eIssueDate} onChange={e => setEIssueDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Vencimento</label>
-                  <input type="date" className="input-field w-full" value={eExpiresAt} onChange={e => setEExpiresAt(e.target.value)} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</label>
-                  <input className="input-field w-full" value={eDocNumber} onChange={e => setEDocNumber(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</label>
-                  <input className="input-field w-full" value={eIssuer} onChange={e => setEIssuer(e.target.value)} />
-                </div>
-              </div>
+              {/* Campos específicos da natureza (dinâmico) */}
+              <DocFormFields docType={eDocType} values={eValues} onChange={(k, v) => setEValues(prev => ({ ...prev, [k]: v }))} />
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags (separadas por vírgula)</label>

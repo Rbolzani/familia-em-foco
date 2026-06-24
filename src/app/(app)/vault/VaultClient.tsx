@@ -9,8 +9,9 @@ import { VAULT_CATEGORIES, VAULT_CATEGORY_KEYS, getVaultCategory, expiryStatus, 
 import type { DocumentCategory } from '@/lib/types'
 import { toast } from '@/components/ui/Toast'
 import { ocrDocument } from '@/lib/ocr'
-import { getDocType } from '@/lib/docTypes'
+import { getDocType, seedDocValues, splitDocValues, DOC_TYPE_KEYS } from '@/lib/docTypes'
 import type { DocType } from '@/lib/docTypes'
+import DocFormFields from '@/components/vault/DocFormFields'
 import { createClient } from '@/lib/supabase/client'
 
 interface DocSummary {
@@ -48,28 +49,37 @@ export default function VaultClient({ children, documents: initialDocuments, can
   const [uCategory, setUCategory]   = useState<DocumentCategory>(VAULT_CATEGORIES[0].key as DocumentCategory)
   const [uChildId, setUChildId]     = useState('')
   const [uDescription, setUDescription] = useState('')
-  const [uExpiresAt, setUExpiresAt] = useState('')
-  const [uDocNumber, setUDocNumber] = useState('')
-  const [uIssuer, setUIssuer]       = useState('')
-  const [uIssueDate, setUIssueDate] = useState('')
   const [uTags, setUTags]           = useState('')
   const [uFiles, setUFiles]         = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
-  // OCR (cofre inteligente) no modal de upload
+  // OCR / cofre inteligente: natureza + valores por campo (modelo unificado v1c)
   const [uOcrText, setUOcrText]     = useState<string | null>(null)
-  const [uDocType, setUDocType]     = useState<DocType | null>(null)
-  const [uMetadata, setUMetadata]   = useState<Record<string, unknown>>({})
+  const [uDocType, setUDocType]     = useState<DocType>('outro')
+  const [uValues, setUValues]       = useState<Record<string, unknown>>(() => seedDocValues('outro', {}))
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrApplied, setOcrApplied] = useState(false)
 
   function resetUploadForm() {
     setUTitle(''); setUCategory(VAULT_CATEGORIES[0].key); setUChildId(''); setUDescription('')
-    setUExpiresAt(''); setUDocNumber(''); setUIssuer(''); setUIssueDate(''); setUTags(''); setUFiles([])
-    setUOcrText(null); setUDocType(null); setUMetadata({}); setOcrApplied(false)
+    setUTags(''); setUFiles([])
+    setUOcrText(null); setUDocType('outro'); setUValues(seedDocValues('outro', {})); setOcrApplied(false)
+  }
+
+  // Troca manual de natureza: re-seeda os campos preservando os valores comuns.
+  function changeUDocType(nt: DocType) {
+    setUValues(prev => seedDocValues(nt, {
+      doc_number: prev.doc_number as string ?? null,
+      issuer: prev.issuer as string ?? null,
+      issue_date: prev.issue_date as string ?? null,
+      expires_at: prev.expires_at as string ?? null,
+      metadata: prev,
+    }))
+    setUDocType(nt)
+    setUCategory(getDocType(nt).category)
   }
 
   // Auto-preenchimento por OCR ao escolher arquivo (frente+verso). Classifica a
-  // natureza, sugere a gaveta e preenche só os campos vazios.
+  // natureza, sugere a gaveta e semeia os campos específicos do tipo.
   async function handleUFilesSelected(selected: File[]) {
     setUFiles(selected)
     if (!canOcr) return
@@ -77,15 +87,16 @@ export default function VaultClient({ children, documents: initialDocuments, can
     const r = await ocrDocument(selected)
     setOcrLoading(false)
     if (!r) return
+    const nt = r.doc_type ?? 'outro'
     setUOcrText(r.ocr_text || null)
-    if (r.doc_type) { setUDocType(r.doc_type); setUCategory(getDocType(r.doc_type).category) }
-    setUMetadata(r.metadata ?? {})
+    setUDocType(nt)
+    setUCategory(getDocType(nt).category)
+    setUValues(seedDocValues(nt, {
+      doc_number: r.doc_number, issuer: r.issuer, issue_date: r.issue_date,
+      expires_at: r.expires_at, metadata: r.metadata,
+    }))
     setUTitle(prev => prev.trim() ? prev : (r.title ?? ''))
     setUDescription(prev => prev.trim() ? prev : (r.description ?? ''))
-    setUDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
-    setUIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
-    setUIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
-    setUExpiresAt(prev => prev ? prev : (r.expires_at ?? ''))
     setOcrApplied(true)
   }
 
@@ -129,26 +140,27 @@ export default function VaultClient({ children, documents: initialDocuments, can
     if (!uTitle.trim()) { toast('Informe o título do documento', 'error'); return }
     setUploading(true)
     try {
+      const { columns, metadata } = splitDocValues(uDocType, uValues)
       const form = new FormData()
       form.append('title', uTitle.trim())
       form.append('category', uCategory)
       if (uChildId) form.append('child_id', uChildId)
       if (uDescription) form.append('description', uDescription.trim())
-      if (uExpiresAt) form.append('expires_at', uExpiresAt)
-      if (uDocNumber) form.append('doc_number', uDocNumber.trim())
-      if (uIssuer) form.append('issuer', uIssuer.trim())
-      if (uIssueDate) form.append('issue_date', uIssueDate)
+      if (columns.doc_number) form.append('doc_number', columns.doc_number)
+      if (columns.issuer) form.append('issuer', columns.issuer)
+      if (columns.issue_date) form.append('issue_date', columns.issue_date)
+      if (columns.expires_at) form.append('expires_at', columns.expires_at)
       if (uTags.trim()) form.append('tags', uTags.trim())
       if (uOcrText) form.append('ocr_text', uOcrText)
-      if (uDocType) form.append('doc_type', uDocType)
-      if (Object.keys(uMetadata).length) form.append('metadata', JSON.stringify(uMetadata))
+      form.append('doc_type', uDocType)
+      if (Object.keys(metadata).length) form.append('metadata', JSON.stringify(metadata))
       uFiles.forEach(f => form.append('files', f))
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
       const json = await res.json()
       if (!res.ok) { toast(json.error ?? 'Falha no upload', 'error'); return }
       toast('Documento salvo com sucesso ✓')
       // add to local list so counts update instantly
-      setDocuments(prev => [{ id: json.document.id, category: uCategory, child_id: uChildId || null, title: uTitle.trim(), expires_at: uExpiresAt || null }, ...prev])
+      setDocuments(prev => [{ id: json.document.id, category: uCategory, child_id: uChildId || null, title: uTitle.trim(), expires_at: columns.expires_at ?? null }, ...prev])
       setShowUpload(false)
       resetUploadForm()
       router.push(`/vault/${uCategory}/${json.document.id}`)
@@ -465,6 +477,14 @@ export default function VaultClient({ children, documents: initialDocuments, can
             </div>
 
             <form onSubmit={handleUpload} className="space-y-3">
+              {/* Natureza */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Natureza do documento</label>
+                <select className="input-field w-full" value={uDocType} onChange={e => changeUDocType(e.target.value as DocType)}>
+                  {DOC_TYPE_KEYS.map(k => <option key={k} value={k}>{getDocType(k).label}</option>)}
+                </select>
+              </div>
+
               {/* Gaveta */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Gaveta *</label>
@@ -479,10 +499,10 @@ export default function VaultClient({ children, documents: initialDocuments, can
                 <input className="input-field w-full" value={uTitle} onChange={e => setUTitle(e.target.value)} placeholder="Ex: RG da Gabriela" required />
               </div>
 
-              {/* Filho */}
+              {/* Filho (rótulo contextual: Paciente/Aluno/Titular…) */}
               {children.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Filho</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>{getDocType(uDocType).childLabel}</label>
                   <select className="input-field w-full" value={uChildId} onChange={e => setUChildId(e.target.value)}>
                     <option value="">Todos os filhos</option>
                     {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -490,27 +510,14 @@ export default function VaultClient({ children, documents: initialDocuments, can
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</label>
-                  <input type="date" className="input-field w-full" value={uIssueDate} onChange={e => setUIssueDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Vencimento</label>
-                  <input type="date" className="input-field w-full" value={uExpiresAt} onChange={e => setUExpiresAt(e.target.value)} />
-                </div>
+              {/* Descrição / observações */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Descrição</label>
+                <textarea className="input-field w-full resize-none" rows={2} value={uDescription} onChange={e => setUDescription(e.target.value)} placeholder="Observações..." />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</label>
-                  <input className="input-field w-full" value={uDocNumber} onChange={e => setUDocNumber(e.target.value)} placeholder="Ex: 12.345.678-9" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</label>
-                  <input className="input-field w-full" value={uIssuer} onChange={e => setUIssuer(e.target.value)} placeholder="Ex: SSP-SP" />
-                </div>
-              </div>
+              {/* Campos específicos da natureza (dinâmico) */}
+              <DocFormFields docType={uDocType} values={uValues} onChange={(k, v) => setUValues(prev => ({ ...prev, [k]: v }))} />
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags (separadas por vírgula)</label>
@@ -538,13 +545,8 @@ export default function VaultClient({ children, documents: initialDocuments, can
                 )}
                 {ocrApplied && !ocrLoading && (
                   <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
-                    <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
+                    <Sparkles size={12} /> Natureza detectada e campos preenchidos pela IA — confira antes de salvar.
                   </p>
-                )}
-                {uDocType && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(61,102,65,0.12)', color: '#2C4A2E' }}>
-                    Natureza detectada: {getDocType(uDocType).label}
-                  </div>
                 )}
                 {uFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
