@@ -83,20 +83,36 @@ export default function VaultClient({ children, documents: initialDocuments, can
     setOcrApplied(true)
   }
 
-  // Busca full-text no servidor (inclui conteúdo OCR). Debounce ~300ms. Os ids
-  // que casam entram no filtro `base` — todos os docs já estão carregados como
-  // resumo, então basta marcar quais incluir. Gateada pelo plano (documentSearch).
+  // Busca por CONTEÚDO no servidor (substring/ILIKE — robusta para números,
+  // pedaços e qualquer formatação; full-text/tsvector falha com nº de documento).
+  // Os ids que casam entram no filtro `base`; todos os docs já estão carregados
+  // como resumo. Debounce ~300ms. Gateada pelo plano (documentSearch).
   useEffect(() => {
     const q = query.trim()
     if (!canSearch || q.length < 2) { setFtsIds(null); return }
+    // Sanitiza para o filtro .or() do PostgREST (vírgula/parênteses são sintaxe).
+    const safe = q.replace(/[(),*]/g, ' ').replace(/\s+/g, ' ').trim()
+    if (safe.length < 2) { setFtsIds(null); return }
+    const pat = `%${safe}%`
+    // Versão só-dígitos: acha número de documento independente da formatação
+    // (ex.: digitar "521.762.108-75" casa com "521762108/75" no conteúdo).
+    const qDigits = q.replace(/\D/g, '')
+    const orParts = [
+      `ocr_text.ilike.${pat}`,
+      `doc_number.ilike.${pat}`,
+      `title.ilike.${pat}`,
+      `description.ilike.${pat}`,
+      `issuer.ilike.${pat}`,
+    ]
+    if (qDigits.length >= 3) orParts.push(`content_digits.ilike.%${qDigits}%`)
     let cancelled = false
     const t = setTimeout(async () => {
       const supabase = createClient()
       const { data } = await supabase
         .from('documents')
         .select('id')
-        .textSearch('search_tsv', q, { type: 'websearch', config: 'portuguese' })
-        .limit(200)
+        .or(orParts.join(','))
+        .limit(300)
       if (!cancelled) setFtsIds(new Set((data ?? []).map((d: { id: string }) => d.id)))
     }, 300)
     return () => { cancelled = true; clearTimeout(t) }
