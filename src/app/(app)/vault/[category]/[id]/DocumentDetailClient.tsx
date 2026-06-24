@@ -172,9 +172,9 @@ export default function DocumentDetailClient({ document: doc, category, children
     }
   }
 
-  // Carrega o preview inline do arquivo selecionado.
+  // Carrega o preview inline — só para IMAGENS (PDF usa placeholder + nova aba).
   useEffect(() => {
-    if (!previewFile) { setInlineUrl(null); return }
+    if (!previewFile || !previewFile.mime_type?.startsWith('image/')) { setInlineUrl(null); return }
     setInlineUrl(null)
     let active = true
     fetch(`/api/documents/${doc.id}/signed-url?fileId=${previewFile.id}`)
@@ -191,7 +191,10 @@ export default function DocumentDetailClient({ document: doc, category, children
       const res = await fetch(`/api/documents/${doc.id}/signed-url?fileId=${file.id}`)
       const json = await res.json()
       if (!res.ok) { toast(json.error ?? 'Erro ao abrir', 'error'); return }
-      setPreview({ url: json.url, mime: file.mime_type, name: file.file_name })
+      // PDF: abre em nova aba (visualizador nativo do navegador — sempre funciona).
+      // Imagem: lightbox embutido.
+      if (file.mime_type === 'application/pdf') window.open(json.url, '_blank')
+      else setPreview({ url: json.url, mime: file.mime_type, name: file.file_name })
     } catch {
       toast('Erro ao abrir arquivo', 'error')
     } finally {
@@ -317,12 +320,22 @@ export default function DocumentDetailClient({ document: doc, category, children
           <div style={{ height: 240, borderRadius: 12, overflow: 'hidden', background: 'rgba(61,102,65,0.05)', border: '1px solid rgba(61,102,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {previewFile && inlineUrl && previewFile.mime_type?.startsWith('image/') ? (
               <img src={inlineUrl} alt={previewFile.file_name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            ) : previewFile && inlineUrl && previewFile.mime_type === 'application/pdf' ? (
-              <iframe src={inlineUrl} title={previewFile.file_name} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+            ) : previewFile && previewFile.mime_type === 'application/pdf' ? (
+              // PDF: placeholder limpo (iframe cross-origin é instável); "Visualizar" abre em nova aba.
+              <div className="flex flex-col items-center gap-2 px-4 text-center">
+                <FileText size={42} strokeWidth={1.2} color="#B91C1C" />
+                <span className="text-xs font-semibold break-words" style={{ color: '#1A2B1C', maxWidth: '90%' }}>{previewFile.file_name}</span>
+                <span className="text-[11px]" style={{ color: 'rgba(26,43,28,0.45)' }}>PDF · toque em Visualizar para abrir</span>
+              </div>
+            ) : previewFile ? (
+              <div className="flex flex-col items-center gap-2" style={{ color: 'rgba(26,43,28,0.35)' }}>
+                <Loader2 size={28} className="animate-spin" />
+                <span className="text-xs">Carregando…</span>
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-2" style={{ color: 'rgba(26,43,28,0.35)' }}>
-                {previewFile ? <Loader2 size={28} className="animate-spin" /> : <FileText size={40} strokeWidth={1.2} />}
-                <span className="text-xs">{previewFile ? 'Carregando…' : 'Sem arquivo anexado'}</span>
+                <FileText size={40} strokeWidth={1.2} />
+                <span className="text-xs">Sem arquivo anexado</span>
               </div>
             )}
           </div>
