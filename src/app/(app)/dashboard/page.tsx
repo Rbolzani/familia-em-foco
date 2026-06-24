@@ -2,6 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import DashboardClient from './DashboardClient'
+import { expiryStatus, daysToExpiry } from '@/lib/vault'
+import type { VacinaItem } from '@/lib/docTypes'
+
+export interface VaccineAlert {
+  documentId: string
+  childName: string | null
+  vaccineName: string
+  proxima_dose: string
+  daysLeft: number
+  status: 'vencido' | 'a_vencer'
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -26,6 +37,7 @@ export default async function DashboardPage() {
     { data: upcomingActivities },
     { data: monthActivities },
     { data: reminders },
+    { data: vaccineDocs },
   ] = await Promise.all([
     supabase.from('children').select('*').order('sort_order'),
 
@@ -55,7 +67,35 @@ export default async function DashboardPage() {
       .is('date', null)
       .neq('status', 'cancelado')
       .order('created_at', { ascending: false }),
+
+    // Vaccine documents — for upcoming dose alerts
+    supabase.from('documents')
+      .select('id, title, metadata, child:children(name)')
+      .eq('doc_type', 'vacinacao'),
   ])
+
+  // Compute upcoming vaccine dose alerts (vencido + a_vencer nos próximos 30 dias)
+  const vaccineAlerts: VaccineAlert[] = []
+  for (const doc of vaccineDocs ?? []) {
+    const vacinas = ((doc.metadata as Record<string, unknown>)?.vacinas ?? []) as VacinaItem[]
+    for (const v of vacinas) {
+      if (!v.proxima_dose || !v.nome) continue
+      const st = expiryStatus(v.proxima_dose)
+      if (st !== 'vencido' && st !== 'a_vencer') continue
+      vaccineAlerts.push({
+        documentId: doc.id,
+        childName: (doc.child as unknown as { name: string } | null)?.name ?? null,
+        vaccineName: v.nome,
+        proxima_dose: v.proxima_dose,
+        daysLeft: daysToExpiry(v.proxima_dose) ?? 0,
+        status: st,
+      })
+    }
+  }
+  vaccineAlerts.sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'vencido' ? -1 : 1
+    return a.daysLeft - b.daysLeft
+  })
 
   const userName = user.user_metadata?.full_name?.split(' ')[0] || 'Olá'
 
@@ -67,6 +107,7 @@ export default async function DashboardPage() {
       upcomingActivities={upcomingActivities ?? []}
       monthActivities={(monthActivities ?? []) as Parameters<typeof DashboardClient>[0]['monthActivities']}
       reminders={(reminders ?? []) as Parameters<typeof DashboardClient>[0]['reminders']}
+      vaccineAlerts={vaccineAlerts}
     />
   )
 }

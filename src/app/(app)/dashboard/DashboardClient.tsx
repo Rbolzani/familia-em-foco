@@ -6,7 +6,7 @@ import {
   SunMedium, MapPin,
   ChevronLeft, ChevronRight,
   CalendarCheck, CalendarRange, Stethoscope,
-  StickyNote, Plus, Trash2, Check,
+  StickyNote, Plus, Trash2, Check, Syringe,
 } from 'lucide-react'
 import { Activity, Child } from '@/lib/types'
 import { mergeActivities } from '@/lib/merge-activities'
@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { useAccess } from '@/components/access/AccessContext'
+import type { VaccineAlert } from './page'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ActWithChild = Activity & { child: { name: string; avatar_color: string } }
@@ -25,6 +26,7 @@ interface Props {
   upcomingActivities: ActWithChild[]
   monthActivities:    ActWithChild[]   // full month — for mini-calendar dots + click detail
   reminders:          ActWithChild[]  // activities with no date
+  vaccineAlerts:      VaccineAlert[]
 }
 
 // ── Textures ───────────────────────────────────────────────────────────────
@@ -462,8 +464,52 @@ function RemindersPanel({ initial, allChildren }: { initial: ActWithChild[]; all
   )
 }
 
+// ── Vaccine Alerts Panel ───────────────────────────────────────────────────
+function VaccineAlertsPanel({ alerts }: { alerts: VaccineAlert[] }) {
+  if (!alerts.length) return null
+  return (
+    <div>
+      <SectionH><Syringe size={18} color="#DB2777"/> Vacinas</SectionH>
+      <div className="space-y-2">
+        {alerts.map((a, i) => {
+          const isVencida = a.status === 'vencido'
+          const accent = isVencida ? '#DC2626' : '#D97706'
+          const badgeBg = isVencida ? 'rgba(220,38,38,0.10)' : 'rgba(245,158,11,0.10)'
+          const badgeColor = isVencida ? '#B91C1C' : '#92400E'
+          const dayLabel = isVencida
+            ? `Vencida há ${Math.abs(a.daysLeft)} dia${Math.abs(a.daysLeft) !== 1 ? 's' : ''}`
+            : a.daysLeft === 0 ? 'Hoje!'
+            : a.daysLeft === 1 ? 'Amanhã'
+            : `Em ${a.daysLeft} dias`
+          return (
+            <Link key={i} href={`/vault/vacinacao/${a.documentId}`}>
+              <div className="flex items-center gap-3 p-3 rounded-xl transition-all hover:brightness-95"
+                style={{ background: isVencida ? 'rgba(220,38,38,0.04)' : 'rgba(245,158,11,0.05)', border: `1px solid ${accent}30` }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: badgeBg }}>
+                  <Syringe size={13} color={accent} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold truncate" style={{ color: '#1A2B1C' }}>{a.vaccineName}</p>
+                  {a.childName && (
+                    <p className="text-[11px]" style={{ color: 'rgba(26,43,28,0.50)' }}>{a.childName}</p>
+                  )}
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                  style={{ background: badgeBg, color: badgeColor }}>
+                  {dayLabel}
+                </span>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
-export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthActivities, reminders }: Props) {
+export default function DashboardClient({ userName, children, todayActivities, upcomingActivities, monthActivities, reminders, vaccineAlerts }: Props) {
   // Group month activities by date for mini-calendar
   const activitiesByDate = monthActivities.reduce<Record<string, ActWithChild[]>>((acc, a) => {
     if (!a.date) return acc
@@ -561,6 +607,7 @@ export default function DashboardClient({ userName, children, todayActivities, u
             <SectionH>Calendário</SectionH>
             <MiniCalendar activitiesByDate={activitiesByDate}/>
           </div>
+          <VaccineAlertsPanel alerts={vaccineAlerts}/>
           <div>
             <SectionH>Lembretes</SectionH>
             <RemindersPanel initial={reminders} allChildren={children}/>

@@ -12,6 +12,25 @@ interface Props {
 const LABEL = 'block text-[11px] font-bold uppercase tracking-wider mb-1.5'
 const LABEL_STYLE: React.CSSProperties = { color: 'rgba(26,43,28,0.50)' }
 
+function maskCpfCnpj(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 14)
+  if (d.length <= 11) {
+    const p1 = d.slice(0, 3), p2 = d.slice(3, 6), p3 = d.slice(6, 9), p4 = d.slice(9, 11)
+    let r = p1
+    if (p2) r += '.' + p2
+    if (p3) r += '.' + p3
+    if (p4) r += '-' + p4
+    return r
+  }
+  const p1 = d.slice(0, 2), p2 = d.slice(2, 5), p3 = d.slice(5, 8), p4 = d.slice(8, 12), p5 = d.slice(12, 14)
+  let r = p1
+  if (p2) r += '.' + p2
+  if (p3) r += '.' + p3
+  if (p4) r += '/' + p4
+  if (p5) r += '-' + p5
+  return r
+}
+
 // Renderiza dinamicamente os campos específicos da natureza do documento.
 // Usado nos formulários de upload (overview/gaveta) e na edição do detalhe.
 export default function DocFormFields({ docType, values, onChange }: Props) {
@@ -47,10 +66,19 @@ function Field({ f, value, onChange }: { f: DocField; value: unknown; onChange: 
       </div>
     )
   }
+  if (f.format === 'cpf_cnpj') {
+    return (
+      <div>
+        <label className={LABEL} style={LABEL_STYLE}>{f.label}</label>
+        <input type="text" inputMode="numeric" className="input-field w-full"
+          placeholder="000.000.000-00" maxLength={18}
+          value={(value as string) ?? ''} onChange={e => onChange(maskCpfCnpj(e.target.value))} />
+      </div>
+    )
+  }
   const type = f.format === 'data' ? 'date' : 'text'
   const placeholder =
     f.format === 'valor' ? 'R$ 0,00' :
-    f.format === 'cpf_cnpj' ? '000.000.000-00' :
     f.format === 'crm' ? 'CRM/UF 000000' : undefined
   return (
     <div>

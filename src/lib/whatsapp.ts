@@ -225,6 +225,39 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     if (nextActs.length > 8) lines.push(`… e mais ${nextActs.length - 8} atividades no app`)
   }
 
+  // Vacinas com próxima dose vencida ou nos próximos 30 dias
+  const vaccineQuery = admin
+    .from('documents')
+    .select('title, metadata, child:children(name)')
+    .eq('doc_type', 'vacinacao')
+  const { data: vaccineDocs } = familyIds.length > 0
+    ? await vaccineQuery.in('family_id', familyIds)
+    : await vaccineQuery.eq('user_id', userId)
+
+  const vaccineLines: string[] = []
+  const cutoff = spDate(30)  // próximos 30 dias
+  for (const doc of vaccineDocs ?? []) {
+    const vacinas = ((doc.metadata as Record<string, unknown>)?.vacinas ?? []) as Array<{ nome?: string; proxima_dose?: string | null }>
+    for (const v of vacinas) {
+      if (!v.proxima_dose || !v.nome) continue
+      if (v.proxima_dose > cutoff) continue  // mais de 30 dias, pula
+      const childName = (doc.child as unknown as { name: string } | null)?.name
+      const daysLeft = Math.ceil((new Date(v.proxima_dose + 'T23:59:59').getTime() - Date.now()) / 86_400_000)
+      const status = daysLeft < 0
+        ? `vencida há ${Math.abs(daysLeft)} dia${Math.abs(daysLeft) !== 1 ? 's' : ''}`
+        : daysLeft === 0 ? 'hoje!'
+        : daysLeft === 1 ? 'amanhã'
+        : `em ${daysLeft} dias`
+      const who = childName ? ` (${childName})` : ''
+      vaccineLines.push(`💉 ${v.nome}${who} — dose ${status}`)
+    }
+  }
+  if (vaccineLines.length > 0) {
+    lines.push('')
+    lines.push('*Vacinas — doses próximas*')
+    vaccineLines.forEach(l => lines.push(l))
+  }
+
   lines.push('')
   lines.push('💚 _Família em Foco_')
 
