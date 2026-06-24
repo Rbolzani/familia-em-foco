@@ -2,11 +2,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle, Eye } from 'lucide-react'
+import { ChevronLeft, Download, Trash2, Plus, FileText, Image, File, Loader2, X, Upload, AlertTriangle, Eye, Pencil } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentFile, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
-import { getVaultCategory } from '@/lib/vault'
+import { getVaultCategory, VAULT_CATEGORIES } from '@/lib/vault'
 
 function fileIcon(mime: string | null) {
   if (!mime) return <File size={18} />
@@ -56,6 +56,60 @@ export default function DocumentDetailClient({ document: doc, category, children
   const [previewFile, setPreviewFile] = useState<DocumentFile | null>(doc.files?.[0] ?? null)
   const [inlineUrl, setInlineUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Edição dos dados cadastrais
+  const [showEdit, setShowEdit]       = useState(false)
+  const [savingEdit, setSavingEdit]   = useState(false)
+  const [eTitle, setETitle]           = useState(doc.title)
+  const [eDescription, setEDescription] = useState(doc.description ?? '')
+  const [eChildId, setEChildId]       = useState(doc.child?.id ?? '')
+  const [eCategory, setECategory]     = useState<DocumentCategory>(category)
+  const [eExpiresAt, setEExpiresAt]   = useState(doc.expires_at ?? '')
+  const [eDocNumber, setEDocNumber]   = useState(doc.doc_number ?? '')
+  const [eIssuer, setEIssuer]         = useState(doc.issuer ?? '')
+  const [eIssueDate, setEIssueDate]   = useState(doc.issue_date ?? '')
+  const [eTags, setETags]             = useState((doc.tags ?? []).join(', '))
+
+  function openEdit() {
+    setETitle(doc.title)
+    setEDescription(doc.description ?? '')
+    setEChildId(doc.child?.id ?? '')
+    setECategory(category)
+    setEExpiresAt(doc.expires_at ?? '')
+    setEDocNumber(doc.doc_number ?? '')
+    setEIssuer(doc.issuer ?? '')
+    setEIssueDate(doc.issue_date ?? '')
+    setETags((doc.tags ?? []).join(', '))
+    setShowEdit(true)
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!eTitle.trim()) { toast('Informe o título do documento', 'error'); return }
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/documents/${doc.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: eTitle, description: eDescription, child_id: eChildId,
+          category: eCategory, expires_at: eExpiresAt, doc_number: eDocNumber,
+          issuer: eIssuer, issue_date: eIssueDate, tags: eTags,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast(json.error ?? 'Erro ao salvar', 'error'); return }
+      toast('Documento atualizado ✓')
+      setShowEdit(false)
+      // Se mudou de gaveta, navega para a nova URL; senão recarrega os dados.
+      if (eCategory !== category) router.push(`/vault/${eCategory}/${doc.id}`)
+      else router.refresh()
+    } catch {
+      toast('Erro ao salvar', 'error')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
 
   // Carrega o preview inline do arquivo selecionado.
   useEffect(() => {
@@ -281,6 +335,13 @@ export default function DocumentDetailClient({ document: doc, category, children
               </div>
             )}
           </div>
+          {canEdit && (
+            <button onClick={openEdit}
+              className="mt-3 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:brightness-105 active:scale-95"
+              style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+              <Pencil size={13} /> Editar informações
+            </button>
+          )}
         </div>
       </div>
 
@@ -420,6 +481,87 @@ export default function DocumentDetailClient({ document: doc, category, children
                 className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
                 style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
                 {uploadingMore ? <><Loader2 size={15} className="animate-spin" /> Enviando...</> : 'Enviar arquivos'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edição dos dados */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowEdit(false) }}>
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-4 animate-fade-up max-h-[90vh] overflow-y-auto"
+            style={{ background: '#F5F0E8', border: '1px solid rgba(61,102,65,0.20)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+            <div className="flex items-center justify-between">
+              <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C' }}>
+                Editar documento
+              </h2>
+              <button onClick={() => setShowEdit(false)} className="p-1 rounded-lg hover:bg-black/10 transition-colors">
+                <X size={18} color="#1A2B1C" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSave} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Gaveta *</label>
+                <select className="input-field w-full" value={eCategory} onChange={e => setECategory(e.target.value as DocumentCategory)}>
+                  {VAULT_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Título *</label>
+                <input className="input-field w-full" value={eTitle} onChange={e => setETitle(e.target.value)} required />
+              </div>
+
+              {children.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Filho</label>
+                  <select className="input-field w-full" value={eChildId} onChange={e => setEChildId(e.target.value)}>
+                    <option value="">Todos os filhos</option>
+                    {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Descrição</label>
+                <textarea className="input-field w-full resize-none" rows={2} value={eDescription} onChange={e => setEDescription(e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Emissão</label>
+                  <input type="date" className="input-field w-full" value={eIssueDate} onChange={e => setEIssueDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Vencimento</label>
+                  <input type="date" className="input-field w-full" value={eExpiresAt} onChange={e => setEExpiresAt(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Nº do documento</label>
+                  <input className="input-field w-full" value={eDocNumber} onChange={e => setEDocNumber(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Órgão emissor</label>
+                  <input className="input-field w-full" value={eIssuer} onChange={e => setEIssuer(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags (separadas por vírgula)</label>
+                <input className="input-field w-full" value={eTags} onChange={e => setETags(e.target.value)} placeholder="Ex: viagem, escola" />
+              </div>
+
+              <button type="submit" disabled={savingEdit}
+                className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
+                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                {savingEdit ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar alterações'}
               </button>
             </form>
           </div>

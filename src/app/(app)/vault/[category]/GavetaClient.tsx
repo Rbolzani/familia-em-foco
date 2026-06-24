@@ -2,11 +2,12 @@
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, FileText, ChevronRight, X, Upload, Loader2 } from 'lucide-react'
+import { ChevronLeft, FileText, ChevronRight, X, Upload, Loader2, Sparkles } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { Child, AppDocument, DocumentCategory } from '@/lib/types'
 import { useAccess } from '@/components/access/AccessContext'
 import { getVaultCategory } from '@/lib/vault'
+import { ocrDocument, isOcrable } from '@/lib/ocr'
 
 function expiryStatus(expires_at: string | null): 'vencido' | 'a vencer' | 'valido' | null {
   if (!expires_at) return null
@@ -28,9 +29,10 @@ interface Props {
   category: DocumentCategory
   children: Child[]
   documents: AppDocument[]
+  canOcr: boolean
 }
 
-export default function GavetaClient({ category, children, documents: initialDocs }: Props) {
+export default function GavetaClient({ category, children, documents: initialDocs, canOcr }: Props) {
   const router = useRouter()
   const { canEdit } = useAccess()
   const cat = getVaultCategory(category)
@@ -51,8 +53,33 @@ export default function GavetaClient({ category, children, documents: initialDoc
   const [tags, setTags] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+  // OCR (cofre inteligente): texto extraído + estado de auto-preenchimento
+  const [ocrText, setOcrText] = useState<string | null>(null)
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrApplied, setOcrApplied] = useState(false)
 
   const filtered = childFilter ? docs.filter(d => d.child_id === childFilter) : docs
+
+  // Ao selecionar arquivos: roda OCR no 1º arquivo "ocrável" e auto-preenche os
+  // campos vazios (não sobrescreve o que a pessoa já digitou). Conveniência —
+  // qualquer falha é silenciosa e o upload manual segue normal.
+  async function handleFilesSelected(selected: File[]) {
+    setFiles(selected)
+    if (!canOcr) return
+    const target = selected.find(isOcrable)
+    if (!target) return
+    setOcrLoading(true); setOcrApplied(false)
+    const r = await ocrDocument(target)
+    setOcrLoading(false)
+    if (!r) return
+    setOcrText(r.ocr_text || null)
+    setTitle(prev => prev.trim() ? prev : (r.title ?? ''))
+    setDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
+    setIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
+    setIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
+    setExpiresAt(prev => prev ? prev : (r.expires_at ?? ''))
+    setOcrApplied(true)
+  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault()
@@ -69,6 +96,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
       if (issuer) form.append('issuer', issuer.trim())
       if (issueDate) form.append('issue_date', issueDate)
       if (tags.trim()) form.append('tags', tags.trim())
+      if (ocrText) form.append('ocr_text', ocrText)
       files.forEach(f => form.append('files', f))
 
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
@@ -81,6 +109,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
       setShowUpload(false)
       setTitle(''); setDescription(''); setChildId(''); setExpiresAt(''); setFiles([])
       setDocNumber(''); setIssuer(''); setIssueDate(''); setTags('')
+      setOcrText(null); setOcrApplied(false)
     } catch {
       toast('Erro ao salvar documento', 'error')
     } finally {
@@ -298,17 +327,28 @@ export default function GavetaClient({ category, children, documents: initialDoc
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
                   Arquivos (PDF, imagem)
+                  {canOcr && <span className="inline-flex items-center gap-1 normal-case tracking-normal font-semibold" style={{ color: '#3D6641' }}><Sparkles size={11} /> a IA preenche os campos</span>}
                 </label>
                 <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  className="hidden" onChange={e => setFiles(Array.from(e.target.files ?? []))} />
+                  className="hidden" onChange={e => handleFilesSelected(Array.from(e.target.files ?? []))} />
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-colors hover:bg-black/5"
                   style={{ borderColor: 'rgba(61,102,65,0.30)', color: '#3D6641' }}>
                   <Upload size={15} />
                   {files.length > 0 ? `${files.length} arquivo${files.length > 1 ? 's' : ''} selecionado${files.length > 1 ? 's' : ''}` : 'Selecionar arquivos'}
                 </button>
+                {ocrLoading && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
+                    <Loader2 size={12} className="animate-spin" /> Lendo documento com IA…
+                  </p>
+                )}
+                {ocrApplied && !ocrLoading && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
+                    <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
+                  </p>
+                )}
                 {files.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {files.map((f, i) => (

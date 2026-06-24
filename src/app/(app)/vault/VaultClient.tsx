@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo, useState, useRef } from 'react'
+import React, { useMemo, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Sparkles, Search, X, Plus, Upload, Loader2 } from 'lucide-react'
@@ -8,6 +8,8 @@ import { useAccess } from '@/components/access/AccessContext'
 import { VAULT_CATEGORIES, VAULT_CATEGORY_KEYS, getVaultCategory, expiryStatus, EXPIRY_META, expiryLabel } from '@/lib/vault'
 import type { DocumentCategory } from '@/lib/types'
 import { toast } from '@/components/ui/Toast'
+import { ocrDocument, isOcrable } from '@/lib/ocr'
+import { createClient } from '@/lib/supabase/client'
 
 interface DocSummary {
   id: string
@@ -20,11 +22,13 @@ interface DocSummary {
 interface Props {
   children: Child[]
   documents: DocSummary[]
+  canOcr: boolean
+  canSearch: boolean
 }
 
 type StatusFilter = 'todos' | 'a_vencer' | 'vencido'
 
-export default function VaultClient({ children, documents: initialDocuments }: Props) {
+export default function VaultClient({ children, documents: initialDocuments, canOcr, canSearch }: Props) {
   const router = useRouter()
   const { canEdit } = useAccess()
   const [documents, setDocuments] = useState<DocSummary[]>(initialDocuments)
@@ -32,6 +36,8 @@ export default function VaultClient({ children, documents: initialDocuments }: P
   const [childId, setChildId]   = useState<string | 'fam' | null>(null) // null = todos
   const [showSearch, setShowSearch] = useState(false)
   const [query, setQuery]       = useState('')
+  // Busca full-text (conteúdo OCR): ids dos docs que casam no servidor.
+  const [ftsIds, setFtsIds]     = useState<Set<string> | null>(null)
 
   // Upload modal
   const [showUpload, setShowUpload] = useState(false)
@@ -47,11 +53,54 @@ export default function VaultClient({ children, documents: initialDocuments }: P
   const [uTags, setUTags]           = useState('')
   const [uFiles, setUFiles]         = useState<File[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+  // OCR (cofre inteligente) no modal de upload
+  const [uOcrText, setUOcrText]     = useState<string | null>(null)
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrApplied, setOcrApplied] = useState(false)
 
   function resetUploadForm() {
     setUTitle(''); setUCategory(VAULT_CATEGORIES[0].key); setUChildId(''); setUDescription('')
     setUExpiresAt(''); setUDocNumber(''); setUIssuer(''); setUIssueDate(''); setUTags(''); setUFiles([])
+    setUOcrText(null); setOcrApplied(false)
   }
+
+  // Auto-preenchimento por OCR ao escolher arquivo (preenche só campos vazios).
+  async function handleUFilesSelected(selected: File[]) {
+    setUFiles(selected)
+    if (!canOcr) return
+    const target = selected.find(isOcrable)
+    if (!target) return
+    setOcrLoading(true); setOcrApplied(false)
+    const r = await ocrDocument(target)
+    setOcrLoading(false)
+    if (!r) return
+    setUOcrText(r.ocr_text || null)
+    setUTitle(prev => prev.trim() ? prev : (r.title ?? ''))
+    setUDocNumber(prev => prev.trim() ? prev : (r.doc_number ?? ''))
+    setUIssuer(prev => prev.trim() ? prev : (r.issuer ?? ''))
+    setUIssueDate(prev => prev ? prev : (r.issue_date ?? ''))
+    setUExpiresAt(prev => prev ? prev : (r.expires_at ?? ''))
+    setOcrApplied(true)
+  }
+
+  // Busca full-text no servidor (inclui conteúdo OCR). Debounce ~300ms. Os ids
+  // que casam entram no filtro `base` — todos os docs já estão carregados como
+  // resumo, então basta marcar quais incluir. Gateada pelo plano (documentSearch).
+  useEffect(() => {
+    const q = query.trim()
+    if (!canSearch || q.length < 2) { setFtsIds(null); return }
+    let cancelled = false
+    const t = setTimeout(async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('documents')
+        .select('id')
+        .textSearch('search_tsv', q, { type: 'websearch', config: 'portuguese' })
+        .limit(200)
+      if (!cancelled) setFtsIds(new Set((data ?? []).map((d: { id: string }) => d.id)))
+    }, 300)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [query, canSearch])
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault()
@@ -68,6 +117,7 @@ export default function VaultClient({ children, documents: initialDocuments }: P
       if (uIssuer) form.append('issuer', uIssuer.trim())
       if (uIssueDate) form.append('issue_date', uIssueDate)
       if (uTags.trim()) form.append('tags', uTags.trim())
+      if (uOcrText) form.append('ocr_text', uOcrText)
       uFiles.forEach(f => form.append('files', f))
       const res = await fetch('/api/documents/upload', { method: 'POST', body: form })
       const json = await res.json()
@@ -94,10 +144,11 @@ export default function VaultClient({ children, documents: initialDocuments }: P
     return (documents as DocSummary[]).filter(d => {
       if (childId === 'fam' && d.child_id !== null) return false
       if (childId && childId !== 'fam' && d.child_id !== childId) return false
-      if (q && !d.title.toLowerCase().includes(q)) return false
+      // casa por título (instantâneo) OU por conteúdo via full-text do servidor
+      if (q && !(d.title.toLowerCase().includes(q) || (ftsIds?.has(d.id) ?? false))) return false
       return true
     })
-  }, [documents, childId, query])
+  }, [documents, childId, query, ftsIds])
 
   const counts = useMemo(() => {
     let ok = 0, soon = 0, late = 0
@@ -234,7 +285,7 @@ export default function VaultClient({ children, documents: initialDocuments }: P
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(26,43,28,0.40)' }} />
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Buscar por título…"
+              placeholder={canSearch ? 'Buscar por título ou conteúdo do documento…' : 'Buscar por título…'}
               style={{ width: '100%', padding: '10px 34px', borderRadius: 12, border: '1px solid rgba(61,102,65,0.22)', fontSize: 14, outline: 'none', background: '#fff', color: '#1A2B1C' }} />
             {query && <X size={15} onClick={() => setQuery('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(26,43,28,0.40)', cursor: 'pointer' }} />}
           </div>
@@ -384,15 +435,28 @@ export default function VaultClient({ children, documents: initialDocuments }: P
 
               {/* Upload */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Arquivos (PDF, imagem)</label>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                  Arquivos (PDF, imagem)
+                  {canOcr && <span className="inline-flex items-center gap-1 normal-case tracking-normal font-semibold" style={{ color: '#3D6641' }}><Sparkles size={11} /> a IA preenche os campos</span>}
+                </label>
                 <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden"
-                  onChange={e => setUFiles(Array.from(e.target.files ?? []))} />
+                  onChange={e => handleUFilesSelected(Array.from(e.target.files ?? []))} />
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-colors hover:bg-black/5"
                   style={{ borderColor: 'rgba(61,102,65,0.30)', color: '#3D6641' }}>
                   <Upload size={15} />
                   {uFiles.length > 0 ? `${uFiles.length} arquivo${uFiles.length > 1 ? 's' : ''} selecionado${uFiles.length > 1 ? 's' : ''}` : 'Selecionar arquivos'}
                 </button>
+                {ocrLoading && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
+                    <Loader2 size={12} className="animate-spin" /> Lendo documento com IA…
+                  </p>
+                )}
+                {ocrApplied && !ocrLoading && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
+                    <Sparkles size={12} /> Campos preenchidos pela IA — confira antes de salvar.
+                  </p>
+                )}
                 {uFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {uFiles.map((f, i) => (

@@ -19,17 +19,19 @@ export async function POST(req: NextRequest) {
   const tags        = tagsRaw
     ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
     : null
+  const ocr_text    = (form.get('ocr_text') as string) || null
   const files       = form.getAll('files') as File[]
 
   if (!title || !category) {
     return NextResponse.json({ error: 'Título e categoria são obrigatórios' }, { status: 400 })
   }
 
-  // Create document record first
+  // Create document record first. ocr_text (extraído no upload pela IA) alimenta
+  // a busca full-text via trigger search_tsv.
   const { data: doc, error: docErr } = await supabase
     .from('documents')
     .insert({ user_id: user.id, child_id, category, title, description, expires_at,
-              doc_number, issuer, issue_date, tags })
+              doc_number, issuer, issue_date, tags, ocr_text })
     .select()
     .single()
 
