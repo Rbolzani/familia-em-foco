@@ -2,10 +2,21 @@ import { createClient, createAdminClient } from './supabase/server'
 
 export type PlanId = 'free' | 'familia' | 'plus'
 
-export const PLAN_LIMITS: Record<PlanId, { children: number; aiPerMonth: number; partners: number }> = {
-  free:    { children: 2, aiPerMonth: 5,        partners: 0 },
-  familia: { children: 2, aiPerMonth: Infinity, partners: 1 },
-  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity },
+// OCR de documentos (v1b): auto-preenche campos ao escanear + busca full-text
+// dentro dos documentos + volume ilimitado. Decisão comercial: o OCR é IDÊNTICO
+// no Família e no Plus (não é eixo de upsell); entre os dois pagos, o único
+// diferencial pretendido é o storage. O Gratuito não tem OCR dedicado — segue
+// o limite de 5 capturas de IA/mês.
+export const PLAN_LIMITS: Record<PlanId, {
+  children: number
+  aiPerMonth: number
+  partners: number
+  ocr: boolean             // OCR completo (auto-preenchimento + volume ilimitado)
+  documentSearch: boolean  // busca full-text dentro dos documentos
+}> = {
+  free:    { children: 2,        aiPerMonth: 5,        partners: 0,        ocr: false, documentSearch: false },
+  familia: { children: 2,        aiPerMonth: Infinity, partners: 1,        ocr: true,  documentSearch: true  },
+  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity, ocr: true,  documentSearch: true  },
 }
 
 export const PLAN_LABELS: Record<PlanId, string> = {

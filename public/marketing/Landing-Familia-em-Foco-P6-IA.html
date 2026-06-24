@@ -158,6 +158,7 @@
   .sic-lock{background:linear-gradient(135deg,#1e5e58,#0B4F4A)}
   .sic-key{background:linear-gradient(135deg,#1a4a46,#133e3a)}
   .sic-perm{background:linear-gradient(135deg,#14433f,#0d3330)}
+  .sic-ocr{background:linear-gradient(135deg,#17514c,#0e3a36)}
 
   /* SVG icon wrapper */
   .sic svg{width:28px;height:28px}
@@ -272,7 +273,7 @@
   .emo h2{font-size:clamp(30px,4vw,46px);margin-bottom:16px}.emo h2 span{color:var(--coral)}
 
   /* SEGURANÇA — cards melhorados */
-  .secgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .secgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
   .seccard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);padding:28px;transition:background .2s}
   .seccard:hover{background:rgba(255,255,255,.10)}
   .seccard h3{color:#fff;font-size:18px;margin-bottom:7px}.seccard p{color:#BFD8D3;font-size:14.5px;line-height:1.6}
@@ -837,10 +838,9 @@
 
       <!-- Mockup celular lado direito (apenas desktop) -->
       <div class="video-mockup-col" style="display:flex;justify-content:center;align-items:center">
-        <div style="position:relative;width:360px">
-          <div style="width:360px;height:720px;background:#0a0a0a;border-radius:52px;padding:14px;box-shadow:0 0 0 2px #2a2a2a, 0 40px 100px rgba(0,0,0,.6), inset 0 0 0 1px #333;position:relative;">
-            <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:96px;height:28px;background:#0a0a0a;border-radius:0 0 18px 18px;z-index:10"></div>
-            <div style="width:100%;height:100%;border-radius:34px;overflow:hidden;background:#000;position:relative">
+        <div style="position:relative;width:420px">
+          <div style="width:420px;height:720px;background:#0a0a0a;border-radius:44px;padding:6px;box-shadow:0 0 0 1px #2a2a2a, 0 40px 100px rgba(0,0,0,.6), inset 0 0 0 1px #333;position:relative;">
+            <div style="width:100%;height:100%;border-radius:38px;overflow:hidden;background:#000;position:relative">
               <video id="demo-video" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block">
                 <source src="assets/0618.mp4" type="video/mp4">
               </video>
@@ -942,7 +942,7 @@
             <path d="M18 4v5l3-2.5" stroke="#FF6B5C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
           </svg>
         </div>
-        <h3>Cofre de Documentos</h3><p>RG, carteirinhas e contratos guardados com segurança e alerta de vencimento.</p>
+        <h3>Cofre de Documentos Inteligente</h3><p>RG, carteirinhas e contratos guardados com segurança. A IA organiza tudo sem você digitar e encontra qualquer documento ou imagem por palavra-chave.</p>
       </div>
 
       <div class="fcard c-fam">
@@ -1303,6 +1303,19 @@
         <h3>Permissões por pessoa</h3>
         <p>Convide o parceiro ou a família com níveis: só leitura, só logística ou acesso completo.</p>
       </div>
+      <div class="seccard">
+        <div class="sic sic-ocr">
+          <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="4" width="13" height="18" rx="2.5" fill="#7FE3D6" opacity=".18"/>
+            <path d="M9 9h7M9 12.5h7M9 16h4.5" stroke="#7FE3D6" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="18.5" cy="18.5" r="4" fill="none" stroke="#7FE3D6" stroke-width="2"/>
+            <path d="M21.4 21.4l2.6 2.6" stroke="#7FE3D6" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21.5 5.2l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6z" fill="#FF6B5C" opacity=".9"/>
+          </svg>
+        </div>
+        <h3>Cofre inteligente com IA</h3>
+        <p>Organize sem digitar nada: a IA reconhece seus documentos e imagens — e você acha qualquer um em segundos por palavra-chave.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -1451,7 +1464,7 @@
           <li><span class="ck">✓</span> Até 3 filhos</li>
           <li><span class="ck">✓</span> <b>IA texto + foto ilimitado</b></li>
           <li><span class="ck">✓</span> <b>Entrada por voz ilimitado</b></li>
-          <li><span class="ck">✓</span> <b>Cofre de documentos (5 GB)</b></li>
+          <li><span class="ck">✓</span> <b>Cofre de documentos inteligente (5 GB)</b></li>
           <li><span class="ck">✓</span> <b>Resumo diário no WhatsApp</b></li>
           <li><span class="ck">✓</span> <b>1 parceiro com acesso compartilhado</b></li>
           <li><span class="ck">✓</span> Logística leva/busca em tempo real</li>
@@ -1475,7 +1488,7 @@
           <li><span class="ck">✓</span> <b>Tudo do plano Família</b></li>
           <li><span class="ck">✓</span> Filhos ilimitados</li>
           <li><span class="ck">✓</span> Parceiros ilimitados</li>
-          <li><span class="ck">✓</span> Cofre de documentos (20 GB)</li>
+          <li><span class="ck">✓</span> Cofre de documentos inteligente (20 GB)</li>
           <li><span class="ck">✓</span> Export de dados (PDF/CSV)</li>
           <li><span class="ck">✓</span> Suporte prioritário</li>
         </ul>
