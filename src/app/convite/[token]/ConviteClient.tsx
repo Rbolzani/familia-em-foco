@@ -158,9 +158,10 @@ export default function ConviteClient({
     if (!email.trim()) return
     setMagicLoading(true)
     setError('')
+    const redirectTo = `${window.location.origin}/auth/callback?next=/convite/${token}`
     const { error: otpErr } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
     })
     if (otpErr) {
       setError('Não foi possível enviar o código. Tente novamente.')
