@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#2C4A2E"/>
-  <text x="50%" y="54%" font-family="Arial,Helvetica,sans-serif" font-size="290" font-weight="700" fill="#D4E8D5" text-anchor="middle" dominant-baseline="middle">F</text>
+  <!-- fundo coral, border-radius proporcional ao 11/36 da landing -->
+  <rect width="512" height="512" rx="157" fill="#FF6B5C"/>
+  <!-- anel branco: inset 10/36 * 512, stroke 3/36 * 512 -->
+  <circle cx="256" cy="256" r="92" fill="none" stroke="white" stroke-width="43"/>
+  <!-- ponto branco: posição 19/36 * 512, raio 3/36 * 512 -->
+  <circle cx="270" cy="270" r="43" fill="white"/>
 </svg>
