@@ -7,6 +7,7 @@ import {
   CalendarDays, FolderLock, Sparkles, Leaf,
   Palette, Moon, Sun, SlidersHorizontal,
   Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star, UserCog,
+  ChevronRight, Headphones, HelpCircle, FileText, Shield,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -63,6 +64,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
   const [mobileTemaOpen,   setMobileTemaOpen]   = useState(false)
   const [mobileSidebarOpen,setMobileSidebarOpen]= useState(false)
   const [desktopTweaksOpen,setDesktopTweaksOpen]= useState(false)
+  const [cfgPanelOpen,     setCfgPanelOpen]     = useState(false)
+  const cfgLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Notificações de logística ─────────────────────────────────────────
   const [pendingLogisticsCount, setPendingLogisticsCount] = useState(0)
@@ -172,6 +175,14 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     }
   }, [tourActive, pathname, mobileSidebarOpen])
 
+  function cfgEnter() {
+    if (cfgLeaveTimer.current) clearTimeout(cfgLeaveTimer.current)
+    setCfgPanelOpen(true)
+  }
+  function cfgLeave() {
+    cfgLeaveTimer.current = setTimeout(() => setCfgPanelOpen(false), 120)
+  }
+
   async function handleLogout() {
     await createClient().auth.signOut()
     router.push('/auth/login')
@@ -253,6 +264,29 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     )
   }
 
+  // ── Desktop Configurações sub-panel item ──
+  function CfgPanelItem({ href, label, icon: Icon, badge }: {
+    href: string; label: string; icon: React.ElementType; badge?: string
+  }) {
+    return (
+      <Link href={href} onClick={() => setCfgPanelOpen(false)}
+        onMouseEnter={cfgEnter} onMouseLeave={cfgLeave}
+        style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 12px',
+          borderRadius:9, textDecoration:'none', color:'rgba(26,43,28,0.72)',
+          fontSize:12.5, fontWeight:500 }}
+        className="hover:bg-black/[0.05]">
+        <Icon size={13} strokeWidth={1.8} style={{ flexShrink:0 }} />
+        <span style={{ flex:1 }}>{label}</span>
+        {badge && (
+          <span style={{ fontSize:9.5, fontWeight:700, background:'rgba(61,102,65,0.13)',
+            color:'rgba(26,43,28,0.55)', padding:'1px 6px', borderRadius:5 }}>
+            {badge}
+          </span>
+        )}
+      </Link>
+    )
+  }
+
   const sidebarBg = `
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E"),
     linear-gradient(175deg,#F2EAD8 0%,#E8DEC8 100%)
@@ -322,6 +356,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
+              <div style={{ height:1, background:'rgba(61,102,65,0.14)', margin:'5px 8px' }} />
+              <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
             </div>
           </nav>
 
@@ -364,17 +400,22 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               )}
             </div>
 
-            {/* Configurações section */}
+            {/* Configurações hover trigger */}
             <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
-              <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
-                display:'flex', alignItems:'center', gap:8, padding:'8px 10px 4px', color:'rgba(26,43,28,0.36)' }}>
-                Configurações
-                <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
-              </div>
-              <NavItem href="/conta"         label="Minha Conta"         icon={UserCog} />
-              <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
-              <NavItem href="/alertas"       label="Alertas"             icon={Bell} tourId="nav-alertas" />
-              <NavItem href="/planos"        label="Planos"              icon={Star} />
+              <button
+                onMouseEnter={cfgEnter}
+                onMouseLeave={cfgLeave}
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'7px 10px',
+                  borderRadius:11, background:'none', border:'none', cursor:'pointer',
+                  color:'rgba(26,43,28,0.50)', fontSize:14, fontWeight:500 }}
+                className="hover:bg-black/[0.04]">
+                <div style={{ width:28, height:28, borderRadius:9, display:'flex', alignItems:'center',
+                  justifyContent:'center', background:'rgba(61,102,65,0.07)', color:'rgba(26,43,28,0.30)', flexShrink:0 }}>
+                  <Settings size={14} strokeWidth={1.8} />
+                </div>
+                <span style={{ flex:1, textAlign:'left' }}>Configurações</span>
+                <ChevronRight size={13} style={{ opacity:0.4 }} />
+              </button>
             </div>
 
             {/* Sair + Tweaks */}
@@ -395,6 +436,40 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           </div>
 
         </aside>
+
+        {/* ── Desktop Configurações floating sub-panel ── */}
+        {cfgPanelOpen && (
+          <div
+            onMouseEnter={cfgEnter}
+            onMouseLeave={cfgLeave}
+            style={{
+              position:'fixed', left:256, bottom:44, zIndex:60,
+              width:216,
+              backgroundColor:'#EAE1CE',
+              backgroundImage:sidebarBg,
+              backgroundSize:'200px 200px, 100% 100%',
+              borderRadius:14,
+              border:'1px solid rgba(61,102,65,0.22)',
+              boxShadow:'4px 4px 28px rgba(44,74,46,0.18)',
+              padding:'10px 6px',
+            }}>
+            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Conta</div>
+            <CfgPanelItem href="/conta"   label="Minha Conta" icon={UserCog} />
+            <CfgPanelItem href="/planos"  label="Planos"      icon={Star} />
+            <CfgPanelItem href="/alertas" label="Alertas"     icon={Bell} badge="WhatsApp" />
+            <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Ajuda</div>
+            <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} badge="Novo" />
+            <CfgPanelItem href="/faq"     label="FAQ"      icon={HelpCircle} />
+            <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Legal</div>
+            <CfgPanelItem href="/termos"      label="Termos de Uso" icon={FileText} />
+            <CfgPanelItem href="/privacidade" label="Privacidade"   icon={Shield} />
+          </div>
+        )}
 
         {/* ══ MAIN ══ */}
         <main className="flex-1 min-w-0 md:ml-[256px] musgo-bg relative z-[1] flex flex-col main-container overflow-x-hidden"
@@ -565,7 +640,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         </div>
 
         {/* Main nav items */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:0, padding:'4px 0' }}>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'flex-start', gap:0, padding:'8px 0 4px' }}>
           <MobileNavItem href="/dashboard"  icon={LayoutDashboard} label="Início"     />
           <MobileNavItem href="/calendario" icon={CalendarDays}    label="Agenda"     />
           <MobileNavItem href="/logistica"  icon={Car}             label="Logística"  />
@@ -576,22 +651,31 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <MobileNavItem href="/saude"      icon={HeartPulse}      label="Saúde"      />
           <MobileNavItem href="/atividades" icon={Trophy}          label="Atividades" />
           <MobileNavItem href="/vault"      icon={FolderLock}      label="Documentos" />
+
+          <div style={{ height:1, background:'rgba(91,143,94,0.18)', margin:'6px 16px' }} />
+
+          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"        tourId="nav-children" />
+          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso" tourId="nav-invite" />
         </div>
 
-        {/* Divider */}
-        <div style={{ height:1, background:'rgba(91,143,94,0.18)', margin:'2px 16px' }} />
-
-        {/* Bottom items */}
-        <div style={{ display:'flex', flexDirection:'column', paddingBottom:8 }}>
-          <MobileNavItem href="/children"      icon={Users}    label="Meus Filhos"         amber tourId="nav-children" />
-          <MobileNavItem href="/conta"         icon={UserCog}  label="Minha Conta"          amber />
-          <MobileNavItem href="/configuracoes" icon={UserPlus} label="Compartilhar Acesso"  amber tourId="nav-invite" />
-          <MobileNavItem href="/alertas"       icon={Bell}     label="Alertas"             amber tourId="nav-alertas" />
-          <MobileNavItem href="/planos"        icon={Star}     label="Planos"              amber />
+        {/* Footer: Configurações → /settings + Sair */}
+        <div style={{ flexShrink:0, borderTop:'1px solid rgba(91,143,94,0.18)', paddingBottom:8 }}>
+          <Link href="/settings"
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{ display:'flex', alignItems:'center', gap:12, height:48, padding:'0 16px',
+              textDecoration:'none', flexShrink:0 }}>
+            <span style={{ width:32, height:32, borderRadius:10, flexShrink:0,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              background:'rgba(255,255,255,0.07)' }}>
+              <Settings size={17} strokeWidth={1.8} color="rgba(180,220,185,0.65)" />
+            </span>
+            <span style={{ fontSize:14, fontWeight:500, color:'rgba(180,220,185,0.65)', flex:1 }}>Configurações</span>
+            <ChevronRight size={14} color="rgba(180,220,185,0.35)" />
+          </Link>
           <button
             onClick={() => { setMobileSidebarOpen(false); handleLogout() }}
             style={{ display:'flex', flexDirection:'row', alignItems:'center',
-              gap:12, height:48, padding:'0 16px',
+              gap:12, height:48, padding:'0 16px', width:'100%',
               background:'none', border:'none', cursor:'pointer', flexShrink:0 }}>
             <span style={{ width:32, height:32, borderRadius:10, flexShrink:0,
               display:'flex', alignItems:'center', justifyContent:'center',
