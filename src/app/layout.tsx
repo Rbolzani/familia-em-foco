@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Lora } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegistrar from "@/components/layout/ServiceWorkerRegistrar";
 
 // DM Sans — corpo e UI
 const dmSans = DM_Sans({
@@ -36,7 +37,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`h-full antialiased ${dmSans.variable} ${lora.variable}`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <ServiceWorkerRegistrar />
+        {children}
+      </body>
     </html>
   );
 }
