@@ -583,7 +583,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
             color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Ajuda</div>
-          <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} badge="Novo" />
+          <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} />
           <CfgPanelItem href="/faq"     label="FAQ"      icon={HelpCircle} />
           <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',

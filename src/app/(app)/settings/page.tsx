@@ -41,7 +41,7 @@ export default function SettingsPage() {
     {
       title: 'Ajuda',
       items: [
-        { href: '/suporte', label: 'Suporte', icon: Headphones, badge: 'Novo' },
+        { href: '/suporte', label: 'Suporte', icon: Headphones },
         { href: '/faq',     label: 'FAQ',     icon: HelpCircle },
       ],
     },
