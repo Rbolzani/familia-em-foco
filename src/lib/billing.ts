@@ -17,9 +17,9 @@ export const PLAN_LIMITS: Record<PlanId, {
   documentSearch: boolean  // busca full-text dentro dos documentos
   storageLimitBytes: number // 0 = sem upload de arquivos no vault
 }> = {
-  free:    { children: 2,        aiPerMonth: 5,        partners: 0,        ocr: false, documentSearch: false, storageLimitBytes: 0        },
-  familia: { children: 2,        aiPerMonth: Infinity, partners: 1,        ocr: true,  documentSearch: true,  storageLimitBytes: 2 * GB   },
-  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity, ocr: true,  documentSearch: true,  storageLimitBytes: 5 * GB   },
+  free:    { children: 2,        aiPerMonth: 5,        partners: 0,        ocr: false, documentSearch: false, storageLimitBytes: 0                  },
+  familia: { children: 2,        aiPerMonth: Infinity, partners: 1,        ocr: true,  documentSearch: true,  storageLimitBytes: 500 * 1024 * 1024  },
+  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity, ocr: true,  documentSearch: true,  storageLimitBytes: 5 * GB             },
 }
 
 export const PLAN_LABELS: Record<PlanId, string> = {
