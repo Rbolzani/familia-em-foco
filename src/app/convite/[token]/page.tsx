@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import ConviteClient from './ConviteClient'
 
 interface Props {
@@ -17,15 +16,14 @@ interface InviteDetails {
   children_names: string[]
 }
 
-export default async function ConvitePage({ params }: Props) {
+export default async function ConvitePublicaPage({ params }: Props) {
   const { token } = await params
   const supabase = await createClient()
 
-  // Must be logged in
+  // Usuário pode ou não estar autenticado nesta rota pública
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect(`/auth/login?redirect=/convite/${token}`)
 
-  // Invite preview via SECURITY DEFINER function (invitee is not a member yet)
+  // get_invite_details é SECURITY DEFINER e acessível ao anon
   const { data: rows } = await supabase.rpc('get_invite_details', { p_token: token })
   const invite = (rows?.[0] ?? null) as InviteDetails | null
 
@@ -33,9 +31,9 @@ export default async function ConvitePage({ params }: Props) {
     invite.status === 'pending' &&
     new Date(invite.expires_at) > new Date()
 
-  // Already a member of this family? (invitee can read their own membership)
+  // Verifica se o usuário autenticado já é membro desta família
   let alreadyMember = false
-  if (invite?.family_id) {
+  if (user && invite?.family_id) {
     const { data: existing } = await supabase
       .from('family_members')
       .select('id')
@@ -48,6 +46,7 @@ export default async function ConvitePage({ params }: Props) {
   return (
     <ConviteClient
       token={token}
+      isAuthenticated={!!user}
       isValid={isValid}
       alreadyMember={alreadyMember}
       familyId={invite?.family_id ?? null}

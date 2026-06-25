@@ -1,24 +1,36 @@
 {
-  "name": "Gestão de Filhos",
-  "short_name": "GestãoFilhos",
-  "description": "Sua assistente pessoal para tudo que envolve seus filhos",
+  "name": "Família em Foco",
+  "short_name": "Família em Foco",
+  "description": "Organize a rotina dos seus filhos com carinho",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#f4f6fb",
-  "theme_color": "#4f46e5",
+  "background_color": "#1E3320",
+  "theme_color": "#2C4A2E",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/api/icon/192",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/api/icon/512",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/api/icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/api/icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["productivity", "lifestyle"],
