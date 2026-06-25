@@ -23,6 +23,32 @@ export default function SignupPage() {
     e.preventDefault()
     if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
     setLoading(true); setError('')
+
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    const isInvite = redirect?.startsWith('/convite/')
+
+    if (isInvite) {
+      // Fluxo de convite: cria usuário já confirmado via admin API e loga em seguida.
+      const res = await fetch('/api/auth/signup-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, familyName: familyName.trim() || 'Minha Família' }),
+      })
+      const body = await res.json()
+      if (!res.ok) { setError(body.error || 'Erro ao criar conta.'); setLoading(false); return }
+
+      // Usuário criado e confirmado — agora faz login normal para obter sessão
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) { setError(signInError.message); setLoading(false); return }
+
+      const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
+      router.push(dest)
+      return
+    }
+
+    // Fluxo normal: cadastro com confirmação de e-mail obrigatória.
     const supabase = createClient()
     const { data, error } = await supabase.auth.signUp({
       email, password,
@@ -33,11 +59,6 @@ export default function SignupPage() {
     })
     if (error) { setError(error.message); setLoading(false); return }
     if (data.session) {
-      // Auto-confirm ativo — sessão criada imediatamente, ir direto para o app.
-      // O layout cria a família com o nome escolhido no formulário (via user_metadata).
-      // Honra o ?redirect= (ex.: link de convite) propagado pelo login → signup.
-      const params = new URLSearchParams(window.location.search)
-      const redirect = params.get('redirect')
       const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
       router.push(dest)
     } else {
