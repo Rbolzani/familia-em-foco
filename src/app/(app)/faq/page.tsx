@@ -137,7 +137,7 @@ const SECTIONS: FAQSection[] = [
     items: [
       {
         q: 'O que é a Logística?',
-        a: 'É o módulo onde os responsáveis combinam quem leva e quem busca cada filho em cada atividade. Cada atividade tem dois "slots": Leva e Busca — que podem ser assumidos, sugeridos ou deixados em aberto.',
+        a: 'É o módulo onde os responsáveis combinam quem leva e quem busca cada filho em cada atividade. Cada atividade tem dois "slots": Leva e Busca — que podem ser assumidos, sugeridos ou deixados em aberto. Para que a logística entre pessoas funcione, é necessário que o acesso esteja sendo compartilhado com ao menos um parceiro (veja a seção Compartilhamento acima).',
       },
       {
         q: 'Como assumo o transporte de uma atividade?',
