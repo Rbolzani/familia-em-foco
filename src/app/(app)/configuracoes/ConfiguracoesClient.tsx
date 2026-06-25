@@ -104,13 +104,16 @@ export default function ConfiguracoesClient({
   async function copyLink(inv: PendingInvite) {
     await navigator.clipboard.writeText(inviteUrl(inv.token))
     setCopiedId(inv.id)
-    setTimeout(() => setCopiedId(null), 2000)
+    // Remove o card após 1.5s — link já foi copiado, não deve ser reaproveitado
+    setTimeout(() => setInvites(prev => prev.filter(i => i.id !== inv.id)), 1500)
   }
 
-  function whatsappLink(inv: PendingInvite) {
+  function openWhatsapp(inv: PendingInvite) {
     const url = inviteUrl(inv.token)
     const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Foco. É só acessar e aceitar: ${url}`
-    return `https://wa.me/?text=${encodeURIComponent(msg)}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    // Remove o card imediatamente — link já foi enviado
+    setInvites(prev => prev.filter(i => i.id !== inv.id))
   }
 
   async function revokeInvite(id: string) {
@@ -258,7 +261,7 @@ export default function ConfiguracoesClient({
                       style={{ background: copiedId === inv.id ? '#2D6A35' : 'rgba(61,102,65,0.10)', color: copiedId === inv.id ? '#fff' : '#2D6A35', fontSize: 12 }}>
                       {copiedId === inv.id ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar link</>}
                     </button>
-                    <button onClick={() => window.open(whatsappLink(inv), '_blank')}
+                    <button onClick={() => openWhatsapp(inv)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all hover:brightness-105"
                       style={{ background: '#25D366', color: '#fff', fontSize: 12, border: 'none', cursor: 'pointer' }}>
                       <MessageCircle size={12} /> WhatsApp
