@@ -38,13 +38,32 @@ export default function SignupPage() {
       const body = await res.json()
       if (!res.ok) { setError(body.error || 'Erro ao criar conta.'); setLoading(false); return }
 
-      // Usuário criado e confirmado — agora faz login normal para obter sessão
+      // Usuário criado e confirmado — faz login para obter sessão
       const supabase = createClient()
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) { setError(signInError.message); setLoading(false); return }
 
-      const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
-      router.push(dest)
+      // Auto-aceita o convite sem mostrar a tela de convite novamente.
+      // Extrai o token do redirect (/convite/TOKEN).
+      const token = redirect!.replace('/convite/', '')
+
+      // Busca o family_id do convite para poder trocar a família ativa
+      const { data: rows } = await supabase.rpc('get_invite_details', { p_token: token })
+      const invite = rows?.[0] as { family_id: string } | undefined
+
+      // Aceita o convite (RPC SECURITY DEFINER)
+      await supabase.rpc('accept_invite', { p_token: token })
+
+      // Troca a família ativa para a família do dono do convite
+      if (invite?.family_id) {
+        await supabase.rpc('switch_active_family', { p_family_id: invite.family_id })
+      }
+
+      // Limpa o cookie pending_invite (não é mais necessário)
+      document.cookie = 'pending_invite=; path=/; max-age=0'
+
+      // Vai direto para completar o cadastro (ou dashboard se já completou)
+      router.push('/completar-cadastro')
       return
     }
 
