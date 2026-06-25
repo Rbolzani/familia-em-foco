@@ -2,7 +2,10 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 // Cria o usuário já com email confirmado — usado apenas no fluxo de convite.
-// Chamado pelo signup/page.tsx quando há ?redirect=/convite/... na URL.
+// Também cria a família própria do usuário via admin, porque o bootstrap do
+// layout (que normalmente cria a família) só roda quando auth_family_id é null.
+// Após aceitar o convite, auth_family_id já aponta para a família do convidante,
+// então o bootstrap nunca criaria a família própria sem este passo.
 export async function POST(request: Request) {
   const { email, password, name, familyName } = await request.json()
 
@@ -11,14 +14,16 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+  const resolvedFamilyName = familyName?.trim() || 'Minha Família'
 
+  // 1. Cria o usuário com email já confirmado
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: {
       full_name: name,
-      family_name: familyName?.trim() || 'Minha Família',
+      family_name: resolvedFamilyName,
     },
   })
 
@@ -29,5 +34,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  return NextResponse.json({ userId: data.user.id })
+  const userId = data.user.id
+
+  // 2. Cria a família própria do usuário imediatamente (via admin, bypassando RLS).
+  // Isso garante que, mesmo após aceitar o convite e ter a família do dono como
+  // "ativa", o usuário ainda possui a sua própria família como owner.
+  const { data: fam } = await admin
+    .from('families')
+    .insert({ name: resolvedFamilyName, created_by: userId })
+    .select('id')
+    .single()
+
+  if (fam?.id) {
+    await admin.from('family_members').insert({
+      family_id: fam.id,
+      user_id: userId,
+      role: 'owner',
+    })
+  }
+
+  return NextResponse.json({ userId })
 }
