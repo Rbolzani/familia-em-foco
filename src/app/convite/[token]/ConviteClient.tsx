@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Leaf, CheckCircle, XCircle, Users, ArrowRight, Loader2, Eye, Truck, Pencil, Mail, LogIn, UserPlus } from 'lucide-react'
+import { Leaf, CheckCircle, XCircle, Users, ArrowRight, Loader2, Eye, Truck, Pencil, LogIn, UserPlus } from 'lucide-react'
 
 type AccessRole = 'read_only' | 'logistics_editor' | 'full_editor'
 
@@ -78,9 +78,9 @@ function Logo() {
   )
 }
 
-function InvitePreview({ inviterName, namesLabel, access, accessRole }: {
+function InvitePreview({ inviterName, namesLabel, access }: {
   inviterName: string; namesLabel: string
-  access: typeof ACCESS[AccessRole]; accessRole: AccessRole
+  access: typeof ACCESS[AccessRole]
 }) {
   return (
     <>
@@ -119,7 +119,7 @@ function InvitePreview({ inviterName, namesLabel, access, accessRole }: {
 
 export default function ConviteClient({
   token, isAuthenticated, isValid, alreadyMember,
-  familyId, familyName, inviterName, accessRole, childrenNames,
+  familyId, inviterName, accessRole, childrenNames,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -127,15 +127,10 @@ export default function ConviteClient({
   const [done, setDone] = useState(alreadyMember)
   const [error, setError] = useState('')
 
-  // Magic link state (for unauthenticated users)
-  const [email, setEmail] = useState('')
-  const [magicSent, setMagicSent] = useState(false)
-  const [magicLoading, setMagicLoading] = useState(false)
-
   const access = ACCESS[accessRole]
   const namesLabel = formatNames(childrenNames)
 
-  // ── Accept invite (authenticated user) ──────────────────────────────
+  // ── Aceitar convite (usuário autenticado) ────────────────────────────
   async function handleAccept() {
     setLoading(true)
     setError('')
@@ -150,28 +145,7 @@ export default function ConviteClient({
     router.push('/dashboard')
   }
 
-  // ── Send OTP code for unauthenticated user ───────────────────────────
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault()
-    if (!email.trim()) return
-    setMagicLoading(true)
-    setError('')
-    const redirectTo = `${window.location.origin}/auth/callback?next=/convite/${token}`
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
-    })
-    if (otpErr) {
-      setError('Não foi possível enviar o código. Tente novamente.')
-      setMagicLoading(false)
-      return
-    }
-    setMagicSent(true)
-    setMagicLoading(false)
-  }
-
-
-  // ── Invalid invite ───────────────────────────────────────────────────
+  // ── Convite inválido ─────────────────────────────────────────────────
   if (!isValid && !alreadyMember) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 musgo-bg">
@@ -198,7 +172,7 @@ export default function ConviteClient({
     )
   }
 
-  // ── Already a member / post-accept success ───────────────────────────
+  // ── Já é membro / aceite concluído ──────────────────────────────────
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 musgo-bg">
@@ -225,13 +199,13 @@ export default function ConviteClient({
     )
   }
 
-  // ── Authenticated: show accept button ────────────────────────────────
+  // ── Autenticado: botão de aceitar ────────────────────────────────────
   if (isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 musgo-bg">
         <div style={cardStyle}>
           <Logo />
-          <InvitePreview inviterName={inviterName} namesLabel={namesLabel} access={access} accessRole={accessRole} />
+          <InvitePreview inviterName={inviterName} namesLabel={namesLabel} access={access} />
           {error && (
             <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>{error}</p>
           )}
@@ -249,78 +223,27 @@ export default function ConviteClient({
     )
   }
 
-  // ── Unauthenticated: invite preview + magic link ─────────────────────
+  // ── Não autenticado: prévia + entrar / criar conta ───────────────────
   return (
     <div className="min-h-screen flex items-center justify-center p-6 musgo-bg">
       <div style={cardStyle}>
         <Logo />
-        <InvitePreview inviterName={inviterName} namesLabel={namesLabel} access={access} accessRole={accessRole} />
-
-        {magicSent ? (
-          <div style={{ textAlign: 'center' }}>
-            <div className="flex justify-center mb-3">
-              <Mail size={36} style={{ color: '#2D6A35' }} />
-            </div>
-            <p style={{ fontWeight: 700, color: '#1A2B1C', fontSize: 15, marginBottom: 8 }}>
-              Link enviado!
-            </p>
-            <p style={{ color: 'rgba(26,43,28,0.55)', fontSize: 13, lineHeight: 1.65, marginBottom: 6 }}>
-              Verifique o e-mail <strong style={{ color: '#1A2B1C' }}>{email}</strong> e clique no link para aceitar o convite.
-            </p>
-            <p style={{ color: 'rgba(26,43,28,0.45)', fontSize: 12.5, lineHeight: 1.55, marginBottom: 16 }}>
-              Abra o link no dispositivo onde quer usar o app — celular ou computador.
-            </p>
-            <button
-              onClick={() => { setMagicSent(false); setError('') }}
-              style={{ background: 'transparent', border: 'none', color: 'rgba(26,43,28,0.40)', fontSize: 12, cursor: 'pointer' }}>
-              Reenviar ou usar outro e-mail
-            </button>
-          </div>
-        ) : (
-          <>
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#1A2B1C', marginBottom: 6 }}>
-                Para aceitar, entre com seu e-mail:
-              </p>
-              <form onSubmit={handleMagicLink} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  required
-                  style={{
-                    width: '100%', padding: '11px 14px', borderRadius: 12,
-                    border: '1.5px solid rgba(61,102,65,0.25)', fontSize: 14,
-                    background: '#fff', color: '#1A2B1C', outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
-                />
-                {error && (
-                  <p style={{ color: '#DC2626', fontSize: 13 }}>{error}</p>
-                )}
-                <button type="submit" disabled={magicLoading || !email.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.24)' }}>
-                  {magicLoading ? <><Loader2 size={15} className="animate-spin" /> Enviando...</> : <><Mail size={15} /> Receber link de acesso</>}
-                </button>
-              </form>
-            </div>
-
-            <div style={{ borderTop: '1px solid rgba(61,102,65,0.12)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <a href={`/auth/login?redirect=/convite/${token}`}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all hover:bg-black/[0.04]"
-                style={{ fontSize: 13, color: 'rgba(26,43,28,0.7)', textDecoration: 'none', border: '1px solid rgba(61,102,65,0.18)' }}>
-                <LogIn size={14} /> Já tenho conta — entrar
-              </a>
-              <a href={`/auth/signup?redirect=/convite/${token}`}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all hover:bg-black/[0.04]"
-                style={{ fontSize: 13, color: 'rgba(26,43,28,0.7)', textDecoration: 'none', border: '1px solid rgba(61,102,65,0.18)' }}>
-                <UserPlus size={14} /> Criar conta
-              </a>
-            </div>
-          </>
-        )}
+        <InvitePreview inviterName={inviterName} namesLabel={namesLabel} access={access} />
+        <p style={{ fontSize: 13, color: 'rgba(26,43,28,0.55)', marginBottom: 14, textAlign: 'center', lineHeight: 1.5 }}>
+          Para aceitar o convite, entre na sua conta ou crie uma gratuitamente.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <a href={`/auth/signup?redirect=/convite/${token}`}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105"
+            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, textDecoration: 'none', boxShadow: '0 4px 14px rgba(44,74,46,0.24)' }}>
+            <UserPlus size={15} /> Criar conta gratuita
+          </a>
+          <a href={`/auth/login?redirect=/convite/${token}`}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all hover:bg-black/[0.04]"
+            style={{ fontSize: 13, color: 'rgba(26,43,28,0.7)', textDecoration: 'none', border: '1px solid rgba(61,102,65,0.18)' }}>
+            <LogIn size={14} /> Já tenho conta — entrar
+          </a>
+        </div>
       </div>
     </div>
   )

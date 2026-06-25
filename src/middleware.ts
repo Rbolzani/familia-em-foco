@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   // qualquer layout/redirect) e o consumimos ao final do cadastro.
   const inviteMatch = pathname.match(/^\/convite\/([^/]+)\/?$/)
 
-  // Rota pública de convite — não requer autenticação prévia (tem magic link próprio)
+  // Rota pública de convite — não requer autenticação prévia (usuário faz login/cadastro após ver a prévia)
   const isConviteRoute = pathname.startsWith('/convite')
 
   if (!user && !isAuthRoute && !isPublic && !isApi && !isConviteRoute) {
