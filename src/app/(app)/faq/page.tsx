@@ -106,6 +106,32 @@ const SECTIONS: FAQSection[] = [
     ],
   },
   {
+    icon: Users,
+    title: 'Compartilhamento com parceiro(a)',
+    items: [
+      {
+        q: 'Como convido meu parceiro(a)?',
+        a: 'Acesse Compartilhar Acesso e copie o link de convite ou envie pelo WhatsApp. Seu parceiro precisará ter uma conta no app para aceitar.',
+      },
+      {
+        q: 'Quais níveis de acesso posso conceder?',
+        a: 'Três opções: Apenas leitura (vê tudo, não edita), Leitura + logística (edita só quem leva/busca), Acesso completo (edita tudo como você).',
+      },
+      {
+        q: 'Posso mudar o nível de acesso depois?',
+        a: 'Sim, a qualquer momento em Compartilhar Acesso. Você também pode revogar o acesso completamente.',
+      },
+      {
+        q: 'O parceiro vê meus dados financeiros ou de pagamento?',
+        a: 'Não. O parceiro herda o plano da sua conta sem custo adicional, mas não tem acesso a nenhuma informação de pagamento ou assinatura.',
+      },
+      {
+        q: 'Posso ter mais de um parceiro?',
+        a: 'Depende do plano. Família permite 1 parceiro, Plus permite múltiplos.',
+      },
+    ],
+  },
+  {
     icon: Car,
     title: 'Logística — quem leva e quem busca',
     items: [
@@ -140,32 +166,6 @@ const SECTIONS: FAQSection[] = [
       {
         q: 'Se o acesso do parceiro for revogado, o que acontece com as fichas de logística que ele tinha assumido?',
         a: 'As fichas permanecem registradas para você ter o histórico. Os slots ficam disponíveis para serem reassumidos ou sugeridos normalmente.',
-      },
-    ],
-  },
-  {
-    icon: Users,
-    title: 'Compartilhamento com parceiro(a)',
-    items: [
-      {
-        q: 'Como convido meu parceiro(a)?',
-        a: 'Acesse Compartilhar Acesso e copie o link de convite ou envie pelo WhatsApp. Seu parceiro precisará ter uma conta no app para aceitar.',
-      },
-      {
-        q: 'Quais níveis de acesso posso conceder?',
-        a: 'Três opções: Apenas leitura (vê tudo, não edita), Leitura + logística (edita só quem leva/busca), Acesso completo (edita tudo como você).',
-      },
-      {
-        q: 'Posso mudar o nível de acesso depois?',
-        a: 'Sim, a qualquer momento em Compartilhar Acesso. Você também pode revogar o acesso completamente.',
-      },
-      {
-        q: 'O parceiro vê meus dados financeiros ou de pagamento?',
-        a: 'Não. O parceiro herda o plano da sua conta sem custo adicional, mas não tem acesso a nenhuma informação de pagamento ou assinatura.',
-      },
-      {
-        q: 'Posso ter mais de um parceiro?',
-        a: 'Depende do plano. Família permite 1 parceiro, Plus permite múltiplos.',
       },
     ],
   },
