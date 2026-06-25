@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistrar from "@/components/layout/ServiceWorkerRegistrar";
+import PwaInstallBanner from "@/components/layout/PwaInstallBanner";
 
 // DM Sans — corpo e UI
 const dmSans = DM_Sans({
@@ -45,7 +46,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`h-full antialiased ${dmSans.variable} ${lora.variable}`}>
       <body className="min-h-full">
+        {/* Captura beforeinstallprompt antes da hydration do React */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window._pwaInstallPrompt = e;
+          });
+        `}} />
         <ServiceWorkerRegistrar />
+        <PwaInstallBanner />
         {children}
       </body>
     </html>
