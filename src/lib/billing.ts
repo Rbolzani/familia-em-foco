@@ -7,16 +7,19 @@ export type PlanId = 'free' | 'familia' | 'plus'
 // no Família e no Plus (não é eixo de upsell); entre os dois pagos, o único
 // diferencial pretendido é o storage. O Gratuito não tem OCR dedicado — segue
 // o limite de 5 capturas de IA/mês.
+const GB = 1024 * 1024 * 1024
+
 export const PLAN_LIMITS: Record<PlanId, {
   children: number
   aiPerMonth: number
   partners: number
   ocr: boolean             // OCR completo (auto-preenchimento + volume ilimitado)
   documentSearch: boolean  // busca full-text dentro dos documentos
+  storageLimitBytes: number // 0 = sem upload de arquivos no vault
 }> = {
-  free:    { children: 2,        aiPerMonth: 5,        partners: 0,        ocr: false, documentSearch: false },
-  familia: { children: 2,        aiPerMonth: Infinity, partners: 1,        ocr: true,  documentSearch: true  },
-  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity, ocr: true,  documentSearch: true  },
+  free:    { children: 2,        aiPerMonth: 5,        partners: 0,        ocr: false, documentSearch: false, storageLimitBytes: 0         },
+  familia: { children: 2,        aiPerMonth: Infinity, partners: 1,        ocr: true,  documentSearch: true,  storageLimitBytes: 5  * GB   },
+  plus:    { children: Infinity, aiPerMonth: Infinity, partners: Infinity, ocr: true,  documentSearch: true,  storageLimitBytes: 20 * GB   },
 }
 
 export const PLAN_LABELS: Record<PlanId, string> = {
@@ -118,6 +121,17 @@ export async function getAiUsageThisMonth(userId: string): Promise<number> {
   // Contador de mês anterior — considera como zero
   if (resetAt < startOfMonth) return 0
   return data.ai_uses_this_month ?? 0
+}
+
+// Soma o total de bytes armazenados no vault da família ativa do usuário logado.
+// Usa o cliente com RLS — a query automaticamente retorna só os arquivos da família.
+export async function getFamilyStorageUsedBytes(): Promise<number> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('document_files')
+    .select('file_size')
+  if (!data) return 0
+  return data.reduce((sum, f) => sum + (f.file_size ?? 0), 0)
 }
 
 // Incrementa o contador de IA do mês. Reseta se for mês novo.

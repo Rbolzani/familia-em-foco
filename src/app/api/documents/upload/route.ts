@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getFamilyPlan, getFamilyStorageUsedBytes, PLAN_LIMITS } from '@/lib/billing'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -28,6 +29,26 @@ export async function POST(req: NextRequest) {
 
   if (!title || !category) {
     return NextResponse.json({ error: 'Título e categoria são obrigatórios' }, { status: 400 })
+  }
+
+  // Verificar cota de storage antes de qualquer upload
+  if (files.length > 0) {
+    const plan = await getFamilyPlan()
+    const limit = PLAN_LIMITS[plan].storageLimitBytes
+    if (limit === 0) {
+      return NextResponse.json(
+        { error: 'Seu plano não inclui armazenamento de arquivos no cofre. Faça upgrade para Família ou Plus.' },
+        { status: 402 }
+      )
+    }
+    const used = await getFamilyStorageUsedBytes()
+    const incoming = files.reduce((sum, f) => sum + f.size, 0)
+    if (used + incoming > limit) {
+      return NextResponse.json(
+        { error: `Cota de armazenamento atingida. Seu plano permite ${Math.round(limit / (1024 ** 3))} GB e você está usando ${(used / (1024 ** 3)).toFixed(2)} GB.` },
+        { status: 402 }
+      )
+    }
   }
 
   // Create document record first. ocr_text + metadata (extraídos no upload pela

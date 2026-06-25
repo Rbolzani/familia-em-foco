@@ -27,11 +27,20 @@ interface Props {
   documents: DocSummary[]
   canOcr: boolean
   canSearch: boolean
+  storageUsedBytes: number
+  storageLimitBytes: number
 }
 
 type StatusFilter = 'todos' | 'a_vencer' | 'vencido'
 
-export default function VaultClient({ children, documents: initialDocuments, canOcr, canSearch }: Props) {
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
+export default function VaultClient({ children, documents: initialDocuments, canOcr, canSearch, storageUsedBytes, storageLimitBytes }: Props) {
   const router = useRouter()
   const { canEdit } = useAccess()
   const [documents, setDocuments] = useState<DocSummary[]>(initialDocuments)
@@ -274,6 +283,36 @@ export default function VaultClient({ children, documents: initialDocuments, can
           </div>
         ))}
       </div>
+
+      {/* Barra de storage */}
+      {storageLimitBytes > 0 ? (
+        <div className="animate-fade-up" style={{ background: 'rgba(61,102,65,0.06)', borderRadius: 12, padding: '10px 14px' }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#3D6641' }}>Armazenamento</span>
+            <span style={{ fontSize: 12, color: 'rgba(26,43,28,0.55)' }}>
+              {formatBytes(storageUsedBytes)} de {formatBytes(storageLimitBytes)}
+            </span>
+          </div>
+          <div style={{ height: 5, background: 'rgba(61,102,65,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 99,
+              width: `${Math.min(100, storageLimitBytes > 0 ? (storageUsedBytes / storageLimitBytes) * 100 : 0).toFixed(1)}%`,
+              background: storageUsedBytes / storageLimitBytes > 0.9
+                ? 'linear-gradient(90deg,#dc2626,#ef4444)'
+                : storageUsedBytes / storageLimitBytes > 0.7
+                  ? 'linear-gradient(90deg,#d97706,#f59e0b)'
+                  : 'linear-gradient(90deg,#3D6641,#5A8C5E)',
+            }} />
+          </div>
+        </div>
+      ) : (
+        <div className="animate-fade-up" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 12, padding: '10px 14px' }}>
+          <p style={{ fontSize: 12, color: '#991b1b' }}>
+            ⚠️ Seu plano não inclui armazenamento de arquivos no cofre.{' '}
+            <a href="/planos" style={{ fontWeight: 700, textDecoration: 'underline' }}>Fazer upgrade</a>
+          </p>
+        </div>
+      )}
 
       {/* Barra de filtros */}
       <div className="animate-fade-up space-y-2.5">
