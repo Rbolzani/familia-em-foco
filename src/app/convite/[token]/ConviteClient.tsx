@@ -127,10 +127,12 @@ export default function ConviteClient({
   const [done, setDone] = useState(alreadyMember)
   const [error, setError] = useState('')
 
-  // Magic link state (for unauthenticated users)
+  // OTP state (for unauthenticated users)
   const [email, setEmail] = useState('')
   const [magicSent, setMagicSent] = useState(false)
   const [magicLoading, setMagicLoading] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
 
   const access = ACCESS[accessRole]
   const namesLabel = formatNames(childrenNames)
@@ -150,24 +152,51 @@ export default function ConviteClient({
     router.push('/dashboard')
   }
 
-  // ── Magic link for unauthenticated user ──────────────────────────────
+  // ── Send OTP code for unauthenticated user ───────────────────────────
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
     setMagicLoading(true)
     setError('')
-    const redirectTo = `${window.location.origin}/auth/callback?next=/convite/${token}`
     const { error: otpErr } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
+      options: { shouldCreateUser: true },
     })
     if (otpErr) {
-      setError('Não foi possível enviar o link. Tente novamente.')
+      setError('Não foi possível enviar o código. Tente novamente.')
       setMagicLoading(false)
       return
     }
     setMagicSent(true)
     setMagicLoading(false)
+  }
+
+  // ── Verify OTP code entered on this device ────────────────────────────
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault()
+    if (otpCode.length < 6) return
+    setOtpLoading(true)
+    setError('')
+    const { error: verifyErr } = await supabase.auth.verifyOtp({
+      email,
+      token: otpCode.trim(),
+      type: 'email',
+    })
+    if (verifyErr) {
+      setError('Código inválido ou expirado. Verifique e tente novamente.')
+      setOtpLoading(false)
+      return
+    }
+    // Authenticated on this device — accept the invite directly
+    const { data, error: rpcErr } = await supabase.rpc('accept_invite', { p_token: token })
+    if (rpcErr || data !== true) {
+      setError('Não foi possível aceitar o convite. O link pode ter expirado.')
+      setOtpLoading(false)
+      return
+    }
+    document.cookie = 'pending_invite=; path=/; max-age=0'
+    if (familyId) await supabase.rpc('switch_active_family', { p_family_id: familyId })
+    router.push('/dashboard')
   }
 
   // ── Invalid invite ───────────────────────────────────────────────────
@@ -256,31 +285,46 @@ export default function ConviteClient({
         <InvitePreview inviterName={inviterName} namesLabel={namesLabel} access={access} accessRole={accessRole} />
 
         {magicSent ? (
-          <div style={{ textAlign: 'center' }}>
+          <div>
             <div className="flex justify-center mb-3">
               <Mail size={36} style={{ color: '#2D6A35' }} />
             </div>
-            <p style={{ fontWeight: 700, color: '#1A2B1C', fontSize: 15, marginBottom: 6 }}>
-              Link enviado!
+            <p style={{ fontWeight: 700, color: '#1A2B1C', fontSize: 15, marginBottom: 6, textAlign: 'center' }}>
+              Código enviado!
             </p>
-            <p style={{ color: 'rgba(26,43,28,0.55)', fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-              Verifique seu e-mail <strong>{email}</strong> e clique no link para entrar e aceitar o convite automaticamente.
+            <p style={{ color: 'rgba(26,43,28,0.55)', fontSize: 13, lineHeight: 1.6, marginBottom: 18, textAlign: 'center' }}>
+              Verifique seu e-mail <strong style={{ color: '#1A2B1C' }}>{email}</strong>. Copie o código de 6 dígitos e cole aqui — pode abrir o email em qualquer dispositivo.
             </p>
-            <div style={{ background: 'rgba(244,169,60,0.10)', border: '1px solid rgba(244,169,60,0.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, textAlign: 'left' }}>
-              <p style={{ fontSize: 12.5, color: 'rgba(26,43,28,0.70)', lineHeight: 1.55, margin: 0 }}>
-                ⚠️ <strong>Abra o link neste mesmo dispositivo</strong> (este navegador/computador). Se clicar no email por outro aparelho, a sessão será criada lá — não aqui.
-              </p>
-            </div>
+            <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otpCode}
+                onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                autoFocus
+                style={{
+                  width: '100%', padding: '13px 14px', borderRadius: 12,
+                  border: '1.5px solid rgba(61,102,65,0.25)', fontSize: 22,
+                  background: '#fff', color: '#1A2B1C', outline: 'none',
+                  fontFamily: 'monospace', textAlign: 'center', letterSpacing: '0.25em',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {error && (
+                <p style={{ color: '#DC2626', fontSize: 13, textAlign: 'center' }}>{error}</p>
+              )}
+              <button type="submit" disabled={otpLoading || otpCode.length < 6}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
+                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.24)', border: 'none', cursor: 'pointer' }}>
+                {otpLoading ? <><Loader2 size={15} className="animate-spin" /> Verificando...</> : <><ArrowRight size={15} /> Confirmar e aceitar convite</>}
+              </button>
+            </form>
             <button
-              onClick={() => window.location.reload()}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all hover:brightness-105"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#fff', fontSize: 13, border: 'none', cursor: 'pointer', marginBottom: 10 }}>
-              <ArrowRight size={14} /> Já cliquei no link — continuar
-            </button>
-            <button
-              onClick={() => setMagicSent(false)}
-              style={{ background: 'transparent', border: 'none', color: 'rgba(26,43,28,0.40)', fontSize: 12, cursor: 'pointer' }}>
-              Usar outro e-mail
+              onClick={() => { setMagicSent(false); setOtpCode(''); setError('') }}
+              style={{ marginTop: 12, width: '100%', background: 'transparent', border: 'none', color: 'rgba(26,43,28,0.40)', fontSize: 12, cursor: 'pointer' }}>
+              Reenviar ou usar outro e-mail
             </button>
           </div>
         ) : (
