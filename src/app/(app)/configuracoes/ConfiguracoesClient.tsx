@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Users, Copy, Check, Trash2, Crown, UserPlus, Eye, Truck, Pencil, Clock, MessageCircle, Lock } from 'lucide-react'
@@ -53,9 +53,13 @@ export default function ConfiguracoesClient({
   const router = useRouter()
   const [members, setMembers]   = useState<Member[]>(initialMembers)
   const [invites, setInvites]   = useState<PendingInvite[]>(initialInvites)
+  // IDs de convites já compartilhados — filtrados mesmo após router.refresh()
+  const sharedIds = useRef<Set<string>>(new Set())
   // Realtime: reflete partner entrando / mudança de acesso ao vivo
   useEffect(() => { setMembers(initialMembers) }, [initialMembers])
-  useEffect(() => { setInvites(initialInvites) }, [initialInvites])
+  useEffect(() => {
+    setInvites(initialInvites.filter(i => !sharedIds.current.has(i.id)))
+  }, [initialInvites])
   const [email, setEmail]       = useState('')
   const [role, setRole]         = useState<AccessRole>('logistics_editor')
   const [generating, setGenerating] = useState(false)
@@ -101,19 +105,22 @@ export default function ConfiguracoesClient({
     setGenerating(false)
   }
 
+  function hideInvite(id: string) {
+    sharedIds.current.add(id)
+    setInvites(prev => prev.filter(i => i.id !== id))
+  }
+
   async function copyLink(inv: PendingInvite) {
     await navigator.clipboard.writeText(inviteUrl(inv.token))
     setCopiedId(inv.id)
-    // Remove o card após 1.5s — link já foi copiado, não deve ser reaproveitado
-    setTimeout(() => setInvites(prev => prev.filter(i => i.id !== inv.id)), 1500)
+    setTimeout(() => hideInvite(inv.id), 1500)
   }
 
   function openWhatsapp(inv: PendingInvite) {
     const url = inviteUrl(inv.token)
     const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Foco. É só acessar e aceitar: ${url}`
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
-    // Remove o card imediatamente — link já foi enviado
-    setInvites(prev => prev.filter(i => i.id !== inv.id))
+    hideInvite(inv.id)
   }
 
   async function revokeInvite(id: string) {
