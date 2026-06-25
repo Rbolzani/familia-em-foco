@@ -71,7 +71,6 @@ const PLANS = [
       { text: 'Filhos ilimitados', bold: true },
       { text: 'Parceiros ilimitados', bold: true },
       { text: 'Cofre de documentos inteligente (5 GB)', bold: true },
-      { text: 'Export de dados (PDF/CSV)', bold: true },
       { text: 'Suporte prioritário', bold: true },
       { text: 'Histórico completo de atividades', bold: false },
     ],
