@@ -263,9 +263,25 @@ export default function ConviteClient({
             <p style={{ fontWeight: 700, color: '#1A2B1C', fontSize: 15, marginBottom: 6 }}>
               Link enviado!
             </p>
-            <p style={{ color: 'rgba(26,43,28,0.55)', fontSize: 13, lineHeight: 1.6 }}>
+            <p style={{ color: 'rgba(26,43,28,0.55)', fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
               Verifique seu e-mail <strong>{email}</strong> e clique no link para entrar e aceitar o convite automaticamente.
             </p>
+            <div style={{ background: 'rgba(244,169,60,0.10)', border: '1px solid rgba(244,169,60,0.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, textAlign: 'left' }}>
+              <p style={{ fontSize: 12.5, color: 'rgba(26,43,28,0.70)', lineHeight: 1.55, margin: 0 }}>
+                ⚠️ <strong>Abra o link neste mesmo dispositivo</strong> (este navegador/computador). Se clicar no email por outro aparelho, a sessão será criada lá — não aqui.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all hover:brightness-105"
+              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#fff', fontSize: 13, border: 'none', cursor: 'pointer', marginBottom: 10 }}>
+              <ArrowRight size={14} /> Já cliquei no link — continuar
+            </button>
+            <button
+              onClick={() => setMagicSent(false)}
+              style={{ background: 'transparent', border: 'none', color: 'rgba(26,43,28,0.40)', fontSize: 12, cursor: 'pointer' }}>
+              Usar outro e-mail
+            </button>
           </div>
         ) : (
           <>
