@@ -142,13 +142,15 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
 
   const unreadCount = notifications.filter(n => !n.read).length + pendingLogisticsCount
 
-  const appRef = useRef<HTMLDivElement>(null)
-  const navRef = useRef<HTMLDivElement>(null)   // mobile sidebar — same filter as app-wrap
+  const appRef    = useRef<HTMLDivElement>(null)
+  const navRef    = useRef<HTMLDivElement>(null)   // mobile sidebar — same filter as app-wrap
+  const cfgPanelRef = useRef<HTMLDivElement>(null) // cfg sub-panel — outside app-wrap, needs filter
 
   // ── Apply CSS filter ────────────────────────────────────────────────
   useEffect(() => {
-    const el  = appRef.current
-    const nav = navRef.current
+    const el    = appRef.current
+    const nav   = navRef.current
+    const cfg   = cfgPanelRef.current
     if (!el) return
     const { hue, sat } = PALETTES[palIdx]
     let filterStr: string
@@ -160,11 +162,12 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     }
     el.style.filter = filterStr
     if (nav) nav.style.filter = filterStr
-  }, [palIdx, sepia, brightness, contrast, darkMode])
+    if (cfg) cfg.style.filter = filterStr
+  }, [palIdx, sepia, brightness, contrast, darkMode, cfgPanelOpen])
 
-  // Close sidebar on navigation — exceto durante o tour, em que a sidebar
-  // verde precisa ficar aberta para o beacon percorrer as abas.
+  // Close sidebar + cfg panel on navigation
   useEffect(() => {
+    setCfgPanelOpen(false)
     if (!tourActive) setMobileSidebarOpen(false)
   }, [pathname, tourActive])
 
@@ -437,40 +440,6 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
 
         </aside>
 
-        {/* ── Desktop Configurações floating sub-panel ── */}
-        {cfgPanelOpen && (
-          <div
-            onMouseEnter={cfgEnter}
-            onMouseLeave={cfgLeave}
-            style={{
-              position:'fixed', left:256, bottom:44, zIndex:60,
-              width:216,
-              backgroundColor:'#EAE1CE',
-              backgroundImage:sidebarBg,
-              backgroundSize:'200px 200px, 100% 100%',
-              borderRadius:14,
-              border:'1px solid rgba(61,102,65,0.22)',
-              boxShadow:'4px 4px 28px rgba(44,74,46,0.18)',
-              padding:'10px 6px',
-            }}>
-            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Conta</div>
-            <CfgPanelItem href="/conta"   label="Minha Conta" icon={UserCog} />
-            <CfgPanelItem href="/planos"  label="Planos"      icon={Star} />
-            <CfgPanelItem href="/alertas" label="Alertas"     icon={Bell} badge="WhatsApp" />
-            <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
-            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Ajuda</div>
-            <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} badge="Novo" />
-            <CfgPanelItem href="/faq"     label="FAQ"      icon={HelpCircle} />
-            <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
-            <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-              color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Legal</div>
-            <CfgPanelItem href="/termos"      label="Termos de Uso" icon={FileText} />
-            <CfgPanelItem href="/privacidade" label="Privacidade"   icon={Shield} />
-          </div>
-        )}
-
         {/* ══ MAIN ══ */}
         <main className="flex-1 min-w-0 md:ml-[256px] musgo-bg relative z-[1] flex flex-col main-container overflow-x-hidden"
           style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
@@ -588,6 +557,41 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
       {/* ══════════════════════════════════════════════════════════════
           Siblings of app-wrap — CSS filter applied manually via refs
           ═══════════════════════════════════════════════════════════ */}
+
+      {/* ── Desktop Configurações floating sub-panel (fora do app-wrap para position:fixed correto) ── */}
+      {cfgPanelOpen && (
+        <div
+          ref={cfgPanelRef}
+          onMouseEnter={cfgEnter}
+          onMouseLeave={cfgLeave}
+          style={{
+            position:'fixed', left:256, bottom:50, zIndex:60,
+            width:216,
+            backgroundColor:'#EAE1CE',
+            backgroundImage:sidebarBg,
+            backgroundSize:'200px 200px, 100% 100%',
+            borderRadius:14,
+            border:'1px solid rgba(61,102,65,0.22)',
+            boxShadow:'4px 4px 28px rgba(44,74,46,0.18)',
+            padding:'10px 6px',
+          }}>
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Conta</div>
+          <CfgPanelItem href="/conta"   label="Minha Conta" icon={UserCog} />
+          <CfgPanelItem href="/planos"  label="Planos"      icon={Star} />
+          <CfgPanelItem href="/alertas" label="Alertas"     icon={Bell} badge="WhatsApp" />
+          <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Ajuda</div>
+          <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} badge="Novo" />
+          <CfgPanelItem href="/faq"     label="FAQ"      icon={HelpCircle} />
+          <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Legal</div>
+          <CfgPanelItem href="/termos"      label="Termos de Uso" icon={FileText} />
+          <CfgPanelItem href="/privacidade" label="Privacidade"   icon={Shield} />
+        </div>
+      )}
 
       {/* ── Mobile sidebar overlay ── */}
       <div
