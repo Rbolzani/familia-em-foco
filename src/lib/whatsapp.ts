@@ -225,6 +225,33 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     if (nextActs.length > 8) lines.push(`… e mais ${nextActs.length - 8} atividades no app`)
   }
 
+  // Documentos vencidos ou vencendo nos próximos 15 dias
+  const docExpiryQuery = admin
+    .from('documents')
+    .select('title, category, expires_at, child:children(name)')
+    .not('expires_at', 'is', null)
+    .lte('expires_at', spDate(15))
+    .order('expires_at')
+  const { data: expiringDocs } = familyIds.length > 0
+    ? await docExpiryQuery.in('family_id', familyIds)
+    : await docExpiryQuery.eq('user_id', userId)
+
+  if (expiringDocs && expiringDocs.length > 0) {
+    lines.push('')
+    lines.push('*Documentos — vencimentos*')
+    for (const d of expiringDocs) {
+      const childName = (d.child as unknown as { name: string } | null)?.name
+      const daysLeft = Math.ceil((new Date(d.expires_at + 'T23:59:59').getTime() - Date.now()) / 86_400_000)
+      const status = daysLeft < 0
+        ? `vencido há ${Math.abs(daysLeft)} dia${Math.abs(daysLeft) !== 1 ? 's' : ''}`
+        : daysLeft === 0 ? 'vence hoje'
+        : daysLeft === 1 ? 'vence amanhã'
+        : `vence em ${daysLeft} dias`
+      const who = childName ? ` (${childName})` : ''
+      lines.push(`📄 ${d.title}${who} — ${status}`)
+    }
+  }
+
   // Vacinas com próxima dose vencida ou nos próximos 30 dias
   const vaccineQuery = admin
     .from('documents')

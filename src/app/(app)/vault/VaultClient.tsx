@@ -206,9 +206,11 @@ export default function VaultClient({ children, documents: initialDocuments, can
   }, [base])
 
   const filtered = useMemo(() => base.filter(d => {
-    if (status === 'a_vencer') return expiryStatus(d.expires_at) === 'a_vencer'
-    if (status === 'vencido') return expiryStatus(d.expires_at) === 'vencido'
-    return true
+    const st = expiryStatus(d.expires_at)
+    if (status === 'a_vencer') return st === 'a_vencer'
+    if (status === 'vencido') return st === 'vencido'
+    // "todos" = só vencidos e a vencer (30 dias); em dia e sem data ficam fora
+    return st === 'vencido' || st === 'a_vencer'
   }), [base, status])
 
   const countByCategory = (cat: string) => base.filter(d => d.category === cat).length
