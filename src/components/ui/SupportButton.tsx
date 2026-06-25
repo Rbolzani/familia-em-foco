@@ -1,24 +1,34 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { MessageCircle, Zap } from 'lucide-react'
+import { Mail, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { PlanId } from '@/lib/billing'
 
 const APP_VERSION = '1.0.0'
 
-const SLA: Record<PlanId, { label: string; sla: string | null; priority: boolean }> = {
-  free:    { label: 'Fale com o suporte',  sla: null,                  priority: false },
-  familia: { label: 'Fale com o suporte',  sla: 'Resposta em até 48h', priority: false },
-  plus:    { label: 'Suporte prioritário', sla: 'Resposta em até 4h',  priority: true  },
-}
-
 const PLAN_LABELS: Record<PlanId, string> = {
   free: 'Gratuito', familia: 'Família', plus: 'Família Plus',
+}
+
+type Channel = 'email' | 'whatsapp'
+
+interface PlanCfg {
+  channel: Channel
+  label: string
+  sla: string | null
+  priority: boolean
+}
+
+const CFG: Record<PlanId, PlanCfg> = {
+  free:    { channel:'email',    label:'Fale com o suporte',  sla: null,                  priority: false },
+  familia: { channel:'email',    label:'Fale com o suporte',  sla: 'Resposta em até 72h', priority: false },
+  plus:    { channel:'whatsapp', label:'Suporte prioritário', sla: 'Resposta em até 12h', priority: true  },
 }
 
 export default function SupportButton() {
   const [plan,     setPlan]     = useState<PlanId>('free')
   const [userName, setUserName] = useState('')
+  const [userEmail,setUserEmail]= useState('')
   const [ready,    setReady]    = useState(false)
 
   useEffect(() => {
@@ -26,9 +36,8 @@ export default function SupportButton() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
       setUserName(user.user_metadata?.full_name ?? user.email ?? 'Usuário')
-
+      setUserEmail(user.email ?? '')
       const { data } = await supabase.rpc('get_family_plan')
       const p = (data as PlanId) ?? 'free'
       setPlan(p === 'plus' ? 'plus' : p === 'familia' ? 'familia' : 'free')
@@ -37,29 +46,50 @@ export default function SupportButton() {
     load()
   }, [])
 
-  function openWhatsApp() {
-    const number = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ''
-    if (!number) return
-    const msg = encodeURIComponent(
-      `Olá! Preciso de ajuda com o Família em Foco.\n` +
-      `Usuário: ${userName}\n` +
-      `Plano: ${PLAN_LABELS[plan]}\n` +
-      `Versão: ${APP_VERSION}`
-    )
-    window.open(`https://wa.me/${number}?text=${msg}`, '_blank')
+  function handleClick() {
+    const cfg = CFG[plan]
+
+    if (cfg.channel === 'whatsapp') {
+      const number = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ''
+      if (!number) return
+      const msg = encodeURIComponent(
+        `Olá! Preciso de ajuda com o Família em Foco.\n` +
+        `Usuário: ${userName}\n` +
+        `Plano: ${PLAN_LABELS[plan]}\n` +
+        `Versão: ${APP_VERSION}`
+      )
+      window.open(`https://wa.me/${number}?text=${msg}`, '_blank')
+    } else {
+      const email   = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? ''
+      if (!email) return
+      const subject = encodeURIComponent(`[Suporte] ${PLAN_LABELS[plan]} — ${userName}`)
+      const body    = encodeURIComponent(
+        `Olá equipe Família em Foco,\n\n` +
+        `Preciso de ajuda com o seguinte:\n\n[descreva aqui sua dúvida ou problema]\n\n` +
+        `---\n` +
+        `Usuário: ${userName}\n` +
+        `E-mail: ${userEmail}\n` +
+        `Plano: ${PLAN_LABELS[plan]}\n` +
+        `Versão: ${APP_VERSION}`
+      )
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_self')
+    }
   }
 
-  const cfg = SLA[plan]
-  const hasNumber = !!process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP
+  const cfg = CFG[plan]
+  const hasConfig = cfg.channel === 'whatsapp'
+    ? !!process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP
+    : !!process.env.NEXT_PUBLIC_SUPPORT_EMAIL
 
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
       <button
-        onClick={openWhatsApp}
-        disabled={!ready || !hasNumber}
+        onClick={handleClick}
+        disabled={!ready || !hasConfig}
         style={{
           display:'flex', alignItems:'center', gap:10,
-          padding:'14px 28px', borderRadius:14, border:'none', cursor: ready && hasNumber ? 'pointer' : 'default',
+          padding:'14px 28px', borderRadius:14, border:'none',
+          cursor: ready && hasConfig ? 'pointer' : 'default',
           background: cfg.priority
             ? 'linear-gradient(135deg,#2C4A2E,#1E3320)'
             : 'linear-gradient(135deg,#3D6641,#2C4A2E)',
@@ -67,9 +97,7 @@ export default function SupportButton() {
           opacity: !ready ? 0.6 : 1,
           transition:'opacity 0.2s',
         }}>
-        {cfg.priority
-          ? <Zap size={18} color="#D4E8D5" />
-          : <MessageCircle size={18} color="#D4E8D5" />}
+        {cfg.priority ? <Zap size={18} color="#D4E8D5" /> : <Mail size={18} color="#D4E8D5" />}
         <span style={{ fontSize:15, fontWeight:700, color:'#D4E8D5' }}>
           {cfg.label}{cfg.priority ? ' ⚡' : ''}
         </span>
@@ -81,9 +109,14 @@ export default function SupportButton() {
         </span>
       )}
 
-      {!hasNumber && (
+      {/* Indicador de canal */}
+      <span style={{ fontSize:11.5, color:'rgba(26,43,28,0.35)' }}>
+        {cfg.channel === 'whatsapp' ? 'via WhatsApp' : 'via e-mail'}
+      </span>
+
+      {!hasConfig && (
         <span style={{ fontSize:11.5, color:'rgba(26,43,28,0.35)', fontStyle:'italic' }}>
-          Suporte via WhatsApp em breve
+          Suporte em breve
         </span>
       )}
     </div>
