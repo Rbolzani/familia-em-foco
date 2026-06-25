@@ -34,8 +34,8 @@ export default function SuportePage() {
               Fale diretamente com nossa equipe
             </p>
             <p style={{ fontSize:13, color:'rgba(26,43,28,0.50)', margin:0, lineHeight:1.6 }}>
-              Clique no botão abaixo e abriremos o WhatsApp com<br />
-              suas informações já preenchidas.
+              Clique no botão abaixo. Suas informações<br />
+              já estarão preenchidas automaticamente.
             </p>
           </div>
 
