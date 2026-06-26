@@ -121,7 +121,7 @@ export default function PwaInstallBanner() {
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 11, opacity: 0.8, lineHeight: 1.4 }}>
           {showIos
-            ? 'Toque em Compartilhar ⬆ na barra inferior do Safari e escolha "Adicionar à Tela de Início"'
+            ? 'Para instalar o app, toque em Compartilhar ⬆ na barra inferior do Safari e escolha "Adicionar à Tela de Início"'
             : 'Acesse mais rápido, com ícone próprio e sem barra do navegador'}
         </p>
       </div>
