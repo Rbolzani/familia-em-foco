@@ -4,7 +4,7 @@ import { LEGAL_EFFECTIVE_DATE, LEGAL_VERSION } from '@/lib/legal'
 
 export default function LegalLayout({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: '#F8F3EA' }}>
+    <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: '#F8F3EA', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
       <div className="max-w-3xl mx-auto px-5 py-10">
         <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold mb-6"
           style={{ color: '#3D6641' }}>
