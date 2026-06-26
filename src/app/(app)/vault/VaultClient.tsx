@@ -54,6 +54,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
   // Upload modal
   const [showUpload, setShowUpload] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [formStep, setFormStep]     = useState<'upload'|'form'>('upload')
   const [uTitle, setUTitle]         = useState('')
   const [uCategory, setUCategory]   = useState<DocumentCategory>(VAULT_CATEGORIES[0].key as DocumentCategory)
   const [uChildId, setUChildId]     = useState('')
@@ -72,6 +73,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
     setUTitle(''); setUCategory(VAULT_CATEGORIES[0].key); setUChildId(''); setUDescription('')
     setUTags(''); setUFiles([])
     setUOcrText(null); setUDocType('outro'); setUValues(seedDocValues('outro', {})); setOcrApplied(false)
+    setFormStep('upload')
   }
 
   // Troca manual de natureza: re-seeda os campos preservando os valores comuns.
@@ -91,11 +93,11 @@ export default function VaultClient({ children, documents: initialDocuments, can
   // natureza, sugere a gaveta e semeia os campos específicos do tipo.
   async function handleUFilesSelected(selected: File[]) {
     setUFiles(selected)
-    if (!canOcr) return
+    if (!canOcr) { setFormStep('form'); return }
     setOcrLoading(true); setOcrApplied(false)
     const r = await ocrDocument(selected)
     setOcrLoading(false)
-    if (!r) return
+    if (!r) { setFormStep('form'); return }
     const nt = r.doc_type ?? 'outro'
     setUOcrText(r.ocr_text || null)
     setUDocType(nt)
@@ -107,6 +109,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
     setUTitle(prev => prev.trim() ? prev : (r.title ?? ''))
     setUDescription(prev => prev.trim() ? prev : (r.description ?? ''))
     setOcrApplied(true)
+    setFormStep('form')
   }
 
   // Busca por CONTEÚDO no servidor (substring/ILIKE — robusta para números,
@@ -263,7 +266,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
             <button onClick={() => setShowUpload(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-95 active:scale-95"
               style={{ background: '#fff', border: '1px solid rgba(61,102,65,0.30)', color: '#3D6641' }}>
-              <Plus size={14} /> Adicionar manualmente
+              <Plus size={14} /> Novo documento
             </button>
           </div>
         )}
@@ -508,6 +511,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
           onClick={e => { if (e.target === e.currentTarget) { setShowUpload(false); resetUploadForm() } }}>
           <div className="w-full max-w-md rounded-2xl p-6 space-y-4 animate-fade-up max-h-[90vh] overflow-y-auto"
             style={{ background: '#F5F0E8', border: '1px solid rgba(61,102,65,0.20)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
             <div className="flex items-center justify-between">
               <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 20, fontWeight: 700, color: '#1A2B1C' }}>
                 Novo documento
@@ -517,96 +521,130 @@ export default function VaultClient({ children, documents: initialDocuments, can
               </button>
             </div>
 
-            <form onSubmit={handleUpload} className="space-y-3">
-              {/* Natureza */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Natureza do documento</label>
-                <select className="input-field w-full" value={uDocType} onChange={e => changeUDocType(e.target.value as DocType)}>
-                  {DOC_TYPE_KEYS.map(k => <option key={k} value={k}>{getDocType(k).label}</option>)}
-                </select>
-              </div>
+            <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden"
+              onChange={e => handleUFilesSelected(Array.from(e.target.files ?? []))} />
 
-              {/* Gaveta */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Gaveta *</label>
-                <select className="input-field w-full" value={uCategory} onChange={e => setUCategory(e.target.value as DocumentCategory)}>
-                  {VAULT_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                </select>
-              </div>
-
-              {/* Título */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Título *</label>
-                <input className="input-field w-full" value={uTitle} onChange={e => setUTitle(e.target.value)} placeholder="Ex: RG da Gabriela" required />
-              </div>
-
-              {/* Filho (rótulo contextual: Paciente/Aluno/Titular…) */}
-              {children.length > 0 && (
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>{getDocType(uDocType).childLabel}</label>
-                  <select className="input-field w-full" value={uChildId} onChange={e => setUChildId(e.target.value)}>
-                    <option value="">Todos os filhos</option>
-                    {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* Descrição / observações */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Descrição</label>
-                <textarea className="input-field w-full resize-none" rows={2} value={uDescription} onChange={e => setUDescription(e.target.value)} placeholder="Observações..." />
-              </div>
-
-              {/* Campos específicos da natureza (dinâmico) */}
-              <DocFormFields docType={uDocType} values={uValues} onChange={(k, v) => setUValues(prev => ({ ...prev, [k]: v }))} />
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags (separadas por vírgula)</label>
-                <input className="input-field w-full" value={uTags} onChange={e => setUTags(e.target.value)} placeholder="Ex: viagem, escola" />
-              </div>
-
-              {/* Upload */}
-              <div>
-                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>
-                  Arquivos (PDF, imagem)
-                  {canOcr && <span className="inline-flex items-center gap-1 normal-case tracking-normal font-semibold" style={{ color: '#3D6641' }}><Sparkles size={11} /> a IA preenche os campos</span>}
-                </label>
-                <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden"
-                  onChange={e => handleUFilesSelected(Array.from(e.target.files ?? []))} />
+            {/* STEP 1 — Upload */}
+            {formStep === 'upload' && (
+              <div className="space-y-4">
                 <button type="button" onClick={() => fileRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-colors hover:bg-black/5"
-                  style={{ borderColor: 'rgba(61,102,65,0.30)', color: '#3D6641' }}>
-                  <Upload size={15} />
-                  {uFiles.length > 0 ? `${uFiles.length} arquivo${uFiles.length > 1 ? 's' : ''} selecionado${uFiles.length > 1 ? 's' : ''}` : 'Selecionar arquivos'}
+                  className="w-full flex flex-col items-center justify-center gap-3 py-10 rounded-2xl border-2 border-dashed transition-colors hover:bg-black/5"
+                  style={{ borderColor: 'rgba(61,102,65,0.35)', color: '#3D6641' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(61,102,65,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Upload size={24} color="#3D6641" />
+                  </div>
+                  <div className="text-center">
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#2C4A2E' }}>Enviar foto ou PDF</p>
+                    {canOcr && (
+                      <p className="mt-1 flex items-center justify-center gap-1" style={{ fontSize: 12, color: 'rgba(26,43,28,0.55)' }}>
+                        <Sparkles size={11} color="#3D6641" /> A IA detecta o tipo e preenche os campos
+                      </p>
+                    )}
+                  </div>
                 </button>
-                {ocrLoading && (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
-                    <Loader2 size={12} className="animate-spin" /> Lendo documento com IA…
-                  </p>
-                )}
-                {ocrApplied && !ocrLoading && (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#3D6641' }}>
-                    <Sparkles size={12} /> Natureza detectada e campos preenchidos pela IA — confira antes de salvar.
-                  </p>
-                )}
-                {uFiles.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {uFiles.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(61,102,65,0.07)' }}>
-                        <span className="truncate" style={{ color: '#1A2B1C' }}>{f.name}</span>
-                        <button type="button" onClick={() => setUFiles(prev => prev.filter((_, j) => j !== i))}><X size={12} color="rgba(26,43,28,0.50)" /></button>
-                      </div>
-                    ))}
+                <button type="button" onClick={() => setFormStep('form')}
+                  className="w-full text-center text-sm font-semibold transition-colors hover:opacity-70"
+                  style={{ color: 'rgba(26,43,28,0.45)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  Preencher manualmente →
+                </button>
+              </div>
+            )}
+
+            {/* Loading OCR (transição entre steps) */}
+            {ocrLoading && (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 size={28} className="animate-spin" style={{ color: '#3D6641' }} />
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#3D6641' }}>Lendo documento com IA…</p>
+              </div>
+            )}
+
+            {/* STEP 2 — Formulário (após OCR ou manual) */}
+            {formStep === 'form' && !ocrLoading && (
+              <form onSubmit={handleUpload} className="space-y-3">
+
+                {ocrApplied && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(61,102,65,0.10)' }}>
+                    <Sparkles size={13} color="#3D6641" />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2C4A2E' }}>
+                      IA detectou: {getDocType(uDocType).label} — confira os campos antes de salvar
+                    </span>
                   </div>
                 )}
-              </div>
 
-              <button type="submit" disabled={uploading}
-                className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
-                {uploading ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar documento'}
-              </button>
-            </form>
+                {/* Arquivos selecionados (compacto) */}
+                <div>
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed text-sm font-medium transition-colors hover:bg-black/5"
+                    style={{ borderColor: 'rgba(61,102,65,0.30)', color: '#3D6641' }}>
+                    <Upload size={14} />
+                    {uFiles.length > 0 ? `${uFiles.length} arquivo${uFiles.length > 1 ? 's' : ''} selecionado${uFiles.length > 1 ? 's' : ''}` : 'Anexar arquivo (opcional)'}
+                  </button>
+                  {uFiles.length > 0 && (
+                    <div className="mt-1.5 space-y-1">
+                      {uFiles.map((f, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(61,102,65,0.07)' }}>
+                          <span className="truncate" style={{ color: '#1A2B1C' }}>{f.name}</span>
+                          <button type="button" onClick={() => setUFiles(prev => prev.filter((_, j) => j !== i))}><X size={12} color="rgba(26,43,28,0.50)" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Natureza */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Natureza do documento</label>
+                  <select className="input-field w-full" value={uDocType} onChange={e => changeUDocType(e.target.value as DocType)}>
+                    {DOC_TYPE_KEYS.map(k => <option key={k} value={k}>{getDocType(k).label}</option>)}
+                  </select>
+                </div>
+
+                {/* Gaveta */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Gaveta *</label>
+                  <select className="input-field w-full" value={uCategory} onChange={e => setUCategory(e.target.value as DocumentCategory)}>
+                    {VAULT_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Título */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Título *</label>
+                  <input className="input-field w-full" value={uTitle} onChange={e => setUTitle(e.target.value)} placeholder="Ex: RG da Gabriela" required />
+                </div>
+
+                {/* Filho */}
+                {children.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>{getDocType(uDocType).childLabel}</label>
+                    <select className="input-field w-full" value={uChildId} onChange={e => setUChildId(e.target.value)}>
+                      <option value="">Todos os filhos</option>
+                      {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* Descrição */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Descrição</label>
+                  <textarea className="input-field w-full resize-none" rows={2} value={uDescription} onChange={e => setUDescription(e.target.value)} placeholder="Observações..." />
+                </div>
+
+                {/* Campos específicos da natureza (dinâmico) */}
+                <DocFormFields docType={uDocType} values={uValues} onChange={(k, v) => setUValues(prev => ({ ...prev, [k]: v }))} />
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(26,43,28,0.50)' }}>Tags (separadas por vírgula)</label>
+                  <input className="input-field w-full" value={uTags} onChange={e => setUTags(e.target.value)} placeholder="Ex: viagem, escola" />
+                </div>
+
+                <button type="submit" disabled={uploading}
+                  className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
+                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                  {uploading ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar documento'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
