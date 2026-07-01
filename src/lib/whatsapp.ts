@@ -286,7 +286,7 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   }
 
   lines.push('')
-  lines.push('💚 _Família em Foco_')
+  lines.push('💚 _Família em Dia_')
 
   return lines.join('\n')
 }
@@ -351,10 +351,10 @@ export async function runGraceNotices(admin: SupabaseClient): Promise<{ sent: nu
       if (!number) { skipped++; continue }
 
       const isOwner = memberId === o.user_id
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familia-em-foco.vercel.app'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familiaemdia.com.br'
       const body = isOwner
-        ? `🌿 *Família em Foco*\n\n⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`
-        : `🌿 *Família em Foco*\n\n⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família para manter seu acesso.`
+        ? `🌿 *Família em Dia*\n\n⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`
+        : `🌿 *Família em Dia*\n\n⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família para manter seu acesso.`
 
       const result = await sendWhatsApp(number, body)
       if (result.ok) sent++; else { failed++; console.error(`[grace] falha p/ ${memberId}:`, result.error) }

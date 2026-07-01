@@ -250,7 +250,7 @@ export default function PlanosClient({
                 {!isTrialing && (cancelAtPeriodEnd ? (
                   <button onClick={handleReactivate} disabled={!!loading}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:brightness-105 disabled:opacity-60"
-                    style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: 'white', border: 'none', cursor: 'pointer' }}>
+                    style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: 'white', border: 'none', cursor: 'pointer' }}>
                     {loading === 'reactivate' && <Loader2 size={14} className="animate-spin" />}
                     Reativar assinatura
                   </button>
@@ -299,7 +299,7 @@ export default function PlanosClient({
             <button key={iv} onClick={() => setInterval(iv)}
               className="px-5 py-2 rounded-xl text-sm font-bold transition-all"
               style={{
-                background: interval === iv ? 'linear-gradient(140deg,#3D6641,#2C4A2E)' : 'transparent',
+                background: interval === iv ? '#14463A' : 'transparent',
                 color: interval === iv ? 'white' : 'rgba(26,43,28,0.55)',
                 border: 'none', cursor: 'pointer',
               }}>
@@ -411,12 +411,8 @@ export default function PlanosClient({
                     disabled={!!loading}
                     className="w-full py-3 rounded-[13px] text-sm font-bold text-white transition-all hover:brightness-105 active:scale-[0.99] disabled:opacity-60 flex items-center justify-center gap-2"
                     style={{
-                      background: plan.highlight
-                        ? 'linear-gradient(140deg,#C49A6C,#A07848)'
-                        : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
-                      boxShadow: plan.highlight
-                        ? '0 4px 16px rgba(196,154,108,0.35)'
-                        : '0 4px 16px rgba(44,74,46,0.28)',
+                      background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
+                      boxShadow: '0 4px 16px rgba(255,107,92,0.32)',
                       border: 'none', cursor: loading ? 'wait' : 'pointer',
                     }}>
                     {loading === plan.id

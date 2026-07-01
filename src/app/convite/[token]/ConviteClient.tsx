@@ -66,14 +66,8 @@ const cardStyle: React.CSSProperties = {
 
 function Logo() {
   return (
-    <div className="flex items-center gap-3 mb-8">
-      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center"
-        style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 4px 14px rgba(44,74,46,0.28)' }}>
-        <Leaf size={18} color="#D4E8D5" />
-      </div>
-      <div style={{ fontFamily: 'var(--font-lora)', fontWeight: 700, color: '#1A2B1C', fontSize: 17 }}>
-        Família em Foco
-      </div>
+    <div className="flex items-center mb-8">
+      <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 34, width: 'auto', display: 'block' }} />
     </div>
   )
 }
@@ -95,7 +89,7 @@ function InvitePreview({ inviterName, namesLabel, access }: {
       </h1>
       <p style={{ color: 'rgba(26,43,28,0.62)', fontSize: 14, lineHeight: 1.6, marginBottom: 20, textAlign: 'center' }}>
         <strong style={{ color: '#1A2B1C' }}>{inviterName}</strong> convidou você para acessar a rotina de{' '}
-        <strong style={{ color: '#2D6A35' }}>{namesLabel}</strong> no Família em Foco.
+        <strong style={{ color: '#2D6A35' }}>{namesLabel}</strong> no Família em Dia.
       </p>
       <div style={{ background: 'rgba(61,102,65,0.06)', border: '1px solid rgba(61,102,65,0.14)', borderRadius: 12, padding: '14px 16px', marginBottom: 24 }}>
         <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
@@ -163,7 +157,7 @@ export default function ConviteClient({
             </p>
             <button onClick={() => router.push('/dashboard')}
               className="w-full py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 15 }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 15 }}>
               Ir para o início
             </button>
           </div>
@@ -190,7 +184,7 @@ export default function ConviteClient({
             </p>
             <button onClick={() => router.push('/dashboard')}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 15 }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 15 }}>
               Ir para o dashboard <ArrowRight size={16} />
             </button>
           </div>
@@ -211,7 +205,7 @@ export default function ConviteClient({
           )}
           <button onClick={handleAccept} disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 15, boxShadow: '0 4px 16px rgba(44,74,46,0.28)' }}>
+            style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 15, boxShadow: '0 4px 16px rgba(255,107,92,0.30)' }}>
             {loading ? <><Loader2 size={16} className="animate-spin" /> Entrando...</> : <>Aceitar acesso <ArrowRight size={16} /></>}
           </button>
           <button onClick={() => router.push('/dashboard')}
@@ -235,7 +229,7 @@ export default function ConviteClient({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <a href={`/auth/signup?redirect=/convite/${token}`}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, textDecoration: 'none', boxShadow: '0 4px 14px rgba(44,74,46,0.24)' }}>
+            style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 14, textDecoration: 'none', boxShadow: '0 4px 14px rgba(255,107,92,0.28)' }}>
             <UserPlus size={15} /> Criar conta gratuita
           </a>
           <a href={`/auth/login?redirect=/convite/${token}`}

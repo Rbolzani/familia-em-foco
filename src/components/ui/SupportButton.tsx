@@ -53,7 +53,7 @@ export default function SupportButton() {
       const number = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ''
       if (!number) return
       const msg = encodeURIComponent(
-        `Olá! Preciso de ajuda com o Família em Foco.\n` +
+        `Olá! Preciso de ajuda com o Família em Dia.\n` +
         `Usuário: ${userName}\n` +
         `Plano: ${PLAN_LABELS[plan]}\n` +
         `Versão: ${APP_VERSION}`
@@ -64,7 +64,7 @@ export default function SupportButton() {
       if (!email) return
       const subject = encodeURIComponent(`[Suporte] ${PLAN_LABELS[plan]} — ${userName}`)
       const body    = encodeURIComponent(
-        `Olá equipe Família em Foco,\n\n` +
+        `Olá equipe Família em Dia,\n\n` +
         `Preciso de ajuda com o seguinte:\n\n[descreva aqui sua dúvida ou problema]\n\n` +
         `---\n` +
         `Usuário: ${userName}\n` +
@@ -91,9 +91,9 @@ export default function SupportButton() {
           padding:'14px 28px', borderRadius:14, border:'none',
           cursor: ready && hasConfig ? 'pointer' : 'default',
           background: cfg.priority
-            ? 'linear-gradient(135deg,#2C4A2E,#1E3320)'
-            : 'linear-gradient(135deg,#3D6641,#2C4A2E)',
-          boxShadow:'0 4px 18px rgba(44,74,46,0.28)',
+            ? 'linear-gradient(135deg,#E2553F,#C4452A)'
+            : 'linear-gradient(135deg,#FF8A6E,#FF6B5C)',
+          boxShadow:'0 4px 18px rgba(255,107,92,0.28)',
           opacity: !ready ? 0.6 : 1,
           transition:'opacity 0.2s',
         }}>

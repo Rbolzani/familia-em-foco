@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Família em Foco — Documentação do Projeto
+# Família em Dia — Documentação do Projeto
 
 ## O que é o app
 

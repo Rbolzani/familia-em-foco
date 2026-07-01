@@ -218,7 +218,7 @@ export default function FamilySwitcher({ families: initial }: Props) {
                     disabled={creating}
                     style={{
                       flex: 2, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 700,
-                      border: 'none', background: 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+                      border: 'none', background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
                       color: '#fff', cursor: creating ? 'default' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                       opacity: creating ? 0.7 : 1,

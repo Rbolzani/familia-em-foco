@@ -173,9 +173,6 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
       {/* Header */}
       <div className="flex items-start justify-between gap-3 animate-fade-up">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: accent }}>
-            {emoji} Módulo
-          </p>
           <h1 className="text-2xl font-bold" style={{ fontFamily:'var(--font-lora)', color: '#1A2B1C' }}>{title}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'rgba(26,43,28,0.45)' }}>
             {filtered.length} próxima{filtered.length !== 1 ? 's' : ''}
@@ -186,13 +183,13 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
             {/* Captura com IA — apenas desktop (mobile já tem na topbar) */}
             <Link href="/ia"
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all hover:brightness-105 active:scale-95"
-              style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641', textDecoration: 'none' }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff', textDecoration: 'none', boxShadow: '0 4px 14px rgba(255,107,92,0.30)' }}>
               <Sparkles size={15} /> Captura com IA
             </Link>
             <button
               onClick={openNew}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-              style={{ background: gradient, boxShadow: `0 4px 16px ${accent}44` }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all hover:brightness-105 active:scale-95"
+              style={{ background: '#fff', color: '#14463A', border: '1px solid rgba(20,70,58,0.18)', boxShadow: '0 2px 8px rgba(44,74,46,0.10)' }}
             >
               <Plus size={16} /> Nova
             </button>
@@ -227,10 +224,7 @@ export default function ActivitiesPage({ category, title, emoji, color, initialA
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Tudo tranquilo por aqui"
-          subtitle={`Nenhuma atividade de ${title.toLowerCase()} agendada.${canEdit ? ' Adicione manualmente ou fotografe a agenda — a IA extrai tudo sozinha.' : ''}`}
-          actionLabel={canEdit ? '+ Adicionar' : undefined}
-          onAction={canEdit ? openNew : undefined}
-          showIaShortcut={canEdit}
+          subtitle={`Nenhuma atividade de ${title.toLowerCase()} agendada.${canEdit ? ' Use “+ Nova” ou “Captura com IA” no topo para adicionar — a IA extrai tudo sozinha.' : ''}`}
         />
       ) : (
         <div className="space-y-2.5 stagger">

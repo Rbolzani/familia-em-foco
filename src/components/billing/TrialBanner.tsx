@@ -20,7 +20,7 @@ export default function TrialBanner({ daysLeft, planLabel, hasPartner, isPartner
   const border  = urgent ? '1px solid rgba(245,158,11,0.40)' : '1px solid rgba(61,102,65,0.20)'
   const color   = urgent ? '#92400E' : '#2C4A2E'
   const iconBg  = urgent ? 'linear-gradient(140deg,#F59E0B,#D97706)' : 'linear-gradient(140deg,#3D6641,#2C4A2E)'
-  const btnBg   = urgent ? 'linear-gradient(140deg,#F59E0B,#D97706)' : 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+  const btnBg   = urgent ? 'linear-gradient(140deg,#F59E0B,#D97706)' : 'linear-gradient(140deg,#FF8A6E,#FF6B5C)'
 
   let message: string
   if (isPartner) {

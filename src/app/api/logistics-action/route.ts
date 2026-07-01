@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     if ((otherPending ?? 0) === 0) {
       const phone = await getUserPhone(proposedTo)
       if (phone) {
-        const msg = `Você tem sugestões de logística de ${proposerName} pendentes. Acesse o app Família em Foco para aceitar ou recusar.`
+        const msg = `Você tem sugestões de logística de ${proposerName} pendentes. Acesse o app Família em Dia para aceitar ou recusar.`
         await sendWhatsApp(phone, msg)
       }
     }

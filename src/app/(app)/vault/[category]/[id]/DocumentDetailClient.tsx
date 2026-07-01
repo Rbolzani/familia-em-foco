@@ -366,7 +366,7 @@ export default function DocumentDetailClient({ document: doc, category, children
             <div className="flex gap-2 mt-3">
               <button onClick={() => viewFile(previewFile)} disabled={previewing === previewFile.id}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:brightness-105 active:scale-95"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
                 {previewing === previewFile.id ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Visualizar
               </button>
               <button onClick={() => downloadFile(previewFile)} disabled={downloading === previewFile.id}
@@ -554,7 +554,7 @@ export default function DocumentDetailClient({ document: doc, category, children
               )}
               <button type="submit" disabled={uploadingMore || !newFiles.length}
                 className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
                 {uploadingMore ? <><Loader2 size={15} className="animate-spin" /> Enviando...</> : 'Enviar arquivos'}
               </button>
             </form>
@@ -623,7 +623,7 @@ export default function DocumentDetailClient({ document: doc, category, children
 
               <button type="submit" disabled={savingEdit}
                 className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
                 {savingEdit ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar alterações'}
               </button>
             </form>

@@ -1,6 +1,6 @@
 {
-  "name": "Família em Foco",
-  "short_name": "Família em Foco",
+  "name": "Família em Dia",
+  "short_name": "Família em Dia",
   "description": "Organize a rotina dos seus filhos com carinho",
   "start_url": "/dashboard",
   "display": "standalone",

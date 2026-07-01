@@ -385,9 +385,9 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
           <button onClick={openNew}
             className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all hover:brightness-105 active:scale-95"
             style={{
-              background: atChildLimit ? 'rgba(61,102,65,0.12)' : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+              background: atChildLimit ? 'rgba(61,102,65,0.12)' : 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
               color: atChildLimit ? '#3D6641' : 'white',
-              boxShadow: atChildLimit ? 'none' : '0 4px 16px rgba(44,74,46,0.30)',
+              boxShadow: atChildLimit ? 'none' : '0 4px 16px rgba(255,107,92,0.32)',
             }}>
             {atChildLimit ? <Lock size={14} /> : <Plus size={16} />}
             {atChildLimit ? 'Limite atingido' : 'Adicionar'}
@@ -425,7 +425,7 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
                 />
                 <button onClick={saveFamilyName} disabled={savingName}
                   className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:brightness-105 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+                  style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
                   <Check size={13} color="#fff" />
                 </button>
                 <button onClick={() => { setEditingName(false); setFamilyName(familyCurrentName ?? '') }}
@@ -720,9 +720,9 @@ export default function ChildrenClient({ initialChildren, families, familyId, fa
                 cursor: saving || !form.name.trim() ? 'not-allowed' : 'pointer',
                 background: saving || !form.name.trim()
                   ? 'rgba(61,102,65,0.25)'
-                  : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+                  : 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
                 color: 'white', fontSize: 15, fontWeight: 700,
-                boxShadow: saving || !form.name.trim() ? 'none' : '0 4px 16px rgba(44,74,46,0.32)',
+                boxShadow: saving || !form.name.trim() ? 'none' : '0 4px 16px rgba(255,107,92,0.32)',
                 transition: 'all .2s',
               }}>
               {saving

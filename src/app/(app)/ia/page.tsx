@@ -349,7 +349,7 @@ export default function IAPage() {
           <button key={key} onClick={() => { setMode(key as 'image' | 'text'); setActivities(null); setReminders(null); setDocuments(null); setError('') }}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[12px] text-sm font-bold transition-all"
             style={mode === key
-              ? { background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 4px 12px rgba(44,74,46,0.28)' }
+              ? { background: '#14463A', color: '#fff', boxShadow: '0 4px 12px rgba(20,70,58,0.28)' }
               : { color: 'rgba(26,43,28,0.50)', background: 'transparent' }}>
             <Icon size={15} /> {label}
           </button>
@@ -509,7 +509,7 @@ export default function IAPage() {
       <button onClick={handleExtract}
         disabled={loading || aiBlocked || (mode === 'image' ? images.length === 0 : !text.trim())}
         className="w-full flex items-center justify-center gap-2.5 py-4 rounded-[16px] text-base font-bold transition-all hover:brightness-105 active:scale-95 disabled:opacity-50"
-        style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 6px 20px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+        style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff', boxShadow: '0 6px 20px rgba(255,107,92,0.30)' }}>
         {loading
           ? <><Loader2 size={18} className="animate-spin" /> Analisando{images.length > 1 ? ` ${images.length} imagens` : ''}...</>
           : aiBlocked
@@ -698,7 +698,7 @@ export default function IAPage() {
           {totalSelected > 0 && (
             <button onClick={handleSave} disabled={saving}
               className="w-full flex items-center justify-center gap-2 py-4 rounded-[16px] text-sm font-bold transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 6px 20px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff', boxShadow: '0 6px 20px rgba(255,107,92,0.30)' }}>
               {saving
                 ? <><Loader2 size={16} className="animate-spin" /> Salvando...</>
                 : <><Check size={16} /> Salvar {totalSelected} item{totalSelected !== 1 ? 's' : ''} selecionado{totalSelected !== 1 ? 's' : ''}</>}

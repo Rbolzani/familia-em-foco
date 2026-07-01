@@ -118,7 +118,7 @@ export default function ConfiguracoesClient({
 
   function openWhatsapp(inv: PendingInvite) {
     const url = inviteUrl(inv.token)
-    const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Foco. É só acessar e aceitar: ${url}`
+    const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Dia. É só acessar e aceitar: ${url}`
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
     hideInvite(inv.id)
   }
@@ -348,7 +348,7 @@ export default function ConfiguracoesClient({
 
                 <button onClick={generateInvite} disabled={generating}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 14, boxShadow: '0 4px 14px rgba(44,74,46,0.22)' }}>
+                  style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 14, boxShadow: '0 4px 14px rgba(255,107,92,0.28)' }}>
                   <UserPlus size={16} />
                   {generating ? 'Gerando...' : 'Gerar link de convite'}
                 </button>

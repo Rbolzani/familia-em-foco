@@ -187,7 +187,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFr
             </p>
             <a href="/planos"
               className="mt-1 px-5 py-2.5 rounded-xl font-bold text-white text-sm transition-all hover:brightness-105 active:scale-95"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
               Ver planos
             </a>
           </div>
@@ -224,7 +224,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFr
             onClick={() => saveWhatsApp()}
             disabled={waSaving}
             className="px-4 rounded-[13px] font-bold text-white transition-all hover:brightness-105 active:scale-95 disabled:opacity-60 flex-shrink-0"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', fontSize: 13 }}>
+            style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', fontSize: 13 }}>
             {waSaving ? '...' : 'Salvar'}
           </button>
         </div>

@@ -121,17 +121,9 @@ export default function SignupPage() {
       <div className="hidden lg:flex flex-col justify-between w-[480px] shrink-0 p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #EEF0FF 0%, #F0EBFF 50%, #F0FFF8 100%)' }}>
 
-        <div className="relative flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl flex-none"
-            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.35)' }}>
-            🧒
-          </div>
-          <div>
-            <div className="font-bold text-base leading-tight" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>
-              Família em Foco
-            </div>
-            <div className="text-xs" style={{ color: '#8585A8' }}>Organize · Cuide · Celebre</div>
-          </div>
+        <div className="relative">
+          <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 40, width: 'auto', display: 'block' }} />
+          <div className="text-xs mt-2" style={{ color: '#8585A8' }}>Organize · Cuide · Celebre</div>
         </div>
 
         <div className="relative flex-1 flex flex-col justify-center">
@@ -166,11 +158,7 @@ export default function SignupPage() {
 
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-2xl mx-auto mb-3"
-            style={{ background: 'linear-gradient(135deg,#7B6FE8,#C084FC)', boxShadow: '0 8px 24px rgba(123,111,232,0.3)' }}>
-            🧒
-          </div>
-          <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-gilda)', color: '#1A1535' }}>Família em Foco</div>
+          <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 44, width: 'auto', display: 'block', margin: '0 auto' }} />
         </div>
 
         <div className="w-full max-w-sm">

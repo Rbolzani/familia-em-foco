@@ -61,19 +61,9 @@ export default function LoginPage() {
           style={{ background: 'linear-gradient(180deg,transparent 0%,#5A8C5E 20%,#3D6641 50%,#C49A6C 80%,transparent 100%)', opacity: 0.55 }} />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative">
-          <div className="w-12 h-12 rounded-[15px] flex items-center justify-center flex-none relative"
-            style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 6px 20px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-            <Leaf size={22} color="#D4E8D5" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-tl-none rounded-tr-full rounded-bl-full"
-              style={{ background: '#C49A6C', opacity: 0.9 }} />
-          </div>
-          <div>
-            <div className="font-bold text-base leading-tight" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>
-              Família em Foco
-            </div>
-            <div className="text-xs italic mt-0.5" style={{ color: 'rgba(26,43,28,0.40)' }}>sua rotina, com leveza</div>
-          </div>
+        <div className="relative">
+          <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 40, width: 'auto', display: 'block' }} />
+          <div className="text-xs italic mt-2" style={{ color: 'rgba(26,43,28,0.40)' }}>sua rotina, com leveza</div>
         </div>
 
         {/* Hero copy */}
@@ -124,16 +114,11 @@ export default function LoginPage() {
 
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="relative inline-block mb-3">
-            <div className="w-16 h-16 rounded-[20px] flex items-center justify-center"
-              style={{ background: 'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow: '0 8px 24px rgba(44,74,46,0.30),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-              <Leaf size={28} color="#D4E8D5" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4"
-              style={{ borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.90 }} />
+          <div className="flex items-center justify-center gap-3">
+            <img src="/brand/icone-coral.svg" alt="" style={{ width: 56, height: 56, display: 'block' }} />
+            <img src="/brand/logotipo-claro.svg" alt="Família em Dia" style={{ height: 36, width: 'auto', display: 'block' }} />
           </div>
-          <div className="font-bold text-xl" style={{ fontFamily: 'var(--font-lora)', color: '#1A2B1C' }}>Família em Foco</div>
-          <div className="text-sm italic mt-1" style={{ color: 'rgba(26,43,28,0.45)' }}>sua rotina, com leveza</div>
+          <div className="text-sm italic mt-3" style={{ color: 'rgba(26,43,28,0.45)' }}>sua rotina, com leveza</div>
         </div>
 
         <div className="w-full max-w-sm">
@@ -191,9 +176,9 @@ export default function LoginPage() {
                 type="submit" disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[13px] text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
                 style={{
-                  background: 'linear-gradient(140deg,#3D6641,#2C4A2E)',
-                  color: '#D4E8D5',
-                  boxShadow: '0 6px 20px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset',
+                  background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
+                  color: '#fff',
+                  boxShadow: '0 6px 20px rgba(255,107,92,0.30)',
                 }}
               >
                 {loading

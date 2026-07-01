@@ -170,7 +170,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
             onClick={() => setChildFilter(null)}
             className="px-3 py-1 rounded-full text-xs font-bold transition-all"
             style={{
-              background: !childFilter ? 'linear-gradient(140deg,#3D6641,#2C4A2E)' : 'rgba(61,102,65,0.10)',
+              background: !childFilter ? '#14463A' : 'rgba(61,102,65,0.10)',
               color: !childFilter ? '#fff' : '#3D6641',
             }}>
             Todos
@@ -399,7 +399,7 @@ export default function GavetaClient({ category, children, documents: initialDoc
 
                 <button type="submit" disabled={uploading}
                   className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                  style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
                   {uploading ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar documento'}
                 </button>
               </form>

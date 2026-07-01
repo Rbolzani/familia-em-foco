@@ -300,7 +300,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
 
   function sendWhatsApp() {
     if (!inviteLink) return
-    const msg = encodeURIComponent(`Olá! Estou usando o Família em Foco para organizar a rotina dos nossos filhos. Clique no link para ter acesso: ${inviteLink}`)
+    const msg = encodeURIComponent(`Olá! Estou usando o Família em Dia para organizar a rotina dos nossos filhos. Clique no link para ter acesso: ${inviteLink}`)
     window.open(`https://wa.me/?text=${msg}`, '_blank')
   }
 
@@ -440,10 +440,10 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
 
   const btn: React.CSSProperties = {
     width: '100%', padding: '14px', borderRadius: 13, border: 'none',
-    background: 'linear-gradient(140deg,#3D6641,#2C4A2E)',
-    color: '#D4E8D5', fontWeight: 700, fontSize: 15, cursor: 'pointer',
+    background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
+    color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    boxShadow: '0 6px 20px rgba(44,74,46,0.28)',
+    boxShadow: '0 6px 20px rgba(255,107,92,0.30)',
     transition: 'opacity 0.15s',
     opacity: saving ? 0.7 : 1,
   }
@@ -453,12 +453,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
     <div style={container}>
       {/* Logo */}
       <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', boxShadow: '0 4px 16px rgba(44,74,46,0.28)' }}>
-          <Sparkles size={26} color="#D4E8D5" />
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 22, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
-          Família em Foco
-        </h1>
+        <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 46, width: 'auto', display: 'block', margin: '0 auto' }} />
       </div>
 
       <div style={card}>
@@ -506,12 +501,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'children') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
-          <Sparkles size={20} color="#D4E8D5" />
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
-          Família em Foco
-        </h1>
+        <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 38, width: 'auto', display: 'block', margin: '0 auto' }} />
       </div>
 
       <div style={{ ...card, maxHeight: 'calc(100dvh - 140px)', overflowY: 'auto' }}>
@@ -578,12 +568,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'invite') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
-          <Sparkles size={20} color="#D4E8D5" />
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
-          Família em Foco
-        </h1>
+        <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 38, width: 'auto', display: 'block', margin: '0 auto' }} />
       </div>
 
       <div style={card}>
@@ -620,7 +605,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
 
             <button onClick={copyLink} style={{
               ...btn,
-              background: copied ? 'linear-gradient(140deg,#059669,#047857)' : 'linear-gradient(140deg,#3D6641,#2C4A2E)',
+              background: copied ? 'linear-gradient(140deg,#059669,#047857)' : 'linear-gradient(140deg,#FF8A6E,#FF6B5C)',
             }}>
               {copied ? <><Check size={16} /> Copiado!</> : 'Copiar link de convite'}
             </button>
@@ -657,12 +642,7 @@ export default function OnboardingClient({ firstName }: { firstName: string }) {
   if (step === 'ai') return (
     <div style={container}>
       <div style={{ marginBottom: 20, textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', boxShadow: '0 4px 12px rgba(44,74,46,0.25)' }}>
-          <Sparkles size={20} color="#D4E8D5" />
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-lora)', fontSize: 18, fontWeight: 700, color: '#1A2B1C', margin: 0 }}>
-          Família em Foco
-        </h1>
+        <img src="/brand/lockup-claro.png" alt="Família em Dia" style={{ height: 38, width: 'auto', display: 'block', margin: '0 auto' }} />
       </div>
 
       <div style={{ ...card, maxHeight: 'calc(100dvh - 140px)', overflowY: 'auto' }}>

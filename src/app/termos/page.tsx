@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import LegalLayout from '@/components/legal/LegalLayout'
 import { LEGAL_ENTITY } from '@/lib/legal'
 
-export const metadata: Metadata = { title: 'Termos de Uso · Família em Foco' }
+export const metadata: Metadata = { title: 'Termos de Uso · Família em Dia' }
 
 const H = ({ children }: { children: React.ReactNode }) => (
   <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 19, fontWeight: 700, color: '#1A2B1C', margin: '28px 0 10px' }}>{children}</h2>
@@ -83,14 +83,14 @@ export default function TermosPage() {
         Os recursos de IA auxiliam na organização e classificação de informações e podem conter
         imprecisões. As sugestões geradas <strong>não constituem aconselhamento médico, jurídico,
         financeiro ou profissional</strong>, e o Usuário deve conferir os dados antes de utilizá-los.
-        A Família em Foco não se responsabiliza por decisões tomadas com base exclusivamente em saídas
+        A Família em Dia não se responsabiliza por decisões tomadas com base exclusivamente em saídas
         automatizadas.
       </P>
 
       <H>7. Conteúdo do Usuário</H>
       <P>
         O Usuário mantém todos os direitos sobre os dados e arquivos que inserir (&quot;Conteúdo do
-        Usuário&quot;). O Usuário concede à Família em Foco uma licença limitada, não exclusiva e
+        Usuário&quot;). O Usuário concede à Família em Dia uma licença limitada, não exclusiva e
         revogável, restrita ao necessário para operar, hospedar, processar e exibir o Conteúdo do Usuário
         com a finalidade de prestar o Serviço. Não usamos o Conteúdo do Usuário para outras finalidades
         sem base legal adequada.
@@ -108,7 +108,7 @@ export default function TermosPage() {
 
       <H>9. Propriedade intelectual</H>
       <P>
-        A Plataforma, sua marca, layout, código e demais elementos são de titularidade da Família em Foco
+        A Plataforma, sua marca, layout, código e demais elementos são de titularidade da Família em Dia
         e protegidos por lei. Estes Termos não transferem ao Usuário qualquer direito de propriedade
         intelectual sobre o Serviço.
       </P>
@@ -123,7 +123,7 @@ export default function TermosPage() {
 
       <H>11. Limitação de responsabilidade</H>
       <P>
-        Na máxima extensão permitida pela legislação, a Família em Foco não responde por danos indiretos,
+        Na máxima extensão permitida pela legislação, a Família em Dia não responde por danos indiretos,
         lucros cessantes ou perda de dados decorrentes de uso inadequado, caso fortuito ou força maior.
         Nada nestes Termos limita responsabilidades que não possam ser excluídas por lei, em especial as
         decorrentes do Código de Defesa do Consumidor.

@@ -20,7 +20,7 @@ export async function POST() {
 
   const admin = adminClient()
   const summary = await buildDailySummary(admin, user.id)
-  const body = summary ?? '🌿 *Família em Foco* — teste de conexão OK!\nNenhuma atividade nos próximos 7 dias.'
+  const body = summary ?? '🌿 *Família em Dia* — teste de conexão OK!\nNenhuma atividade nos próximos 7 dias.'
 
   const result = await sendWhatsApp(settings.whatsapp_number, body)
   if (!result.ok) {

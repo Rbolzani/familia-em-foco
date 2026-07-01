@@ -22,16 +22,16 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Família em Foco",
+  title: "Família em Dia",
   description: "Sua assistente pessoal para tudo que envolve seus filhos",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Família em Foco" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Família em Dia" },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

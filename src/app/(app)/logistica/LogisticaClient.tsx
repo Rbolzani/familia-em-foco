@@ -247,7 +247,7 @@ export default function LogisticaClient({ activities: initial, children, familyM
             <button key={v} onClick={() => setView(v)}
               className="flex items-center gap-1.5 px-3 py-2 transition-all"
               style={{ fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer',
-                background: view === v ? '#2D6A35' : 'transparent',
+                background: view === v ? '#14463A' : 'transparent',
                 color: view === v ? '#fff' : 'rgba(26,43,28,0.50)' }}>
               {v === 'atividade' ? <LayoutList size={13} /> : <Users size={13} />}
               {v === 'atividade' ? 'Por atividade' : 'Por pessoa'}
@@ -289,8 +289,8 @@ export default function LogisticaClient({ activities: initial, children, familyM
         )}
         {(['semana', 'mes', 'tudo'] as const).map(p => (
           <button key={p} onClick={() => setFilterPeriod(p)} className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-            style={{ border: '1.5px solid', borderColor: filterPeriod === p ? '#2D6A35' : 'rgba(61,102,65,0.20)',
-              background: filterPeriod === p ? '#2D6A35' : 'transparent',
+            style={{ border: '1.5px solid', borderColor: filterPeriod === p ? '#14463A' : 'rgba(61,102,65,0.20)',
+              background: filterPeriod === p ? '#14463A' : 'transparent',
               color: filterPeriod === p ? '#fff' : 'rgba(26,43,28,0.55)', cursor: 'pointer' }}>
             {p === 'semana' ? 'Esta semana' : p === 'mes' ? 'Este mês' : 'Tudo'}
           </button>

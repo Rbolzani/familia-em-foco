@@ -209,25 +209,24 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     const active = isActive(href)
     return (
       <Link href={href} data-tour={tourId}
-        className={`flex items-center gap-3 px-3 py-[6px] rounded-[11px] text-[14px] font-medium transition-all duration-150 relative mb-[1px] ${active ? 'nav-active' : 'hover:bg-black/[0.04]'}`}
-        style={active ? { color:'#2C4A2E', fontWeight:700 } : { color:'rgba(26,43,28,0.50)' }}>
+        className={`flex items-center gap-3 px-3 py-[6px] rounded-[11px] text-[14px] font-medium transition-all duration-150 relative mb-[1px] ${active ? 'nav-active' : 'hover:bg-white/[0.06]'}`}
+        style={active ? { color:'#FFFFFF', fontWeight:700 } : { color:'rgba(231,241,238,0.72)' }}>
         {active && (
           <div className="absolute pointer-events-none"
             style={{ left:-12, top:'50%', transform:'translateY(-50%)', width:4, height:22,
-              borderRadius:'0 4px 4px 0', background:'linear-gradient(180deg,#5A8C5E,#2C4A2E)' }} />
+              borderRadius:'0 4px 4px 0', background:'linear-gradient(180deg,#FF8A6E,#FF6B5C)' }} />
         )}
         <div className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-none"
           style={active
-            ? { background:'rgba(61,102,65,0.13)', color:'#2C4A2E',
-                boxShadow:'0 1px 4px rgba(44,74,46,0.15),0 -1px 0 rgba(255,255,255,0.70) inset' }
-            : { background:'rgba(61,102,65,0.07)', color:'rgba(26,43,28,0.30)' }
+            ? { background:'rgba(255,255,255,0.12)', color:'#FF6B5C' }
+            : { background:'rgba(255,255,255,0.06)', color:'rgba(231,241,238,0.55)' }
           }>
           <Icon size={14} strokeWidth={active ? 2.5 : 1.8} />
         </div>
         <span className="flex-1 leading-none">{label}</span>
         {badge !== undefined && badge > 0 && (
           <div className="text-[10.5px] font-extrabold min-w-[20px] h-5 rounded-[7px] flex items-center justify-center px-[5px]"
-            style={{ background:'#2C4A2E', color:'#D4E8D5', boxShadow:'0 2px 6px rgba(44,74,46,0.20)' }}>
+            style={{ background:'#FF6B5C', color:'#fff', boxShadow:'0 2px 6px rgba(255,107,92,0.30)' }}>
             {badge}
           </div>
         )}
@@ -242,7 +241,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
     const active = isActive(href)
     const color = amber
       ? (active ? '#E5B87A'   : 'rgba(196,154,108,0.72)')
-      : (active ? '#D4E8D5'   : 'rgba(180,220,185,0.55)')
+      : (active ? '#FFFFFF'   : 'rgba(231,241,238,0.62)')
+    const iconColor = active ? '#FF6B5C' : color
     return (
       <Link href={href} onClick={() => { if (!tourActive) setMobileSidebarOpen(false) }}
         data-tour={tourId}
@@ -254,12 +254,12 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             width:4, height:28, borderRadius:'0 4px 4px 0',
             background: amber
               ? 'linear-gradient(180deg,#C49A6C,#E5B87A)'
-              : 'linear-gradient(180deg,#7AB87E,#D4E8D5)' }} />
+              : 'linear-gradient(180deg,#FF8A6E,#FF6B5C)' }} />
         )}
         <span style={{ width:32, height:32, borderRadius:10, flexShrink:0,
           display:'flex', alignItems:'center', justifyContent:'center',
-          background: active ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)' }}>
-          <Icon size={17} strokeWidth={active ? 2.5 : 1.8} color={color} />
+          background: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)' }}>
+          <Icon size={17} strokeWidth={active ? 2.5 : 1.8} color={iconColor} />
         </span>
         <span style={{ fontSize:14, fontWeight: active ? 700 : 500,
           color, letterSpacing:'0.01em', lineHeight:1 }}>{label}</span>
@@ -275,25 +275,20 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
       <Link href={href} onClick={() => setCfgPanelOpen(false)}
         onMouseEnter={cfgEnter} onMouseLeave={cfgLeave}
         style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 12px',
-          borderRadius:9, textDecoration:'none', color:'rgba(26,43,28,0.72)',
+          borderRadius:9, textDecoration:'none', color:'rgba(231,241,238,0.82)',
           fontSize:12.5, fontWeight:500 }}
-        className="hover:bg-black/[0.05]">
+        className="hover:bg-white/[0.06]">
         <Icon size={13} strokeWidth={1.8} style={{ flexShrink:0 }} />
         <span style={{ flex:1 }}>{label}</span>
         {badge && (
-          <span style={{ fontSize:9.5, fontWeight:700, background:'rgba(61,102,65,0.13)',
-            color:'rgba(26,43,28,0.55)', padding:'1px 6px', borderRadius:5 }}>
+          <span style={{ fontSize:9.5, fontWeight:700, background:'rgba(255,255,255,0.14)',
+            color:'rgba(231,241,238,0.7)', padding:'1px 6px', borderRadius:5 }}>
             {badge}
           </span>
         )}
       </Link>
     )
   }
-
-  const sidebarBg = `
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E"),
-    linear-gradient(175deg,#F2EAD8 0%,#E8DEC8 100%)
-  `
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -305,35 +300,16 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         <aside className="hidden md:flex flex-col w-[256px] flex-shrink-0 fixed z-40"
           style={{
             height:'100vh', top:0, left:0, overflow:'hidden',
-            backgroundColor:'#EAE1CE',
-            backgroundImage:sidebarBg,
-            backgroundSize:'200px 200px, 100% 100%',
-            borderRight:'1px solid rgba(61,102,65,0.22)',
-            boxShadow:'4px 0 24px rgba(44,74,46,0.07)',
+            backgroundImage:'linear-gradient(165deg,#10403A 0%,#08221F 72%)',
+            borderRight:'1px solid rgba(255,255,255,0.08)',
+            boxShadow:'4px 0 24px rgba(0,0,0,0.18)',
           }}>
 
-          <div className="absolute pointer-events-none"
-            style={{ top:60, left:0, bottom:60, width:3, borderRadius:'0 3px 3px 0',
-              background:'linear-gradient(180deg,transparent 0%,#5A8C5E 15%,#3D6641 45%,#C49A6C 75%,transparent 100%)',
-              opacity:0.50 }} />
-
           {/* Logo */}
-          <div style={{ flexShrink:0, padding:'14px 20px 12px', borderBottom:'1px solid rgba(61,102,65,0.14)' }}>
-            <div className="flex items-center gap-[12px]">
-              <div className="w-[40px] h-[40px] rounded-[13px] flex items-center justify-center flex-none relative"
-                style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)',
-                  boxShadow:'0 4px 14px rgba(44,74,46,0.18),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
-                <Leaf size={19} color="#D4E8D5" />
-                <div className="absolute" style={{ top:-3, right:-3, width:11, height:11, borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.85 }} />
-              </div>
-              <div>
-                <div style={{ fontFamily:'var(--font-lora)', fontSize:16, fontWeight:700, color:'#1A2B1C', letterSpacing:'-0.01em', lineHeight:1.2 }}>
-                  Família em Foco
-                </div>
-                <div style={{ fontSize:'10.5px', marginTop:1, fontStyle:'italic', color:'rgba(26,43,28,0.40)' }}>
-                  sua rotina, com leveza
-                </div>
-              </div>
+          <div style={{ flexShrink:0, padding:'18px 14px 16px', borderBottom:'1px solid rgba(255,255,255,0.10)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:11 }}>
+              <img src="/brand/icone-coral.svg" alt="" style={{ width:50, height:50, flex:'0 0 auto', display:'block' }} />
+              <img src="/brand/logotipo-escuro.svg" alt="Família em Dia" style={{ flex:'1 1 auto', minWidth:0, width:'100%', height:'auto', display:'block' }} />
             </div>
           </div>
 
@@ -341,9 +317,9 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <nav style={{ flex:1, minHeight:0, padding:'10px 12px', overflowY:'hidden' }}>
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
-                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(26,43,28,0.36)' }}>
+                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(231,241,238,0.5)' }}>
                 Principal
-                <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
+                <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.10)' }} />
               </div>
               <NavItem href="/dashboard"  label="Início"    icon={LayoutDashboard} />
               <NavItem href="/calendario" label="Agenda"    icon={CalendarDays} />
@@ -351,36 +327,36 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             </div>
             <div>
               <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase',
-                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(26,43,28,0.36)' }}>
+                display:'flex', alignItems:'center', gap:8, padding:'0 10px 6px', color:'rgba(231,241,238,0.5)' }}>
                 Módulos
-                <div style={{ flex:1, height:1, background:'rgba(61,102,65,0.14)' }} />
+                <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.10)' }} />
               </div>
               <NavItem href="/escola"     label="Escola"     icon={BookOpen} />
               <NavItem href="/saude"      label="Saúde"      icon={HeartPulse} />
               <NavItem href="/atividades" label="Atividades" icon={Trophy} />
               <NavItem href="/vault"      label="Documentos" icon={FolderLock} />
-              <div style={{ height:1, background:'rgba(61,102,65,0.14)', margin:'5px 8px' }} />
+              <div style={{ height:1, background:'rgba(255,255,255,0.10)', margin:'5px 8px' }} />
               <NavItem href="/configuracoes" label="Compartilhar Acesso" icon={UserPlus} tourId="nav-invite" />
             </div>
           </nav>
 
           {/* Bottom section: Filhos + Configurações + Sair */}
-          <div style={{ flexShrink:0, borderTop:'1px solid rgba(61,102,65,0.14)', display:'flex', flexDirection:'column' }}>
+          <div style={{ flexShrink:0, borderTop:'1px solid rgba(255,255,255,0.10)', display:'flex', flexDirection:'column' }}>
 
             {/* Filhos — scrollable */}
             <div data-tour="nav-children" style={{ padding:'8px 12px 4px', overflowY:'auto', maxHeight:160 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 8px 7px' }}>
-                <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(26,43,28,0.36)' }}>Filhos</span>
-                <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(61,102,65,0.70)', letterSpacing:'0.04em', textDecoration:'none' }}>
+                <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(231,241,238,0.5)' }}>Filhos</span>
+                <Link href="/children" style={{ fontSize:10, fontWeight:700, color:'rgba(231,241,238,0.7)', letterSpacing:'0.04em', textDecoration:'none' }}>
                   + Gerenciar
                 </Link>
               </div>
               {liveChildren.length === 0 ? (
                 <Link href="/children">
                   <div className="flex items-center gap-2.5 transition-all hover:opacity-80"
-                    style={{ padding:'9px 12px', borderRadius:12, border:'1.5px dashed rgba(61,102,65,0.28)',
-                      color:'rgba(26,43,28,0.40)', fontSize:12.5, fontWeight:600 }}>
-                    <Users size={14} color="rgba(61,102,65,0.55)" />
+                    style={{ padding:'9px 12px', borderRadius:12, border:'1.5px dashed rgba(255,255,255,0.22)',
+                      color:'rgba(231,241,238,0.6)', fontSize:12.5, fontWeight:600 }}>
+                    <Users size={14} color="rgba(231,241,238,0.6)" />
                     Cadastrar primeiro filho
                   </div>
                 </Link>
@@ -394,7 +370,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
                       <div style={{ width:40, margin:'0 auto' }}>
                         <ChildAvatar child={{ ...child, avatar_url: child.avatar_url ?? null }} size={40} radius={20} />
                       </div>
-                      <div style={{ fontSize:11, fontWeight:700, color:'#1A2B1C', marginTop:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#E7F1EE', marginTop:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {child.name}
                       </div>
                     </Link>
@@ -404,36 +380,36 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             </div>
 
             {/* Configurações hover trigger */}
-            <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(61,102,65,0.10)' }}>
+            <div style={{ padding:'0 12px 4px', borderTop:'1px solid rgba(255,255,255,0.08)' }}>
               <button
                 onMouseEnter={cfgEnter}
                 onMouseLeave={cfgLeave}
                 style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'7px 10px',
                   borderRadius:11, background:'none', border:'none', cursor:'pointer',
-                  color:'rgba(26,43,28,0.50)', fontSize:14, fontWeight:500 }}
-                className="hover:bg-black/[0.04]">
+                  color:'rgba(231,241,238,0.72)', fontSize:14, fontWeight:500 }}
+                className="hover:bg-white/[0.06]">
                 <div style={{ width:28, height:28, borderRadius:9, display:'flex', alignItems:'center',
-                  justifyContent:'center', background:'rgba(61,102,65,0.07)', color:'rgba(26,43,28,0.30)', flexShrink:0 }}>
+                  justifyContent:'center', background:'rgba(255,255,255,0.06)', color:'rgba(231,241,238,0.55)', flexShrink:0 }}>
                   <Settings size={14} strokeWidth={1.8} />
                 </div>
                 <span style={{ flex:1, textAlign:'left' }}>Configurações</span>
-                <ChevronRight size={13} style={{ opacity:0.4 }} />
+                <ChevronRight size={13} style={{ opacity:0.5, color:'#E7F1EE' }} />
               </button>
             </div>
 
             {/* Sair + Tweaks */}
             <div style={{ padding:'2px 12px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <button onClick={handleLogout}
-                className="transition-all hover:bg-black/[0.04] rounded-[8px]"
-                style={{ fontSize:11, fontWeight:500, color:'rgba(26,43,28,0.28)', padding:'6px 10px', background:'none', border:'none', cursor:'pointer' }}>
+                className="transition-all hover:bg-white/[0.06] rounded-[8px]"
+                style={{ fontSize:11, fontWeight:500, color:'rgba(231,241,238,0.45)', padding:'6px 10px', background:'none', border:'none', cursor:'pointer' }}>
                 Sair da conta
               </button>
               <button onClick={() => setDesktopTweaksOpen(true)}
                 title="Personalizar tema"
-                className="transition-all hover:bg-black/[0.06] rounded-[9px]"
+                className="transition-all hover:bg-white/[0.10] rounded-[9px]"
                 style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center',
-                  background:'rgba(61,102,65,0.08)', border:'none', cursor:'pointer', flexShrink:0 }}>
-                <Palette size={14} color="rgba(61,102,65,0.55)" />
+                  background:'rgba(255,255,255,0.08)', border:'none', cursor:'pointer', flexShrink:0 }}>
+                <Palette size={14} color="rgba(231,241,238,0.6)" />
               </button>
             </div>
           </div>
@@ -460,21 +436,6 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
               <span style={{ width:15, height:1.8, background:'#2C4A2E', borderRadius:2, display:'block' }} />
               <span style={{ width:15, height:1.8, background:'#2C4A2E', borderRadius:2, display:'block' }} />
             </button>
-
-            {/* Logo + título 2 linhas */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-none" style={{ width:38, height:38 }}>
-                <div className="w-full h-full rounded-[12px] flex items-center justify-center"
-                  style={{ background:'linear-gradient(140deg,#2C4A2E,#1E3320)', boxShadow:'0 4px 14px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.10) inset' }}>
-                  <Leaf size={19} color="#D4E8D5" />
-                </div>
-                <div className="absolute" style={{ top:-3, right:-3, width:11, height:11, borderRadius:'50% 0 50% 0', background:'#C49A6C', opacity:0.88 }} />
-              </div>
-              <div style={{ fontFamily:'var(--font-lora)', fontWeight:700, color:'#1A2B1C', lineHeight:1.15 }}>
-                <div style={{ fontSize:13 }}>Família</div>
-                <div style={{ fontSize:13 }}>em Foco</div>
-              </div>
-            </div>
 
             {/* Notificações (sino) */}
             <div ref={notifRef} className="relative">
@@ -542,9 +503,9 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             {/* Captura IA */}
             <Link href="/ia" data-tour="nav-ia">
               <div className="flex items-center gap-1.5 rounded-[13px] px-3"
-                style={{ height:36, background:'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow:'0 3px 12px rgba(44,74,46,0.30)' }}>
-                <Sparkles size={13} color="#D4E8D5" />
-                <span style={{ fontSize:12, fontWeight:700, color:'#D4E8D5', whiteSpace:'nowrap' }}>Captura IA</span>
+                style={{ height:36, background:'linear-gradient(140deg,#FF8A6E,#FF6B5C)', boxShadow:'0 4px 14px rgba(255,107,92,0.34)' }}>
+                <Sparkles size={13} color="#fff" />
+                <span style={{ fontSize:12, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>Captura IA</span>
               </div>
             </Link>
           </div>
@@ -567,27 +528,25 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           style={{
             position:'fixed', left:256, bottom:50, zIndex:60,
             width:216,
-            backgroundColor:'#EAE1CE',
-            backgroundImage:sidebarBg,
-            backgroundSize:'200px 200px, 100% 100%',
+            backgroundImage:'linear-gradient(165deg,#10403A 0%,#08221F 72%)',
             borderRadius:14,
-            border:'1px solid rgba(61,102,65,0.22)',
-            boxShadow:'4px 4px 28px rgba(44,74,46,0.18)',
+            border:'1px solid rgba(255,255,255,0.10)',
+            boxShadow:'4px 4px 28px rgba(0,0,0,0.30)',
             padding:'10px 6px',
           }}>
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Conta</div>
+            color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Conta</div>
           <CfgPanelItem href="/conta"   label="Minha Conta" icon={UserCog} />
           <CfgPanelItem href="/planos"  label="Planos"      icon={Star} />
           <CfgPanelItem href="/alertas" label="Alertas"     icon={Bell} badge="WhatsApp" />
-          <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+          <div style={{ height:1, background:'rgba(255,255,255,0.10)', margin:'6px 8px' }} />
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Ajuda</div>
+            color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Ajuda</div>
           <CfgPanelItem href="/suporte" label="Suporte"  icon={Headphones} />
           <CfgPanelItem href="/faq"     label="FAQ"      icon={HelpCircle} />
-          <div style={{ height:1, background:'rgba(61,102,65,0.12)', margin:'6px 8px' }} />
+          <div style={{ height:1, background:'rgba(255,255,255,0.10)', margin:'6px 8px' }} />
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
-            color:'rgba(26,43,28,0.36)', padding:'2px 12px 4px' }}>Legal</div>
+            color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Legal</div>
           <CfgPanelItem href="/termos"      label="Termos de Uso" icon={FileText} />
           <CfgPanelItem href="/privacidade" label="Privacidade"   icon={Shield} />
         </div>
@@ -611,8 +570,8 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         className="md:hidden fixed top-0 left-0 bottom-0 z-[75]"
         style={{
           width:230,
-          background:'linear-gradient(180deg,#253D27 0%,#1E3320 100%)',
-          borderRight:'1px solid rgba(91,143,94,0.18)',
+          background:'linear-gradient(165deg,#10403A 0%,#08221F 72%)',
+          borderRight:'1px solid rgba(255,255,255,0.08)',
           boxShadow:'6px 0 28px rgba(10,20,12,0.38)',
           transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-230px)',
           transition:'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
@@ -625,16 +584,9 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         {/* Logo + fechar */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
           padding:'14px 16px 12px', borderBottom:'1px solid rgba(91,143,94,0.14)', flexShrink:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(140deg,#3D6641,#2C4A2E)',
-              display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-              boxShadow:'0 3px 10px rgba(44,74,46,0.30)' }}>
-              <Leaf size={17} color="#D4E8D5" />
-            </div>
-            <div style={{ fontFamily:'var(--font-lora)', fontSize:14, fontWeight:700,
-              color:'rgba(212,232,213,0.92)', lineHeight:1.2 }}>
-              Família<br/>em Foco
-            </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+            <img src="/brand/icone-coral.svg" alt="" style={{ width:44, height:44, flex:'0 0 auto', display:'block' }} />
+            <img src="/brand/logotipo-escuro.svg" alt="Família em Dia" style={{ flex:'1 1 auto', minWidth:0, width:'100%', height:'auto', display:'block' }} />
           </div>
           <button onClick={() => setMobileSidebarOpen(false)}
             style={{ width:30, height:30, borderRadius:8, border:'none', cursor:'pointer',

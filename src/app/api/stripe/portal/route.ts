@@ -12,7 +12,7 @@ async function ensurePortalConfig(): Promise<string> {
   if (cachedPortalConfigId) return cachedPortalConfigId
   const config = await stripe.billingPortal.configurations.create({
     business_profile: {
-      headline: 'Família em Foco — gerencie seu pagamento',
+      headline: 'Família em Dia — gerencie seu pagamento',
     },
     features: {
       invoice_history: { enabled: true },

@@ -292,9 +292,9 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
                 cursor:'pointer', transition:'all .18s',
                 border:`1px solid ${viewMode===v.key?'rgba(61,102,65,0.40)':'rgba(61,102,65,0.14)'}`,
                 background: viewMode===v.key
-                  ? 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+                  ? '#14463A'
                   : 'rgba(255,255,255,0.70)',
-                color: viewMode===v.key ? '#D4E8D5' : 'rgba(26,43,28,0.50)',
+                color: viewMode===v.key ? '#fff' : 'rgba(26,43,28,0.50)',
                 boxShadow: viewMode===v.key
                   ? '0 2px 8px rgba(44,74,46,0.22),0 -1px 0 rgba(255,255,255,0.12) inset'
                   : '0 1px 3px rgba(44,74,46,0.06)',
@@ -363,8 +363,8 @@ export default function CalendarioClient({ initialActivities, initialChildren }:
                     <span className="font-bold flex items-center justify-center rounded-full"
                       style={{ fontSize:10.5, width:20, height:20,
                         ...(todayDay
-                          ?{backgroundImage:'linear-gradient(140deg,#3D6641,#2C4A2E)',color:'#D4E8D5',boxShadow:'0 2px 8px rgba(44,74,46,0.30)'}
-                          :isSelected?{background:'rgba(61,102,65,0.18)',color:'#2C4A2E'}:{color:'#1A2B1C'}) }}>
+                          ?{backgroundImage:'linear-gradient(140deg,#1E5C4C,#14463A)',color:'#fff',boxShadow:'0 2px 8px rgba(20,70,58,0.30)'}
+                          :isSelected?{background:'rgba(20,70,58,0.16)',color:'#14463A'}:{color:'#1A2B1C'}) }}>
                       {day.getDate()}
                     </span>
                   </div>

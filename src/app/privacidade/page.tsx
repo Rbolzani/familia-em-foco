@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import LegalLayout from '@/components/legal/LegalLayout'
 import { LEGAL_ENTITY } from '@/lib/legal'
 
-export const metadata: Metadata = { title: 'Política de Privacidade · Família em Foco' }
+export const metadata: Metadata = { title: 'Política de Privacidade · Família em Dia' }
 
 const H = ({ children }: { children: React.ReactNode }) => (
   <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 19, fontWeight: 700, color: '#1A2B1C', margin: '28px 0 10px' }}>{children}</h2>

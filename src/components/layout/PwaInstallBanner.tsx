@@ -117,7 +117,7 @@ export default function PwaInstallBanner() {
 
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>
-          {showIos ? 'Adicione à tela inicial' : 'Instale o Família em Foco'}
+          {showIos ? 'Adicione à tela inicial' : 'Instale o Família em Dia'}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 11, opacity: 0.8, lineHeight: 1.4 }}>
           {showIos

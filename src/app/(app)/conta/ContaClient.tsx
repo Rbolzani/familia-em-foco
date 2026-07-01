@@ -131,7 +131,7 @@ export default function ContaClient({ email, fullName, phone, birthDate, cpf, ma
           <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
             className="mt-0.5" style={{ accentColor: '#3D6641', width: 16, height: 16 }} />
           <span className="text-xs leading-relaxed" style={{ color: 'rgba(26,43,28,0.60)' }}>
-            Quero receber dicas, novidades e ofertas da Família em Foco por e-mail e WhatsApp.
+            Quero receber dicas, novidades e ofertas da Família em Dia por e-mail e WhatsApp.
           </span>
         </label>
 
@@ -144,7 +144,7 @@ export default function ContaClient({ email, fullName, phone, birthDate, cpf, ma
 
         <button type="submit" disabled={saving}
           className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.28)' }}>
+          style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', boxShadow: '0 4px 16px rgba(255,107,92,0.30)' }}>
           {saving
             ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             : <><Save size={15} /> Salvar alterações</>

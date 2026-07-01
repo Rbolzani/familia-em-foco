@@ -46,6 +46,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Libera acesso ao dev server pela rede local (celular no mesmo Wi-Fi).
+  // Afeta apenas o ambiente de desenvolvimento.
+  allowedDevOrigins: ["192.168.0.20"],
   async headers() {
     return [
       {

@@ -56,8 +56,8 @@ export default function EmptyState({ title, subtitle, actionLabel, onAction, sho
           <button
             onClick={onAction}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[13px] text-sm font-bold transition-all hover:brightness-105 active:scale-95"
-            style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5',
-              boxShadow: '0 4px 16px rgba(44,74,46,0.28),0 -1px 0 rgba(255,255,255,0.12) inset' }}>
+            style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff',
+              boxShadow: '0 4px 16px rgba(255,107,92,0.30)' }}>
             {actionLabel}
           </button>
         )}

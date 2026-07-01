@@ -148,7 +148,7 @@ export default function CompletarCadastroClient({ email, initialName, inviteToke
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
                 className="mt-0.5" style={{ accentColor: '#3D6641', width: 16, height: 16 }} />
               <span className="text-xs leading-relaxed" style={{ color: 'rgba(26,43,28,0.60)' }}>
-                Quero receber dicas, novidades e ofertas da Família em Foco por e-mail e WhatsApp. (opcional)
+                Quero receber dicas, novidades e ofertas da Família em Dia por e-mail e WhatsApp. (opcional)
               </span>
             </label>
 
@@ -161,7 +161,7 @@ export default function CompletarCadastroClient({ email, initialName, inviteToke
 
             <button type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', boxShadow: '0 4px 16px rgba(44,74,46,0.30)' }}>
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', boxShadow: '0 4px 16px rgba(255,107,92,0.30)' }}>
               {loading
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 : <><span>Continuar</span><ArrowRight size={15} /></>

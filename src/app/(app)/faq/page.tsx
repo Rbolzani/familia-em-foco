@@ -27,7 +27,7 @@ const SECTIONS: FAQSection[] = [
       },
       {
         q: 'Preciso instalar alguma coisa?',
-        a: 'Não. O Família em Foco funciona direto no navegador. No celular, você pode adicioná-lo à tela inicial como um app (toque no menu do navegador → "Adicionar à tela inicial").',
+        a: 'Não. O Família em Dia funciona direto no navegador. No celular, você pode adicioná-lo à tela inicial como um app (toque no menu do navegador → "Adicionar à tela inicial").',
       },
       {
         q: 'Como cadastro meus filhos?',
@@ -307,10 +307,10 @@ export default function FAQPage() {
           <a href="/suporte"
             style={{ display:'inline-flex', alignItems:'center', gap:8,
               padding:'10px 22px', borderRadius:11, textDecoration:'none',
-              background:'linear-gradient(135deg,#3D6641,#2C4A2E)',
-              boxShadow:'0 3px 12px rgba(44,74,46,0.22)' }}>
-            <MessageCircle size={14} color="#D4E8D5" />
-            <span style={{ fontSize:13.5, fontWeight:700, color:'#D4E8D5' }}>Falar com o suporte</span>
+              background:'linear-gradient(135deg,#FF8A6E,#FF6B5C)',
+              boxShadow:'0 3px 12px rgba(255,107,92,0.28)' }}>
+            <MessageCircle size={14} color="#fff" />
+            <span style={{ fontSize:13.5, fontWeight:700, color:'#fff' }}>Falar com o suporte</span>
           </a>
         </div>
       </div>

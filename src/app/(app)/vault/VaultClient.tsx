@@ -236,7 +236,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
   const pill = (active: boolean): React.CSSProperties => ({
     fontSize: 12.5, fontWeight: 600, padding: '6px 13px', borderRadius: 999, cursor: 'pointer',
     border: active ? '1px solid transparent' : '1px solid rgba(61,102,65,0.22)',
-    background: active ? 'linear-gradient(140deg,#3D6641,#2C4A2E)' : '#fff',
+    background: active ? '#14463A' : '#fff',
     color: active ? '#fff' : 'rgba(26,43,28,0.65)',
     display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
   })
@@ -258,14 +258,9 @@ export default function VaultClient({ children, documents: initialDocuments, can
         </p>
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {/* Captura IA: oculto no mobile pois já aparece na topbar */}
-            <Link href="/ia" className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
-              style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)', color: '#D4E8D5', boxShadow: '0 4px 14px rgba(44,74,46,0.25)', textDecoration: 'none' }}>
-              <Sparkles size={14} /> Captura com IA
-            </Link>
             <button onClick={() => setShowUpload(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-95 active:scale-95"
-              style={{ background: '#fff', border: '1px solid rgba(61,102,65,0.30)', color: '#3D6641' }}>
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+              style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff', boxShadow: '0 4px 14px rgba(255,107,92,0.30)' }}>
               <Plus size={14} /> Novo documento
             </button>
           </div>
@@ -343,7 +338,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
                 borderRadius: 999, cursor: 'pointer', appearance: 'none',
                 border: childId !== null ? '1px solid transparent' : '1px solid rgba(61,102,65,0.22)',
                 background: childId !== null
-                  ? 'linear-gradient(140deg,#3D6641,#2C4A2E)'
+                  ? '#14463A'
                   : '#fff',
                 color: childId !== null ? '#fff' : 'rgba(26,43,28,0.65)',
                 outline: 'none',
@@ -640,7 +635,7 @@ export default function VaultClient({ children, documents: initialDocuments, can
 
                 <button type="submit" disabled={uploading}
                   className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:brightness-105 active:scale-95 disabled:opacity-60"
-                  style={{ background: 'linear-gradient(140deg,#3D6641,#2C4A2E)' }}>
+                  style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)' }}>
                   {uploading ? <><Loader2 size={15} className="animate-spin" /> Salvando...</> : 'Salvar documento'}
                 </button>
               </form>
