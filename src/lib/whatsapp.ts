@@ -351,7 +351,7 @@ export async function runGraceNotices(admin: SupabaseClient): Promise<{ sent: nu
       if (!number) { skipped++; continue }
 
       const isOwner = memberId === o.user_id
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://familiaemdia.com.br'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.familiaemdia.com.br'
       const body = isOwner
         ? `🌿 *Família em Dia*\n\n⚠️ *Atenção:* seu parceiro(a) será desconectado ${dayStr}. Assine um plano para manter o acesso compartilhado: ${appUrl}/planos`
         : `🌿 *Família em Dia*\n\n⚠️ *Atenção:* sua conexão com a família será encerrada ${dayStr}. Peça ao responsável que assine o plano Família para manter seu acesso.`
