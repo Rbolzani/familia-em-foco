@@ -201,15 +201,12 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
       const emoji = CAT_EMOJI[a.category] ?? '•'
       const time = a.time ? ` (${a.time.slice(0, 5)})` : ''
       const childName = a.child?.name ? `${a.child.name} — ` : ''
-      lines.push(`${emoji} ${childName}${a.title}${time}`)
+      const parts = [`${emoji} ${childName}${a.title}${time}`]
       const leva = who(a.takes_user_id)
       const busca = who(a.picks_user_id)
-      if (leva || busca) {
-        const parts = []
-        if (leva) parts.push(`🚗 leva: ${leva}`)
-        if (busca) parts.push(`🏠 busca: ${busca}`)
-        lines.push(parts.join(' · '))
-      }
+      if (leva) parts.push(`🚗 leva: ${leva}`)
+      if (busca) parts.push(`🏠 busca: ${busca}`)
+      lines.push(parts.join(' · '))
     }
   } else {
     lines.push('*Hoje* — nenhuma atividade. Aproveite! 💚')
