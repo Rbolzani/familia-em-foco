@@ -289,8 +289,8 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   lines.push('💚 _Família em Dia_')
 
   // Templates aprovados do WhatsApp não permitem quebra de linha no parâmetro
-  // dinâmico — junta tudo numa única linha usando "·" como separador visual.
-  return lines.filter(l => l !== '').join('  ·  ')
+  // dinâmico — junta tudo numa única linha usando "|" como separador visual.
+  return lines.filter(l => l !== '').join('  |  ')
 }
 
 // ── Número de WhatsApp do usuário ────────────────────────────────────────────
