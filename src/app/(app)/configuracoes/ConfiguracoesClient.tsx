@@ -110,9 +110,14 @@ export default function ConfiguracoesClient({
     setInvites(prev => prev.filter(i => i.id !== id))
   }
 
+  async function markShared(id: string) {
+    await supabase.from('family_invites').update({ shared_at: new Date().toISOString() }).eq('id', id)
+  }
+
   async function copyLink(inv: PendingInvite) {
     await navigator.clipboard.writeText(inviteUrl(inv.token))
     setCopiedId(inv.id)
+    markShared(inv.id)
     setTimeout(() => hideInvite(inv.id), 1500)
   }
 
@@ -120,6 +125,7 @@ export default function ConfiguracoesClient({
     const url = inviteUrl(inv.token)
     const msg = `Oi! Te convidei para acompanhar a rotina dos nossos filhos no app Família em Dia. É só acessar e aceitar: ${url}`
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    markShared(inv.id)
     hideInvite(inv.id)
   }
 

@@ -83,6 +83,7 @@ export default async function ConfiguracoesPage() {
         .select('id, token, invited_email, access_role, expires_at')
         .eq('family_id', familyId)
         .eq('status', 'pending')
+        .is('shared_at', null)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
       pendingInvites = invs ?? []
