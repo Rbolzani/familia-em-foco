@@ -208,7 +208,7 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
         const parts = []
         if (leva) parts.push(`🚗 leva: ${leva}`)
         if (busca) parts.push(`🏠 busca: ${busca}`)
-        lines.push(`   ${parts.join(' · ')}`)
+        lines.push(parts.join(' · '))
       }
     }
   } else {
@@ -288,7 +288,9 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   lines.push('')
   lines.push('💚 _Família em Dia_')
 
-  return lines.join('\n')
+  // Templates aprovados do WhatsApp não permitem quebra de linha no parâmetro
+  // dinâmico — junta tudo numa única linha usando "·" como separador visual.
+  return lines.filter(l => l !== '').join('  ·  ')
 }
 
 // ── Número de WhatsApp do usuário ────────────────────────────────────────────
