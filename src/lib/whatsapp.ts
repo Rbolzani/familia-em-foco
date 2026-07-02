@@ -191,13 +191,13 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   // Free não recebe a agenda; sem atividades também não há o que enviar.
   if (!familyIsPaid || activities.length === 0) return null
 
-  const lines: string[] = []
-  lines.push(`🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`)
-  lines.push('')
+  // Blocos de nível superior (header, seções) juntam-se com "·"; dentro de uma
+  // seção, cada atividade/item (horário ou data diferente) separa-se com "|".
+  const blocks: string[] = []
+  blocks.push(`🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`)
 
   if (todayActs.length > 0) {
-    lines.push('*Hoje*')
-    for (const a of todayActs) {
+    const items = todayActs.map(a => {
       const emoji = CAT_EMOJI[a.category] ?? '•'
       const time = a.time ? ` (${a.time.slice(0, 5)})` : ''
       const childName = a.child?.name ? `${a.child.name} — ` : ''
@@ -206,20 +206,20 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
       const busca = who(a.picks_user_id)
       if (leva) parts.push(`🚗 leva: ${leva}`)
       if (busca) parts.push(`🏠 busca: ${busca}`)
-      lines.push(parts.join(' · '))
-    }
+      return parts.join(' · ')
+    })
+    blocks.push(`*Hoje* · ${items.join(' | ')}`)
   } else {
-    lines.push('*Hoje* — nenhuma atividade. Aproveite! 💚')
+    blocks.push('*Hoje* — nenhuma atividade. Aproveite! 💚')
   }
 
   if (nextActs.length > 0) {
-    lines.push('')
-    lines.push('*Próximos 7 dias*')
-    for (const a of nextActs.slice(0, 8)) {
+    const items = nextActs.slice(0, 8).map(a => {
       const childName = a.child?.name ? ` (${a.child.name})` : ''
-      lines.push(`• ${fmtShort(a.date)} — ${a.title}${childName}`)
-    }
-    if (nextActs.length > 8) lines.push(`… e mais ${nextActs.length - 8} atividades no app`)
+      return `• ${fmtShort(a.date)} — ${a.title}${childName}`
+    })
+    if (nextActs.length > 8) items.push(`… e mais ${nextActs.length - 8} atividades no app`)
+    blocks.push(`*Próximos 7 dias* · ${items.join(' | ')}`)
   }
 
   // Documentos vencidos ou vencendo nos próximos 15 dias
@@ -234,9 +234,7 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     : await docExpiryQuery.eq('user_id', userId)
 
   if (expiringDocs && expiringDocs.length > 0) {
-    lines.push('')
-    lines.push('*Documentos — vencimentos*')
-    for (const d of expiringDocs) {
+    const items = expiringDocs.map(d => {
       const childName = (d.child as unknown as { name: string } | null)?.name
       const daysLeft = Math.ceil((new Date(d.expires_at + 'T23:59:59').getTime() - Date.now()) / 86_400_000)
       const status = daysLeft < 0
@@ -245,8 +243,9 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
         : daysLeft === 1 ? 'vence amanhã'
         : `vence em ${daysLeft} dias`
       const who = childName ? ` (${childName})` : ''
-      lines.push(`📄 ${d.title}${who} — ${status}`)
-    }
+      return `📄 ${d.title}${who} — ${status}`
+    })
+    blocks.push(`*Documentos — vencimentos* · ${items.join(' | ')}`)
   }
 
   // Vacinas com próxima dose vencida ou nos próximos 30 dias
@@ -277,17 +276,15 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     }
   }
   if (vaccineLines.length > 0) {
-    lines.push('')
-    lines.push('*Vacinas — doses próximas*')
-    vaccineLines.forEach(l => lines.push(l))
+    blocks.push(`*Vacinas — doses próximas* · ${vaccineLines.join(' | ')}`)
   }
 
-  lines.push('')
-  lines.push('💚 _Família em Dia_')
+  blocks.push('💚 _Família em Dia_')
 
   // Templates aprovados do WhatsApp não permitem quebra de linha no parâmetro
-  // dinâmico — junta tudo numa única linha usando "|" como separador visual.
-  return lines.filter(l => l !== '').join('  |  ')
+  // dinâmico — "·" liga rótulos/partes da mesma atividade, "|" só separa
+  // atividades/itens diferentes (horários ou datas distintos).
+  return blocks.join(' · ')
 }
 
 // ── Número de WhatsApp do usuário ────────────────────────────────────────────
