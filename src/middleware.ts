@@ -44,6 +44,13 @@ export async function middleware(request: NextRequest) {
   // Rota pública de convite — não requer autenticação prévia (usuário faz login/cadastro após ver a prévia)
   const isConviteRoute = pathname.startsWith('/convite')
 
+  // Visitante não logado na raiz vê a landing page (rewrite, sem redirect —
+  // mantém "/" na barra de endereço e responde 200, importante para
+  // crawlers como o da Meta que não seguem redirect ao validar um site).
+  if (!user && isPublic) {
+    return NextResponse.rewrite(new URL('/marketing/Landing-Familia-em-Dia-P6-IA.html', request.url))
+  }
+
   if (!user && !isAuthRoute && !isPublic && !isApi && !isConviteRoute) {
     const loginUrl = new URL('/auth/login', request.url)
     // Preserva o destino (ex.: link de convite) para retornar após o login
