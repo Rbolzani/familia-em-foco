@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { getFamilyPlan, getAiUsageThisMonth, incrementAiUsage, PLAN_LIMITS } from '@/lib/billing'
+import { normalizeImage } from '@/lib/image'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
 const MAX_TEXT_CHARS = 12_000
 
 const PROMPT = `Você é um assistente inteligente que analisa conteúdo enviado por pais e classifica automaticamente em três categorias distintas.
@@ -121,21 +121,24 @@ export async function POST(req: NextRequest) {
     if (text && text.length > MAX_TEXT_CHARS) {
       return NextResponse.json({ error: 'Texto muito longo (máx. 12 mil caracteres)' }, { status: 400 })
     }
-    if (file) {
-      if (!ALLOWED_TYPES.includes(file.type as typeof ALLOWED_TYPES[number])) {
-        return NextResponse.json({ error: 'Formato não suportado (use JPG, PNG, GIF ou WebP)' }, { status: 400 })
-      }
-      if (file.size > MAX_FILE_BYTES) {
-        return NextResponse.json({ error: 'Imagem muito grande (máx. 8 MB)' }, { status: 400 })
-      }
+    if (file && file.size > MAX_FILE_BYTES) {
+      return NextResponse.json({ error: 'Imagem muito grande (máx. 8 MB)' }, { status: 400 })
     }
 
     let message
+    let normalized: Awaited<ReturnType<typeof normalizeImage>> = null
 
     if (file) {
       const bytes = await file.arrayBuffer()
-      const base64 = Buffer.from(bytes).toString('base64')
-      const mediaType = file.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+      normalized = await normalizeImage(Buffer.from(bytes), file.type, file.name)
+      if (!normalized) {
+        return NextResponse.json({ error: 'Formato não suportado (use JPG, PNG, GIF, WebP ou foto da câmera)' }, { status: 400 })
+      }
+    }
+
+    if (normalized) {
+      const base64 = normalized.buffer.toString('base64')
+      const mediaType = normalized.mediaType
 
       message = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',

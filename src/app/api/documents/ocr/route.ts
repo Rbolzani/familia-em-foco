@@ -3,11 +3,11 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { getFamilyPlan, PLAN_LIMITS } from '@/lib/billing'
 import { DOC_TYPES, DOC_TYPE_KEYS, getDocType, metadataFields, type DocType } from '@/lib/docTypes'
+import { normalizeImage } from '@/lib/image'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 const MAX_FILE_BYTES = 12 * 1024 * 1024
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
 const PDF_TYPE = 'application/pdf'
 
 // Catálogo de tipos derivado do schema (fonte única em lib/docTypes).
@@ -76,20 +76,21 @@ export async function POST(req: NextRequest) {
 
     const content: Anthropic.Messages.ContentBlockParam[] = []
     for (const file of files) {
-      const isImage = (IMAGE_TYPES as readonly string[]).includes(file.type)
       const isPdf = file.type === PDF_TYPE
-      if (!isImage && !isPdf) {
-        return NextResponse.json({ error: 'Formato não suportado para OCR (use JPG, PNG, WebP ou PDF)' }, { status: 400 })
-      }
       if (file.size > MAX_FILE_BYTES) {
         return NextResponse.json({ error: 'Arquivo muito grande (máx. 12 MB)' }, { status: 400 })
       }
-      const base64 = Buffer.from(await file.arrayBuffer()).toString('base64')
       if (isPdf) {
+        const base64 = Buffer.from(await file.arrayBuffer()).toString('base64')
         content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } })
-      } else {
-        content.push({ type: 'image', source: { type: 'base64', media_type: file.type as typeof IMAGE_TYPES[number], data: base64 } })
+        continue
       }
+      const bytes = Buffer.from(await file.arrayBuffer())
+      const normalized = await normalizeImage(bytes, file.type, file.name)
+      if (!normalized) {
+        return NextResponse.json({ error: 'Formato não suportado para OCR (use JPG, PNG, WebP, PDF ou foto da câmera)' }, { status: 400 })
+      }
+      content.push({ type: 'image', source: { type: 'base64', media_type: normalized.mediaType, data: normalized.buffer.toString('base64') } })
     }
     content.push({ type: 'text', text: PROMPT })
 
