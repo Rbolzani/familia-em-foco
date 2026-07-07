@@ -7,7 +7,7 @@ import {
   CalendarDays, FolderLock, Sparkles, Leaf,
   Palette, Moon, Sun, SlidersHorizontal,
   Users, LogOut, Car, Settings, UserPlus, Bell, X, Clock, Star, UserCog,
-  ChevronRight, Headphones, HelpCircle, FileText, Shield,
+  ChevronRight, Headphones, HelpCircle, FileText, Shield, ExternalLink,
 } from 'lucide-react'
 import { ChildAvatar } from '@/app/(app)/children/ChildrenClient'
 import { createClient } from '@/lib/supabase/client'
@@ -268,11 +268,12 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
   }
 
   // ── Desktop Configurações sub-panel item ──
-  function CfgPanelItem({ href, label, icon: Icon, badge }: {
-    href: string; label: string; icon: React.ElementType; badge?: string
+  function CfgPanelItem({ href, label, icon: Icon, badge, external }: {
+    href: string; label: string; icon: React.ElementType; badge?: string; external?: boolean
   }) {
     return (
       <Link href={href} onClick={() => setCfgPanelOpen(false)}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
         onMouseEnter={cfgEnter} onMouseLeave={cfgLeave}
         style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 12px',
           borderRadius:9, textDecoration:'none', color:'rgba(231,241,238,0.82)',
@@ -549,6 +550,10 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
             color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Legal</div>
           <CfgPanelItem href="/termos"      label="Termos de Uso" icon={FileText} />
           <CfgPanelItem href="/privacidade" label="Privacidade"   icon={Shield} />
+          <div style={{ height:1, background:'rgba(255,255,255,0.10)', margin:'6px 8px' }} />
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
+            color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Sobre</div>
+          <CfgPanelItem href="/marketing/Landing-Familia-em-Dia-P6-IA.html" label="Site" icon={ExternalLink} external />
         </div>
       )}
 

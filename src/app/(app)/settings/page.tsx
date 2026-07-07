@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   UserCog, Star, Bell, Headphones, HelpCircle,
-  FileText, Shield, ChevronRight, LogOut,
+  FileText, Shield, ChevronRight, LogOut, ExternalLink,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -14,6 +14,7 @@ interface SettingsItem {
   badge?: string
   onClick?: () => void
   danger?: boolean
+  external?: boolean
 }
 
 interface SettingsSection {
@@ -50,6 +51,12 @@ export default function SettingsPage() {
       items: [
         { href: '/termos',      label: 'Termos de Uso', icon: FileText },
         { href: '/privacidade', label: 'Privacidade',   icon: Shield },
+      ],
+    },
+    {
+      title: 'Sobre',
+      items: [
+        { href: '/marketing/Landing-Familia-em-Dia-P6-IA.html', label: 'Site', icon: ExternalLink, external: true },
       ],
     },
   ]
@@ -118,7 +125,8 @@ export default function SettingsPage() {
                   )
                 }
                 return (
-                  <Link key={item.label} href={item.href!} style={rowStyle}>
+                  <Link key={item.label} href={item.href!} style={rowStyle}
+                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     {inner}
                   </Link>
                 )
