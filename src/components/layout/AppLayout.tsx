@@ -553,7 +553,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
           <div style={{ height:1, background:'rgba(255,255,255,0.10)', margin:'6px 8px' }} />
           <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase',
             color:'rgba(231,241,238,0.5)', padding:'2px 12px 4px' }}>Sobre</div>
-          <CfgPanelItem href="/marketing/Landing-Familia-em-Dia-P6-IA.html" label="Site" icon={ExternalLink} external />
+          <CfgPanelItem href="https://www.familiaemdia.com.br/marketing/Landing-Familia-em-Dia-P6-IA.html" label="Site" icon={ExternalLink} external />
         </div>
       )}
 

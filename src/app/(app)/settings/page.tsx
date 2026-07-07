@@ -56,7 +56,7 @@ export default function SettingsPage() {
     {
       title: 'Sobre',
       items: [
-        { href: '/marketing/Landing-Familia-em-Dia-P6-IA.html', label: 'Site', icon: ExternalLink, external: true },
+        { href: 'https://www.familiaemdia.com.br/marketing/Landing-Familia-em-Dia-P6-IA.html', label: 'Site', icon: ExternalLink, external: true },
       ],
     },
   ]
