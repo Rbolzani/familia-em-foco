@@ -9,9 +9,14 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 const MAX_FILE_BYTES = 8 * 1024 * 1024
 const MAX_TEXT_CHARS = 12_000
 
+const WEEKDAY_NAMES = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+const today = new Date()
+const todayISO = today.toISOString().split('T')[0]
+const todayWeekday = WEEKDAY_NAMES[today.getDay()]
+
 const PROMPT = `Você é um assistente inteligente que analisa conteúdo enviado por pais e classifica automaticamente em três categorias distintas.
 
-Hoje é: ${new Date().toISOString().split('T')[0]}
+Hoje é: ${todayISO} (${todayWeekday})
 
 Analise o conteúdo e classifique cada item em exatamente uma das três categorias:
 
@@ -22,6 +27,15 @@ Itens que têm uma data específica em que algo VAI ACONTECER:
 - Eventos escolares (reuniões, festas, apresentações)
 - Atividades extracurriculares recorrentes (futebol toda terça)
 - Qualquer compromisso com data/horário definido
+
+**GRADES DE HORÁRIO ESCOLAR (regra importante)** — Se a imagem for uma tabela/grade de horários com colunas por dia da semana (ex: "2ª", "3ª", "4ª", "5ª", "6ª" ou "Segunda", "Terça"...) e linhas por período/horário, isso é uma AGENDA DE COMPROMISSOS, não um documento nem um lembrete. Trate CADA célula preenchida com uma matéria/atividade como um item separado em "activities":
+- title: nome da matéria/atividade da célula (ex: "Geografia", "Xadrez", "Educação Física")
+- category: "escola"
+- date: calcule a data real (YYYY-MM-DD) daquele dia da semana — use a data mais próxima a partir de hoje (se esse dia da semana já passou nesta semana, use a mesma data na semana seguinte)
+- time: horário de início do período daquela linha (HH:MM)
+- Gere um item para CADA célula preenchida da grade, mesmo que o total seja alto (dezenas de itens) — nunca resuma, agrupe ou pule células.
+- Ignore apenas células que são claramente intervalo/refeição (ex: "Lanche/Recreio", "Almoço/Recreio", "Lanche/Saída") — essas não são compromissos.
+Uma grade de horários NUNCA deve virar um item em "documents" nem em "reminders".
 
 **CATEGORIA 2 — reminders (Pendências / Lembretes)**
 Ações que precisam ser feitas, mas SEM data específica de ocorrência:
@@ -142,7 +156,7 @@ export async function POST(req: NextRequest) {
 
       message = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 8192,
         messages: [{
           role: 'user',
           content: [
@@ -154,7 +168,7 @@ export async function POST(req: NextRequest) {
     } else {
       message = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 8192,
         messages: [{
           role: 'user',
           content: `Conteúdo para analisar:\n\n${text}\n\n${PROMPT}`,
