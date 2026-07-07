@@ -5,7 +5,7 @@ import { Child } from '@/lib/types'
 import {
   Sparkles, Upload, FileText, Camera, Check, X, Loader2,
   Clock, MapPin, BookOpen, HeartPulse, Trophy, Plus,
-  Bell, FolderLock, AlertCircle, Lock,
+  Bell, FolderLock, AlertCircle, Lock, Repeat,
 } from 'lucide-react'
 import { useAccess } from '@/components/access/AccessContext'
 import { VoiceInputButton } from '@/components/ui/VoiceInputButton'
@@ -19,6 +19,39 @@ const CARD: React.CSSProperties = {
   backgroundSize: '200px 200px, 100% 100%',
   border: '1px solid rgba(61,102,65,0.22)',
   boxShadow: '0 4px 16px rgba(44,74,46,0.10),0 1px 4px rgba(44,74,46,0.07),0 -1px 0 rgba(255,255,255,0.85) inset',
+}
+
+// ── Agrupamento de atividades recorrentes (grade de horário) ─────────────────
+// Cada matéria recorrente vira várias linhas (uma por semana) — aqui elas
+// são reagrupadas num único item visual para facilitar a revisão.
+type ActivityRenderItem = { kind: 'single'; index: number } | { kind: 'group'; groupId: string; indices: number[] }
+
+function buildActivityRenderItems(acts: ExtActivity[]): ActivityRenderItem[] {
+  const items: ActivityRenderItem[] = []
+  const groupPos = new Map<string, number>()
+  acts.forEach((a, i) => {
+    if (a.recurring && a.groupId) {
+      const pos = groupPos.get(a.groupId)
+      if (pos !== undefined) {
+        (items[pos] as { kind: 'group'; groupId: string; indices: number[] }).indices.push(i)
+      } else {
+        groupPos.set(a.groupId, items.length)
+        items.push({ kind: 'group', groupId: a.groupId, indices: [i] })
+      }
+    } else {
+      items.push({ kind: 'single', index: i })
+    }
+  })
+  return items
+}
+
+const WEEKDAY_LABELS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+function weekdayLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  return WEEKDAY_LABELS[d.getDay()]
+}
+function fmtDateBR(dateStr: string): string {
+  return dateStr.split('-').reverse().join('/')
 }
 
 // ── Activity categories ───────────────────────────────────────────────────────
@@ -42,6 +75,7 @@ type DocCategory  = keyof typeof DOC_CONFIG
 interface ExtActivity {
   title: string; category: ActCategory; date: string | null; time: string | null
   description: string | null; location: string | null; selected: boolean; child_ids: string[]
+  recurring?: boolean; groupId?: string
 }
 interface ExtReminder {
   title: string; category: string; description: string | null; child_hint: string | null
@@ -539,42 +573,101 @@ export default function IAPage() {
                   <BookOpen size={13} color="#2563EB" />
                 </div>
                 <h3 className="font-bold text-sm" style={{ color: '#1A2B1C' }}>
-                  Agenda / Compromissos ({activities.length})
+                  Agenda / Compromissos ({buildActivityRenderItems(activities).length} item{buildActivityRenderItems(activities).length !== 1 ? 's' : ''}
+                  {activities.length !== buildActivityRenderItems(activities).length ? `, ${activities.length} ocorrências` : ''})
                 </h3>
               </div>
               {activities.length === 0 ? (
                 <p className="text-xs italic px-2" style={{ color: 'rgba(26,43,28,0.40)' }}>Nenhuma atividade agendada identificada</p>
               ) : (
                 <div className="space-y-2">
-                  {activities.map((a, i) => {
-                    const cat = ACT_CONFIG[a.category] ?? ACT_CONFIG.escola
+                  {buildActivityRenderItems(activities).map(item => {
+                    if (item.kind === 'single') {
+                      const i = item.index
+                      const a = activities[i]
+                      const cat = ACT_CONFIG[a.category] ?? ACT_CONFIG.escola
+                      return (
+                        <div key={i} style={{ ...CARD, padding: '12px 14px', opacity: a.selected ? 1 : 0.5 }}>
+                          <div className="flex items-start gap-3">
+                            <button onClick={() => setActivities(prev => prev!.map((x, j) => j === i ? { ...x, selected: !x.selected } : x))}
+                              className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-none transition-all"
+                              style={a.selected ? { background: cat.icolor, borderColor: cat.icolor, color: '#fff' } : { borderColor: 'rgba(61,102,65,0.22)' }}>
+                              {a.selected && <Check size={11} strokeWidth={3} />}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="font-bold text-sm" style={{ color: '#1A2B1C' }}>{a.title}</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundImage: cat.ibg, color: cat.icolor }}>{cat.label}</span>
+                              </div>
+                              <div className="flex gap-3 flex-wrap">
+                                {a.date && <span className="text-xs italic" style={{ color: 'rgba(26,43,28,0.50)' }}>📅 {fmtDateBR(a.date)}</span>}
+                                {a.time && <span className="text-xs flex items-center gap-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}><Clock size={11} /> {a.time}</span>}
+                                {a.location && <span className="text-xs flex items-center gap-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}><MapPin size={11} /> {a.location}</span>}
+                              </div>
+                              {!a.date && <div className="text-xs font-semibold mt-1 px-2.5 py-1 rounded-[10px] inline-block" style={{ background: 'linear-gradient(140deg,#FEF3C7,#FDE68A)', color: '#92400E' }}>⚠️ Data não identificada</div>}
+                              {children.length > 1 && (
+                                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                  <span className="text-[10px] font-semibold" style={{ color: 'rgba(26,43,28,0.45)' }}>Filho(a):</span>
+                                  {children.map(c => {
+                                    const active = a.child_ids.includes(c.id)
+                                    return (
+                                      <button key={c.id} type="button"
+                                        onClick={() => setActivities(prev => prev!.map((x, j) => j !== i ? x : { ...x, child_ids: active ? x.child_ids.filter(id => id !== c.id) : [...x.child_ids, c.id] }))}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 700, border: `1.5px solid ${active ? c.avatar_color : 'rgba(61,102,65,0.18)'}`, background: active ? `${c.avatar_color}18` : 'rgba(255,255,255,0.70)', color: active ? c.avatar_color : 'rgba(26,43,28,0.45)', transition: 'all .15s' }}>
+                                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.avatar_color, display: 'inline-block' }} />
+                                        {c.name}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            <button onClick={() => setActivities(prev => prev!.map((x, j) => j === i ? { ...x, selected: false } : x))} className="flex-none w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.10)', color: '#DC2626' }}><X size={13} /></button>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    // Grupo recorrente (grade de horário) — um card para todas as ocorrências.
+                    const { groupId, indices } = item
+                    const groupActs = indices.map(idx => activities[idx])
+                    const a0 = groupActs[0]
+                    const cat = ACT_CONFIG[a0.category] ?? ACT_CONFIG.escola
+                    const dates = groupActs.map(x => x.date).filter((d): d is string => !!d).sort()
+                    const allSelected = groupActs.every(x => x.selected)
+                    const someSelected = groupActs.some(x => x.selected)
                     return (
-                      <div key={i} style={{ ...CARD, padding: '12px 14px', opacity: a.selected ? 1 : 0.5 }}>
+                      <div key={groupId} style={{ ...CARD, padding: '12px 14px', opacity: someSelected ? 1 : 0.5, borderLeft: `4px solid ${cat.icolor}` }}>
                         <div className="flex items-start gap-3">
-                          <button onClick={() => setActivities(prev => prev!.map((x, j) => j === i ? { ...x, selected: !x.selected } : x))}
+                          <button onClick={() => setActivities(prev => prev!.map((x, j) => indices.includes(j) ? { ...x, selected: !allSelected } : x))}
                             className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-none transition-all"
-                            style={a.selected ? { background: cat.icolor, borderColor: cat.icolor, color: '#fff' } : { borderColor: 'rgba(61,102,65,0.22)' }}>
-                            {a.selected && <Check size={11} strokeWidth={3} />}
+                            style={allSelected ? { background: cat.icolor, borderColor: cat.icolor, color: '#fff' } : { borderColor: 'rgba(61,102,65,0.22)' }}>
+                            {allSelected && <Check size={11} strokeWidth={3} />}
                           </button>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="font-bold text-sm" style={{ color: '#1A2B1C' }}>{a.title}</span>
+                              <span className="font-bold text-sm" style={{ color: '#1A2B1C' }}>{a0.title}</span>
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundImage: cat.ibg, color: cat.icolor }}>{cat.label}</span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(61,102,65,0.10)', color: '#3D6641' }}>
+                                <Repeat size={10} /> Toda {dates[0] ? weekdayLabel(dates[0]) : ''}
+                              </span>
                             </div>
                             <div className="flex gap-3 flex-wrap">
-                              {a.date && <span className="text-xs italic" style={{ color: 'rgba(26,43,28,0.50)' }}>📅 {a.date.split('-').reverse().join('/')}</span>}
-                              {a.time && <span className="text-xs flex items-center gap-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}><Clock size={11} /> {a.time}</span>}
-                              {a.location && <span className="text-xs flex items-center gap-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}><MapPin size={11} /> {a.location}</span>}
+                              {a0.time && <span className="text-xs flex items-center gap-1 italic" style={{ color: 'rgba(26,43,28,0.50)' }}><Clock size={11} /> {a0.time}</span>}
+                              {dates.length > 0 && (
+                                <span className="text-xs italic" style={{ color: 'rgba(26,43,28,0.50)' }}>
+                                  📅 {fmtDateBR(dates[0])} a {fmtDateBR(dates[dates.length - 1])} · {indices.length} ocorrências
+                                </span>
+                              )}
                             </div>
-                            {!a.date && <div className="text-xs font-semibold mt-1 px-2.5 py-1 rounded-[10px] inline-block" style={{ background: 'linear-gradient(140deg,#FEF3C7,#FDE68A)', color: '#92400E' }}>⚠️ Data não identificada</div>}
                             {children.length > 1 && (
                               <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                                 <span className="text-[10px] font-semibold" style={{ color: 'rgba(26,43,28,0.45)' }}>Filho(a):</span>
                                 {children.map(c => {
-                                  const active = a.child_ids.includes(c.id)
+                                  const active = a0.child_ids.includes(c.id)
                                   return (
                                     <button key={c.id} type="button"
-                                      onClick={() => setActivities(prev => prev!.map((x, j) => j !== i ? x : { ...x, child_ids: active ? x.child_ids.filter(id => id !== c.id) : [...x.child_ids, c.id] }))}
+                                      onClick={() => setActivities(prev => prev!.map((x, j) => !indices.includes(j) ? x : { ...x, child_ids: active ? x.child_ids.filter(id => id !== c.id) : [...x.child_ids, c.id] }))}
                                       style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 700, border: `1.5px solid ${active ? c.avatar_color : 'rgba(61,102,65,0.18)'}`, background: active ? `${c.avatar_color}18` : 'rgba(255,255,255,0.70)', color: active ? c.avatar_color : 'rgba(26,43,28,0.45)', transition: 'all .15s' }}>
                                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.avatar_color, display: 'inline-block' }} />
                                       {c.name}
@@ -584,7 +677,7 @@ export default function IAPage() {
                               </div>
                             )}
                           </div>
-                          <button onClick={() => setActivities(prev => prev!.map((x, j) => j === i ? { ...x, selected: false } : x))} className="flex-none w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.10)', color: '#DC2626' }}><X size={13} /></button>
+                          <button onClick={() => setActivities(prev => prev!.map((x, j) => indices.includes(j) ? { ...x, selected: false } : x))} className="flex-none w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(220,38,38,0.10)', color: '#DC2626' }}><X size={13} /></button>
                         </div>
                       </div>
                     )

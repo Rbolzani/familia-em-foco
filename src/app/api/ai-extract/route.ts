@@ -124,18 +124,22 @@ interface ExtractedActivity {
   description?: string | null
   location?: string | null
   recurring?: boolean
+  groupId?: string
 }
 
-function expandRecurring(activities: ExtractedActivity[]): Omit<ExtractedActivity, 'recurring'>[] {
-  const result: Omit<ExtractedActivity, 'recurring'>[] = []
-  for (const { recurring, ...act } of activities) {
-    if (!recurring || !act.date) { result.push(act); continue }
+// Cada ocorrência gerada de um mesmo item recorrente leva o mesmo groupId,
+// para a tela de revisão poder agrupá-las (uma matéria = um card, não 12).
+function expandRecurring(activities: ExtractedActivity[]): ExtractedActivity[] {
+  const result: ExtractedActivity[] = []
+  activities.forEach((act, idx) => {
+    if (!act.recurring || !act.date) { result.push({ ...act, recurring: false }); return }
+    const groupId = `rec-${idx}-${act.title}-${act.time}`
     for (let week = 0; week < RECURRING_WEEKS; week++) {
       const d = new Date(act.date + 'T12:00:00')
       d.setDate(d.getDate() + week * 7)
-      result.push({ ...act, date: d.toISOString().split('T')[0] })
+      result.push({ ...act, date: d.toISOString().split('T')[0], recurring: true, groupId })
     }
-  }
+  })
   return result
 }
 
