@@ -28,14 +28,16 @@ Itens que têm uma data específica em que algo VAI ACONTECER:
 - Atividades extracurriculares recorrentes (futebol toda terça)
 - Qualquer compromisso com data/horário definido
 
-**GRADES DE HORÁRIO ESCOLAR (regra importante)** — Se a imagem for uma tabela/grade de horários com colunas por dia da semana (ex: "2ª", "3ª", "4ª", "5ª", "6ª" ou "Segunda", "Terça"...) e linhas por período/horário, isso é uma AGENDA DE COMPROMISSOS, não um documento nem um lembrete. Trate CADA célula preenchida com uma matéria/atividade como um item separado em "activities":
+**GRADES DE HORÁRIO ESCOLAR (regra importante)** — Se a imagem for uma tabela/grade de horários com colunas por dia da semana (ex: "2ª", "3ª", "4ª", "5ª", "6ª" ou "Segunda", "Terça"...) e linhas por período/horário, isso é uma AGENDA RECORRENTE (se repete toda semana), não um documento nem um lembrete. Trate CADA célula preenchida com uma matéria/atividade como um item separado em "activities":
 - title: nome da matéria/atividade da célula (ex: "Geografia", "Xadrez", "Educação Física")
 - category: "escola"
-- date: calcule a data real (YYYY-MM-DD) daquele dia da semana — use a data mais próxima a partir de hoje (se esse dia da semana já passou nesta semana, use a mesma data na semana seguinte)
+- date: calcule a data real (YYYY-MM-DD) da PRÓXIMA ocorrência daquele dia da semana — use a data mais próxima a partir de hoje (se esse dia da semana já passou nesta semana, use a mesma data na semana seguinte). Gere apenas UMA data (a primeira ocorrência) — não repita o item várias vezes para semanas futuras, isso é feito depois por outro processo.
 - time: horário de início do período daquela linha (HH:MM)
+- recurring: true (marca que esse item se repete toda semana no mesmo dia/horário)
 - Gere um item para CADA célula preenchida da grade, mesmo que o total seja alto (dezenas de itens) — nunca resuma, agrupe ou pule células.
 - Ignore apenas células que são claramente intervalo/refeição (ex: "Lanche/Recreio", "Almoço/Recreio", "Lanche/Saída") — essas não são compromissos.
 Uma grade de horários NUNCA deve virar um item em "documents" nem em "reminders".
+Para atividades com data específica e única (prova, consulta, evento — categoria 1 normal), use "recurring": false.
 
 **CATEGORIA 2 — reminders (Pendências / Lembretes)**
 Ações que precisam ser feitas, mas SEM data específica de ocorrência:
@@ -63,7 +65,8 @@ Retorne APENAS um JSON válido neste formato exato (sem markdown, sem explicaç�
       "date": "YYYY-MM-DD ou null",
       "time": "HH:MM ou null",
       "description": "detalhes adicionais ou null",
-      "location": "local ou null"
+      "location": "local ou null",
+      "recurring": false
     }
   ],
   "reminders": [
@@ -107,6 +110,34 @@ Regras para documents:
 
 Se não houver itens de uma categoria, retorne array vazio [].
 Retorne apenas o JSON, sem texto antes ou depois.`
+
+// Quantas semanas materializar para itens de grade de horário (recurring:
+// true) — a tabela activities não tem conceito de recorrência, então cada
+// ocorrência semanal vira uma linha própria até esse horizonte.
+const RECURRING_WEEKS = 12
+
+interface ExtractedActivity {
+  title: string
+  category: string
+  date: string | null
+  time: string | null
+  description?: string | null
+  location?: string | null
+  recurring?: boolean
+}
+
+function expandRecurring(activities: ExtractedActivity[]): Omit<ExtractedActivity, 'recurring'>[] {
+  const result: Omit<ExtractedActivity, 'recurring'>[] = []
+  for (const { recurring, ...act } of activities) {
+    if (!recurring || !act.date) { result.push(act); continue }
+    for (let week = 0; week < RECURRING_WEEKS; week++) {
+      const d = new Date(act.date + 'T12:00:00')
+      d.setDate(d.getDate() + week * 7)
+      result.push({ ...act, date: d.toISOString().split('T')[0] })
+    }
+  }
+  return result
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -184,7 +215,7 @@ export async function POST(req: NextRequest) {
     incrementAiUsage(user.id).catch(err => console.error('[ai-extract] incrementAiUsage error', err))
 
     return NextResponse.json({
-      activities: parsed.activities ?? [],
+      activities: expandRecurring(parsed.activities ?? []),
       reminders: parsed.reminders ?? [],
       documents: parsed.documents ?? [],
     })
