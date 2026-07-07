@@ -28,7 +28,11 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth')
-  const isPublic = pathname === '/'
+  // Assets da landing (vídeo, imagens) ficam sob /marketing/ — não têm
+  // extensão coberta pelo matcher (ex.: .mp4) e por isso passavam pelo gate
+  // de auth, sendo redirecionados para /auth/login em vez de servidos.
+  const isMarketingAsset = pathname.startsWith('/marketing/')
+  const isPublic = pathname === '/' || isMarketingAsset
   // Rotas de API fazem a própria autenticação (sessão ou CRON_SECRET).
   // Nunca redirecionar API para a página de login — isso quebrava o cron
   // do resumo diário (Vercel Cron não tem sessão → levava 307 → não rodava).
@@ -47,7 +51,7 @@ export async function middleware(request: NextRequest) {
   // Visitante não logado na raiz vê a landing page (rewrite, sem redirect —
   // mantém "/" na barra de endereço e responde 200, importante para
   // crawlers como o da Meta que não seguem redirect ao validar um site).
-  if (!user && isPublic) {
+  if (!user && pathname === '/') {
     return NextResponse.rewrite(new URL('/marketing/Landing-Familia-em-Dia-P6-IA.html', request.url))
   }
 
