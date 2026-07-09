@@ -1,7 +1,8 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Child } from '@/lib/types'
+import { Child, type DocumentCategory } from '@/lib/types'
+import { VAULT_CATEGORIES } from '@/lib/vault'
 import {
   Sparkles, Upload, FileText, Camera, Check, X, Loader2,
   Clock, MapPin, BookOpen, HeartPulse, Trophy, Plus,
@@ -62,15 +63,14 @@ const ACT_CONFIG = {
 }
 
 // ── Document categories ───────────────────────────────────────────────────────
-const DOC_CONFIG = {
-  saude:        { label: 'Saúde',        accent: '#10B981', bg: 'rgba(16,185,129,0.10)'  },
-  identidade:   { label: 'Identidade',   accent: '#3B82F6', bg: 'rgba(59,130,246,0.10)'  },
-  contratos:    { label: 'Contratos',    accent: '#F59E0B', bg: 'rgba(245,158,11,0.10)'  },
-  carteirinhas: { label: 'Carteirinhas', accent: '#8B5CF6', bg: 'rgba(139,92,246,0.10)'  },
-}
+// Derivado de VAULT_CATEGORIES (fonte única das 9 gavetas do Cofre) — evita
+// esta lista ficar desatualizada em relação ao módulo Documentos.
+const DOC_CONFIG = Object.fromEntries(
+  VAULT_CATEGORIES.map(c => [c.key, { label: c.label, accent: c.accent, bg: c.iconBg }])
+) as Record<DocumentCategory, { label: string; accent: string; bg: string }>
 
 type ActCategory  = keyof typeof ACT_CONFIG
-type DocCategory  = keyof typeof DOC_CONFIG
+type DocCategory  = DocumentCategory
 
 interface ExtActivity {
   title: string; category: ActCategory; date: string | null; time: string | null

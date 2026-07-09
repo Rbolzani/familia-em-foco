@@ -53,11 +53,14 @@ NÃO crie um reminder a partir de avisos/disclaimers genéricos de comunicados (
 **CATEGORIA 3 — documents (Documentos)**
 Documentos físicos ou digitais identificados no conteúdo:
 - Documentos de identidade (RG, CPF, certidão de nascimento, passaporte)
-- Documentos de saúde (carteirinha de vacinação, plano de saúde, receitas, resultados de exames)
-- Contratos (matrícula escolar, plano de saúde, seguro)
+- Documentos de saúde (receitas, resultados de exames, plano de saúde)
+- Documentos escolares (boletins, declarações, grades de horário, comunicados formais da escola)
+- Comprovantes de vacinação (carteira de vacinação)
+- Contratos (matrícula, plano de saúde, seguro, locação)
 - Carteirinhas (estudante, plano de saúde, clube)
-- Boletos ou faturas identificados
-- Qualquer documento formal listado ou visível
+- Autorizações (viagem, uso de imagem, retirada de terceiros)
+- Boletos, recibos ou comprovantes financeiros
+- Qualquer outro documento formal listado ou visível
 
 Retorne APENAS um JSON válido neste formato exato (sem markdown, sem explicação):
 {
@@ -104,11 +107,16 @@ Regras para activities:
 - date: calcule datas relativas a partir de hoje se necessário; null se incerta
 
 Regras para documents:
-- category: exatamente "saude", "identidade", "contratos" ou "carteirinhas"
-- saude: carteirinha de vacinação, receitas, resultados de exames, plano de saúde
+- category: exatamente "saude", "identidade", "contratos", "carteirinhas", "escolar", "vacinacao", "autorizacoes", "financeiro" ou "outros"
+- saude: receitas, resultados de exames, atestados médicos
 - identidade: RG, CPF, certidão de nascimento, passaporte, CNH
 - contratos: matrícula escolar, contrato de plano de saúde, seguros, locação
 - carteirinhas: carteirinha de estudante, clube, plano de saúde físico
+- escolar: boletins, declarações escolares, grades/horários de aula, comunicados formais da escola
+- vacinacao: carteira ou comprovante de vacinação
+- autorizacoes: autorização de viagem, uso de imagem, retirada de terceiros na escola
+- financeiro: boletos, recibos, comprovantes de pagamento
+- outros: qualquer documento que não se encaixe nas anteriores
 - expires_at: data de validade se visível ou mencionada
 
 Se não houver itens de uma categoria, retorne array vazio [].
