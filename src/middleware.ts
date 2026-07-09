@@ -32,7 +32,10 @@ export async function middleware(request: NextRequest) {
   // extensão coberta pelo matcher (ex.: .mp4) e por isso passavam pelo gate
   // de auth, sendo redirecionados para /auth/login em vez de servidos.
   const isMarketingAsset = pathname.startsWith('/marketing/')
-  const isPublic = pathname === '/' || isMarketingAsset
+  // Termos de Uso e Privacidade precisam ser acessíveis sem login — exigidos
+  // por lei (LGPD) e por revisores externos (ex.: Meta validando a marca).
+  const isLegalRoute = pathname === '/termos' || pathname === '/privacidade'
+  const isPublic = pathname === '/' || isMarketingAsset || isLegalRoute
   // Rotas de API fazem a própria autenticação (sessão ou CRON_SECRET).
   // Nunca redirecionar API para a página de login — isso quebrava o cron
   // do resumo diário (Vercel Cron não tem sessão → levava 307 → não rodava).
