@@ -214,20 +214,35 @@ export async function POST(req: NextRequest) {
     if (normalized) {
       const base64 = normalized.buffer.toString('base64')
       const mediaType = normalized.mediaType
+      const imageBlock = { type: 'image' as const, source: { type: 'base64' as const, media_type: mediaType, data: base64 } }
 
-      message = await client.messages.create({
+      // Checagem rápida e barata (Haiku, sem thinking) só para decidir o
+      // modelo da extração de verdade — grades de horário são tabelas densas
+      // onde o Haiku sozinho tende a pular células; Sonnet é bem mais
+      // meticuloso, mas mais caro, então só usamos quando vale a pena.
+      const detect = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 12000,
-        // Extração de imagem inclui tabelas/grades densas (grade de horário
-        // escolar) — thinking reduz células puladas ao forçar o modelo a
-        // conferir linha por linha antes de gerar o JSON final.
-        thinking: { type: 'enabled', budget_tokens: 4000 },
+        max_tokens: 20,
         messages: [{
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: PROMPT },
+            imageBlock,
+            { type: 'text', text: 'Esta imagem é uma tabela/grade de horários semanais (colunas por dia da semana, linhas por período de aula)? Responda apenas "sim" ou "não".' },
           ],
+        }],
+      })
+      const detectText = detect.content.find(b => b.type === 'text')
+      const isScheduleGrid = detectText?.type === 'text' && /sim/i.test(detectText.text)
+
+      message = await client.messages.create({
+        model: isScheduleGrid ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001',
+        max_tokens: 12000,
+        // Só ativa thinking quando usamos Sonnet numa grade densa — reforça
+        // a conferência célula-a-célula; capturas simples ficam rápidas.
+        ...(isScheduleGrid ? { thinking: { type: 'enabled' as const, budget_tokens: 4000 } } : {}),
+        messages: [{
+          role: 'user',
+          content: [imageBlock, { type: 'text', text: PROMPT }],
         }],
       })
     } else {
