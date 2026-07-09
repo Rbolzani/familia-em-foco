@@ -403,6 +403,12 @@ export default function IAPage() {
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={e => e.target.files && addFiles(e.target.files)} />
 
+          <div className="flex items-center gap-3 py-1">
+            <div style={{ flex: 1, height: 1, background: 'rgba(61,102,65,0.15)' }} />
+            <span className="text-xs font-semibold" style={{ color: 'rgba(26,43,28,0.35)' }}>ou</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(61,102,65,0.15)' }} />
+          </div>
+
           <div className="cursor-pointer transition-all" style={{ ...CARD, textAlign: 'center', padding: '24px 20px', borderStyle: 'dashed', borderWidth: 2, borderColor: images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)' }}
             onClick={() => fileRef.current?.click()}
             onDrop={e => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
@@ -415,6 +421,12 @@ export default function IAPage() {
             <p className="text-xs italic" style={{ color: 'rgba(26,43,28,0.45)' }}>Agenda escolar, documentos, anotações, prints</p>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
               onChange={e => e.target.files && addFiles(e.target.files)} />
+          </div>
+
+          <div className="flex items-center gap-3 py-1">
+            <div style={{ flex: 1, height: 1, background: 'rgba(61,102,65,0.15)' }} />
+            <span className="text-xs font-semibold" style={{ color: 'rgba(26,43,28,0.35)' }}>ou</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(61,102,65,0.15)' }} />
           </div>
 
           {/* Paste zone */}
