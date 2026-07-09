@@ -35,7 +35,8 @@ Itens que têm uma data específica em que algo VAI ACONTECER:
 - time: horário de início do período daquela linha (HH:MM)
 - recurring: true (marca que esse item se repete toda semana no mesmo dia/horário)
 - Gere um item para CADA célula preenchida da grade, mesmo que o total seja alto (dezenas de itens) — nunca resuma, agrupe ou pule células.
-- Ignore apenas células que são claramente intervalo/refeição (ex: "Lanche/Recreio", "Almoço/Recreio", "Lanche/Saída") — essas não são compromissos.
+- Inclua TAMBÉM as células de intervalo/refeição (ex: "Lanche/Recreio", "Almoço/Recreio", "Lanche/Saída") como itens normais — a exclusão delas é feita depois por outro processo automaticamente; você não precisa (e não deve tentar) filtrá-las.
+- Antes de responder, confira mentalmente linha por linha, coluna por coluna: o número de itens gerados para a grade deve ser exatamente igual ao número de células preenchidas na tabela (linhas × colunas). Não pule nenhuma célula.
 Uma grade de horários NUNCA deve virar um item em "documents" nem em "reminders".
 Para atividades com data específica e única (prova, consulta, evento — categoria 1 normal), use "recurring": false.
 
@@ -127,11 +128,22 @@ interface ExtractedActivity {
   groupId?: string
 }
 
+// Filtro determinístico de períodos de intervalo/refeição — a IA nem sempre
+// aplica essa exclusão de forma consistente entre execuções (observado em
+// produção: a mesma grade ora incluía Almoço/Recreio, ora não). Em vez de
+// depender só do prompt, garantimos isso em código.
+const BREAK_KEYWORDS = ['recreio', 'almoço', 'almoco', 'lanche', 'saída', 'saida', 'intervalo']
+function isBreakPeriod(title: string): boolean {
+  const t = title.toLowerCase()
+  return BREAK_KEYWORDS.some(k => t.includes(k))
+}
+
 // Cada ocorrência gerada de um mesmo item recorrente leva o mesmo groupId,
 // para a tela de revisão poder agrupá-las (uma matéria = um card, não 12).
 function expandRecurring(activities: ExtractedActivity[]): ExtractedActivity[] {
   const result: ExtractedActivity[] = []
   activities.forEach((act, idx) => {
+    if (isBreakPeriod(act.title)) return
     if (!act.recurring || !act.date) { result.push({ ...act, recurring: false }); return }
     const groupId = `rec-${idx}-${act.title}-${act.time}`
     for (let week = 0; week < RECURRING_WEEKS; week++) {
