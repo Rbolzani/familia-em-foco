@@ -319,15 +319,6 @@ export default function ConfiguracoesClient({
 
             {!sharingBlocked && !atPartnerLimit && (
               <>
-                <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="email@exemplo.com (opcional)"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(61,102,65,0.22)', fontSize: 13, color: '#1A2B1C', marginBottom: 4, outline: 'none', background: '#fff' }}
-                />
-                <p style={{ fontSize: 11, color: 'rgba(26,43,28,0.45)', marginBottom: 10 }}>
-                  Deixe em branco para gerar um link sem email — qualquer pessoa com o link pode aceitar.
-                </p>
-
                 <div className="space-y-2 mb-3">
                   {ROLES.map(r => {
                     const sel = role === r.key
