@@ -6,6 +6,10 @@ import { normalizeImage } from '@/lib/image'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
+// Extração de imagem com thinking pode levar mais que os 10s padrão do
+// Vercel Hobby, especialmente em grades de horário densas.
+export const maxDuration = 60
+
 const MAX_FILE_BYTES = 8 * 1024 * 1024
 const MAX_TEXT_CHARS = 12_000
 
@@ -217,7 +221,7 @@ export async function POST(req: NextRequest) {
         // Extração de imagem inclui tabelas/grades densas (grade de horário
         // escolar) — thinking reduz células puladas ao forçar o modelo a
         // conferir linha por linha antes de gerar o JSON final.
-        thinking: { type: 'adaptive' },
+        thinking: { type: 'enabled', budget_tokens: 4000 },
         messages: [{
           role: 'user',
           content: [
