@@ -213,7 +213,11 @@ export async function POST(req: NextRequest) {
 
       message = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 8192,
+        max_tokens: 12000,
+        // Extração de imagem inclui tabelas/grades densas (grade de horário
+        // escolar) — thinking reduz células puladas ao forçar o modelo a
+        // conferir linha por linha antes de gerar o JSON final.
+        thinking: { type: 'adaptive' },
         messages: [{
           role: 'user',
           content: [
@@ -233,7 +237,8 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+    const textBlock = message.content.find(b => b.type === 'text')
+    const raw = textBlock?.type === 'text' ? textBlock.text.trim() : ''
     const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
     const parsed = JSON.parse(jsonStr)
 
