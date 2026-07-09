@@ -17,8 +17,6 @@ const Li = ({ children }: { children: React.ReactNode }) => (
 export default function PrivacidadePage() {
   return (
     <LegalLayout title="Política de Privacidade">
-      <P><em>Esta é uma minuta de trabalho e deve ser revisada por advogado antes do uso comercial.</em></P>
-
       <P>
         Esta Política descreve como a <strong>{LEGAL_ENTITY.nomeFantasia}</strong>, marca operada por
         {' '}{LEGAL_ENTITY.razaoSocial} (CNPJ {LEGAL_ENTITY.cnpj}), trata dados pessoais, em conformidade

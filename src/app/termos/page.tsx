@@ -17,8 +17,6 @@ const Li = ({ children }: { children: React.ReactNode }) => (
 export default function TermosPage() {
   return (
     <LegalLayout title="Termos de Uso">
-      <P><em>Esta é uma minuta de trabalho e deve ser revisada por advogado antes do uso comercial.</em></P>
-
       <P>
         Estes Termos de Uso (&quot;Termos&quot;) regem o acesso e a utilização da plataforma
         <strong> {LEGAL_ENTITY.nomeFantasia}</strong> (&quot;Plataforma&quot;, &quot;Serviço&quot; ou &quot;App&quot;),
