@@ -90,6 +90,7 @@ export default function IAPage() {
   const access = useAccess()
   const supabase = createClient()
   const fileRef  = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
   const pasteZoneRef = useRef<HTMLDivElement>(null)
 
   const [children, setChildren]     = useState<Child[]>([])
@@ -393,6 +394,15 @@ export default function IAPage() {
       {/* Image upload */}
       {mode === 'image' && (
         <div className="animate-fade-up space-y-3">
+          {/* Tirar foto — abre a câmera do celular direto (não a galeria) */}
+          <button type="button" onClick={() => cameraRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[13px] text-sm font-bold transition-all active:scale-[0.98]"
+            style={{ background: 'linear-gradient(140deg,#FF8A6E,#FF6B5C)', color: '#fff', boxShadow: '0 4px 14px rgba(255,107,92,0.30)' }}>
+            <Camera size={16} /> Tirar foto
+          </button>
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={e => e.target.files && addFiles(e.target.files)} />
+
           <div className="cursor-pointer transition-all" style={{ ...CARD, textAlign: 'center', padding: '24px 20px', borderStyle: 'dashed', borderWidth: 2, borderColor: images.length > 0 ? 'rgba(61,102,65,0.40)' : 'rgba(61,102,65,0.22)' }}
             onClick={() => fileRef.current?.click()}
             onDrop={e => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
