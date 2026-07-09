@@ -418,7 +418,7 @@ export default function AppLayout({ children, sidebarChildren: initial, activeFa
         </aside>
 
         {/* ══ MAIN ══ */}
-        <main className="flex-1 min-w-0 md:ml-[256px] musgo-bg relative z-[1] flex flex-col main-container overflow-x-hidden"
+        <main className="flex-1 min-w-0 md:ml-[256px] musgo-bg relative z-[1] flex flex-col main-container overflow-x-hidden md:h-screen md:overflow-y-auto"
           style={{ paddingBottom:'env(safe-area-inset-bottom, 0px)' }}>
 
           {/* ── Mobile topbar: [hambúrguer] [logo] [IA] ── */}
