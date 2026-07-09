@@ -48,6 +48,8 @@ Ações que precisam ser feitas, mas SEM data específica de ocorrência:
 - Tarefas sem prazo definido
 - Lembretes gerais ("precisa renovar carteirinha", "comprar material")
 
+NÃO crie um reminder a partir de avisos/disclaimers genéricos de comunicados (ex: "este horário poderá sofrer alterações ao longo do ano letivo", "sujeito a mudanças", rodapés padrão de escola) — isso não é uma ação que o pai/mãe precisa tomar, é só um aviso legal do documento. Só crie reminder se houver uma ação real e específica pedida.
+
 **CATEGORIA 3 — documents (Documentos)**
 Documentos físicos ou digitais identificados no conteúdo:
 - Documentos de identidade (RG, CPF, certidão de nascimento, passaporte)
