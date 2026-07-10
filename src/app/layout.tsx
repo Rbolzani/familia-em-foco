@@ -3,6 +3,7 @@ import { DM_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistrar from "@/components/layout/ServiceWorkerRegistrar";
 import PwaInstallBanner from "@/components/layout/PwaInstallBanner";
+import CookieBanner from "@/components/ui/CookieBanner";
 
 // DM Sans — corpo e UI
 const dmSans = DM_Sans({
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
         <ServiceWorkerRegistrar />
         <PwaInstallBanner />
+        <CookieBanner />
         {children}
       </body>
     </html>

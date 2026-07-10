@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const securityHeaders = [
   {
@@ -32,7 +33,7 @@ const securityHeaders = [
       // Imagens: próprio domínio + Supabase Storage (avatars, documents)
       "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
       // Conexões: Supabase REST/Auth/Realtime + Anthropic + APIs externas
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.anthropic.com https://api.groq.com https://api.twilio.com https://graph.facebook.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://api.anthropic.com https://api.groq.com https://api.twilio.com https://graph.facebook.com https://*.ingest.sentry.io",
       // Frames: nenhum
       "frame-src 'none'",
       // Workers (Supabase Realtime usa SharedWorker em alguns ambientes)
@@ -59,4 +60,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "familia-em-dia",
+  project: "familia-em-dia",
+  silent: !process.env.CI,
+  sourcemaps: { disable: true },
+});
