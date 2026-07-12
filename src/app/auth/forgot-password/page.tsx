@@ -22,9 +22,11 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        // A rota /auth/callback troca o código por sessão e redireciona ao
-        // formulário de nova senha (que exige sessão de recuperação).
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+        // O link do e-mail é montado pelo TEMPLATE do Supabase apontando para
+        // /auth/confirm?token_hash=...&type=recovery&next=/auth/reset-password
+        // (verificação server-side, robusta no mobile). Este redirectTo fica só
+        // como fallback do {{ .RedirectTo }} caso o template use a variável.
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       })
       // Por segurança, não revelamos se o e-mail existe — sucesso genérico.
       if (error) { setError(`Erro: ${error.message}`); setLoading(false); return }
