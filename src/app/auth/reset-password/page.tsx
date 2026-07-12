@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import type { EmailOtpType } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react'
 
@@ -17,15 +18,29 @@ export default function ResetPasswordPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [done, setDone]         = useState(false)
-  // null = verificando sessão; true = tem sessão de recuperação; false = link inválido
-  const [hasSession, setHasSession] = useState<boolean | null>(null)
 
-  // O link de recuperação passa por /auth/callback, que cria a sessão antes de
-  // chegar aqui. Confirmamos que há sessão — senão, o link é inválido/expirado.
+  // Token do link de recuperação (vem na query string, ex.:
+  // /auth/reset-password?token_hash=...&type=recovery). NÃO verificamos aqui —
+  // só no submit — para que scanners de e-mail (SafeLinks do Outlook) que apenas
+  // abrem a URL (GET) não consumam o token de uso único antes do usuário.
+  const [tokenHash, setTokenHash] = useState<string | null>(null)
+  const [otpType, setOtpType]     = useState<EmailOtpType | null>(null)
+  const [checking, setChecking]   = useState(true)
+  const [validLink, setValidLink] = useState(false)
+
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const th = params.get('token_hash')
+    const ty = params.get('type') as EmailOtpType | null
+    if (th && ty) {
+      setTokenHash(th); setOtpType(ty); setValidLink(true); setChecking(false)
+      return
+    }
+    // Sem token na URL — só é válido se já houver sessão ativa (ex.: usuário
+    // logado querendo trocar a senha). Senão, link inválido/expirado.
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      setHasSession(!!data.user)
+      setValidLink(!!data.user); setChecking(false)
     })
   }, [])
 
@@ -36,10 +51,18 @@ export default function ResetPasswordPage() {
     setLoading(true); setError('')
     try {
       const supabase = createClient()
+      // Verifica o token de recuperação AGORA (no clique), garantindo que o
+      // token só é consumido por ação real do usuário — não por pré-scan.
+      if (tokenHash && otpType) {
+        const { error: vErr } = await supabase.auth.verifyOtp({ type: otpType, token_hash: tokenHash })
+        if (vErr) {
+          setError('Este link expirou ou já foi usado. Solicite um novo.')
+          setLoading(false); return
+        }
+      }
       const { error } = await supabase.auth.updateUser({ password })
       if (error) { setError(`Erro: ${error.message}`); setLoading(false); return }
       setDone(true)
-      // Redireciona ao app após breve confirmação visual
       setTimeout(() => { window.location.href = '/dashboard' }, 1500)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido'
@@ -61,12 +84,12 @@ export default function ResetPasswordPage() {
 
         <div className="rounded-[20px] p-8 animate-fade-up" style={CARD}>
 
-          {hasSession === null ? (
+          {checking ? (
             <div className="flex items-center justify-center py-8">
               <span className="w-6 h-6 border-2 border-green-200/40 rounded-full animate-spin"
                 style={{ borderTopColor: '#3D6641' }} />
             </div>
-          ) : hasSession === false ? (
+          ) : !validLink ? (
             <div className="text-center">
               <h2 style={{ fontFamily: 'var(--font-lora)', fontSize: 24, color: '#1A2B1C', lineHeight: 1.2 }}>
                 Link inválido ou expirado
@@ -150,7 +173,7 @@ export default function ResetPasswordPage() {
           )}
         </div>
 
-        {hasSession !== false && !done && (
+        {!checking && validLink && !done && (
           <p className="mt-5 text-center text-sm">
             <Link href="/auth/login" className="inline-flex items-center gap-1.5 font-bold transition-opacity hover:opacity-70"
               style={{ color: '#3D6641' }}>
