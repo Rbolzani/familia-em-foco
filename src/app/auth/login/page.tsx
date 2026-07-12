@@ -163,6 +163,12 @@ export default function LoginPage() {
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <div className="flex justify-end mt-2">
+                  <Link href="/auth/forgot-password" className="text-xs font-semibold transition-opacity hover:opacity-70"
+                    style={{ color: '#3D6641' }}>
+                    Esqueci minha senha
+                  </Link>
+                </div>
               </div>
 
               {error && (

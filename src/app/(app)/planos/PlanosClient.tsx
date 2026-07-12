@@ -322,7 +322,11 @@ export default function PlanosClient({
             // "Plano atual" só quando plano E intervalo batem. Mesmo plano com
             // intervalo diferente (mensal↔anual) deve oferecer botão de troca.
             const isCurrentPlan = currentPlan === plan.id && isActive && billingInterval === interval
-            const samePlanDiffInterval = currentPlan === plan.id && isActive && billingInterval !== interval
+            // "Mudar para mensal/anual" é troca de ciclo — só faz sentido para quem
+            // JÁ tem plano pago contratado (status active). Durante o trial o
+            // billingInterval é null, então usar isActive faria null !== 'month'
+            // disparar "Mudar para mensal" indevidamente. isPaidActive exclui trial.
+            const samePlanDiffInterval = currentPlan === plan.id && isPaidActive && billingInterval !== interval
             const planPrices = prices[plan.id as keyof PlanPrices]
             const price = interval === 'year' ? planPrices.yearly : planPrices.monthly
             const Icon  = plan.icon

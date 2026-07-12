@@ -69,7 +69,11 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
-  if (user && isAuthRoute) {
+  // Exceção: /auth/reset-password precisa ser acessível MESMO com sessão — o link
+  // de recuperação de senha loga o usuário (sessão temporária) e ele precisa
+  // chegar ao formulário para definir a nova senha. Sem essa exceção, o gate
+  // abaixo redirecionaria para /dashboard antes de ele trocar a senha.
+  if (user && isAuthRoute && pathname !== '/auth/reset-password') {
     const redirect = request.nextUrl.searchParams.get('redirect')
     const dest = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard'
     return NextResponse.redirect(new URL(dest, request.url))
