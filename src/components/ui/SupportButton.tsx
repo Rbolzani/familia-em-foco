@@ -60,8 +60,7 @@ export default function SupportButton() {
       )
       window.open(`https://wa.me/${number}?text=${msg}`, '_blank')
     } else {
-      const email   = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? ''
-      if (!email) return
+      const email   = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@familiaemdia.com.br'
       const subject = encodeURIComponent(`[Suporte] ${PLAN_LABELS[plan]} — ${userName}`)
       const body    = encodeURIComponent(
         `Olá equipe Família em Dia,\n\n` +
@@ -77,9 +76,11 @@ export default function SupportButton() {
   }
 
   const cfg = CFG[plan]
+  // E-mail sempre disponível (fallback fixo suporte@familiaemdia.com.br).
+  // WhatsApp depende da env var (número dedicado ainda a configurar).
   const hasConfig = cfg.channel === 'whatsapp'
     ? !!process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP
-    : !!process.env.NEXT_PUBLIC_SUPPORT_EMAIL
+    : true
 
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>

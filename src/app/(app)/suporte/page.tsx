@@ -1,6 +1,8 @@
 import { Headphones } from 'lucide-react'
 import SupportButton from '@/components/ui/SupportButton'
 
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@familiaemdia.com.br'
+
 export default function SuportePage() {
   return (
     <div style={{ minHeight:'100vh', background:'#F8F3EA', paddingBottom:'env(safe-area-inset-bottom, 24px)' }}>
@@ -40,6 +42,13 @@ export default function SuportePage() {
           </div>
 
           <SupportButton />
+
+          <p style={{ fontSize:12.5, color:'rgba(26,43,28,0.50)', margin:0, lineHeight:1.6 }}>
+            Prefere escrever direto? Envie um e-mail para{' '}
+            <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color:'#3D6641', fontWeight:600, textDecoration:'none' }}>
+              {SUPPORT_EMAIL}
+            </a>
+          </p>
         </div>
 
         {/* Card dicas */}

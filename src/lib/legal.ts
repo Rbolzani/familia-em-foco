@@ -9,6 +9,6 @@ export const LEGAL_ENTITY = {
   nomeFantasia: 'Família em Dia',
   cnpj: '49.111.234/0001-03',
   endereco: 'Rua Conde do Pinhal, nº 1.762, caixa postal nº 73, Jardim São Carlos, São Carlos-SP, CEP 13560-648',
-  email: 'contato@familiaemdia.com.br',
-  dpoEmail: '[E-MAIL DO ENCARREGADO/DPO A DEFINIR]', // ⚠️ criar e-mail dedicado antes do lançamento
+  email: 'suporte@familiaemdia.com.br',   // contato geral / suporte (caixa ativa via ImprovMX → Gmail)
+  dpoEmail: 'dpo@familiaemdia.com.br',    // Encarregado/DPO (LGPD) — caixa ativa via ImprovMX → Gmail
 }

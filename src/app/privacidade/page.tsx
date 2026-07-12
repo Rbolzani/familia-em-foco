@@ -139,7 +139,7 @@ export default function PrivacidadePage() {
       </P>
 
       <H>14. Contato</H>
-      <P>Encarregado (DPO): {LEGAL_ENTITY.dpoEmail} · Geral: {LEGAL_ENTITY.email}.</P>
+      <P>Encarregado (DPO): {LEGAL_ENTITY.dpoEmail} · Suporte: {LEGAL_ENTITY.email}.</P>
     </LegalLayout>
   )
 }
