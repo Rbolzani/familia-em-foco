@@ -233,7 +233,19 @@ WHATSAPP_ACCESS_TOKEN=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WHATSAPP_FROM=
+
+# Monitoramento de erros (Sentry) — pendente colar o DSN na Vercel
+NEXT_PUBLIC_SENTRY_DSN=
+
+# Suporte (OPCIONAIS — o código tem fallback fixo suporte@familiaemdia.com.br)
+# ⚠️ NEXT_PUBLIC_* congela no BUILD: mudar exige rebuild. Não setar com valor de teste.
+NEXT_PUBLIC_SUPPORT_EMAIL=
+NEXT_PUBLIC_SUPPORT_WHATSAPP=
 ```
+
+> **E-mail transacional (Resend):** a API key do Resend **não** é env var do Next.js — fica no **Supabase → Auth → SMTP** (envio dos e-mails de auth de `noreply@familiaemdia.com.br`) e no Gmail ("Enviar como" de `dpo@`/`suporte@`). Nunca commitar essa key.
+
+> **Caixas de e-mail de domínio:** `dpo@` e `suporte@familiaemdia.com.br` recebem via **ImprovMX** (encaminha p/ Gmail) e respondem via **Resend** (SMTP). Config de DNS toda no Registro.br. Ver mapa de contas no CLAUDE.md da raiz.
 
 ---
 

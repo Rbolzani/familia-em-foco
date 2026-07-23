@@ -61,6 +61,11 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
       template: { name: 'hello_world', language: { code: 'en_US' } },
     }
   } else if (templateName) {
+    // Parâmetros de template do WhatsApp NÃO podem conter quebras de linha,
+    // tabs ou 4+ espaços consecutivos (erro Meta 132018). Normaliza para uma
+    // única linha antes de injetar no {{1}}. O resumo diário já usa " · " como
+    // separador, então isto não altera o resultado dele — só protege textos com \n.
+    const safeText = body.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim()
     payload = {
       messaging_product: 'whatsapp',
       to,
@@ -68,7 +73,7 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
       template: {
         name: templateName,
         language: { code: 'pt_BR' },
-        components: [{ type: 'body', parameters: [{ type: 'text', text: body }] }],
+        components: [{ type: 'body', parameters: [{ type: 'text', text: safeText }] }],
       },
     }
   } else {
