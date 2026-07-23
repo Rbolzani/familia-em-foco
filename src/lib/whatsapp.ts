@@ -18,13 +18,29 @@ export function adminClient(): SupabaseClient {
 // Se WHATSAPP_TEMPLATE_NAME estiver configurado, envia via template aprovado
 // (obrigatório para mensagens iniciadas pelo negócio fora da janela de 24h).
 // Caso contrário envia texto simples (funciona em testes / janela aberta).
-export async function sendWhatsApp(to: string, body: string): Promise<{ ok: boolean; error?: string; metaResponse?: string }> {
+// Remove caracteres proibidos em parâmetro de template Meta (erro 132018):
+// quebras de linha, tabs e 4+ espaços consecutivos. Usar SEMPRE antes de
+// colocar um texto dentro de um {{n}} de template — nunca dentro do texto
+// fixo do template em si (esse pode e deve ter quebras de linha reais).
+function sanitizeParam(s: string): string {
+  return s.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim()
+}
+
+// `content` pode ser um texto único (fluxo antigo / mensagens avulsas, como o
+// aviso de grace) ou um array de seções (resumo diário — cada posição vira um
+// {{n}} do template, e as quebras de linha entre seções ficam no texto fixo
+// do template, não no parâmetro). Twilio e texto livre não têm essa restrição
+// e usam \n\n real entre seções.
+export async function sendWhatsApp(to: string, content: string | string[]): Promise<{ ok: boolean; error?: string; metaResponse?: string }> {
+  const isMultiPart = Array.isArray(content)
+
   // ── Twilio sandbox (teste) ─────────────────────────────────────────────────
   // Se TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN estiverem configurados, usa Twilio.
   // Ideal para validar entrega real antes de ter número de produção na Meta.
   const twilioSid   = process.env.TWILIO_ACCOUNT_SID
   const twilioToken = process.env.TWILIO_AUTH_TOKEN
   if (twilioSid && twilioToken) {
+    const body = isMultiPart ? content.join('\n\n') : content
     const params = new URLSearchParams({
       From: 'whatsapp:+14155238886',   // número sandbox fixo da Twilio
       To:   `whatsapp:+${to}`,
@@ -61,11 +77,8 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
       template: { name: 'hello_world', language: { code: 'en_US' } },
     }
   } else if (templateName) {
-    // Parâmetros de template do WhatsApp NÃO podem conter quebras de linha,
-    // tabs ou 4+ espaços consecutivos (erro Meta 132018). Normaliza para uma
-    // única linha antes de injetar no {{1}}. O resumo diário já usa " · " como
-    // separador, então isto não altera o resultado dele — só protege textos com \n.
-    const safeText = body.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim()
+    const parts = isMultiPart ? content : [content]
+    const parameters = parts.map(p => ({ type: 'text', text: sanitizeParam(p) }))
     payload = {
       messaging_product: 'whatsapp',
       to,
@@ -73,10 +86,11 @@ export async function sendWhatsApp(to: string, body: string): Promise<{ ok: bool
       template: {
         name: templateName,
         language: { code: 'pt_BR' },
-        components: [{ type: 'body', parameters: [{ type: 'text', text: safeText }] }],
+        components: [{ type: 'body', parameters }],
       },
     }
   } else {
+    const body = isMultiPart ? content.join('\n\n') : content
     payload = { messaging_product: 'whatsapp', to, type: 'text', text: { body } }
   }
 
@@ -116,9 +130,17 @@ interface SummaryActivity {
   child: { name: string } | null
 }
 
+// Resumo diário em 4 seções — cada posição de `params` vira um {{n}} do
+// template Meta; as quebras de linha entre seções ficam no texto fixo do
+// template (ver painel-projeto / CLAUDE.md para o corpo aprovado).
+export interface DailySummary {
+  full: string        // versão texto corrido, para Twilio/texto livre (usa \n\n real)
+  params: [string, string, string, string]  // [hoje, próximos 7 dias, documentos, vacinas]
+}
+
 // ── Monta o resumo do dia + próximos 7 dias para um usuário ─────────────────
 // Retorna null se o usuário não tiver nenhuma atividade no período.
-export async function buildDailySummary(admin: SupabaseClient, userId: string): Promise<string | null> {
+export async function buildDailySummary(admin: SupabaseClient, userId: string): Promise<DailySummary | null> {
   // Usuários da família (o próprio + parceiros)
   const { data: myMemberships } = await admin
     .from('family_members')
@@ -196,11 +218,12 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   // Free não recebe a agenda; sem atividades também não há o que enviar.
   if (!familyIsPaid || activities.length === 0) return null
 
-  // Blocos de nível superior (header, seções) juntam-se com "·"; dentro de uma
-  // seção, cada atividade/item (horário ou data diferente) separa-se com "|".
-  const blocks: string[] = []
-  blocks.push(`🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`)
+  // Cada seção vira uma linha própria no WhatsApp: no template, o texto fixo
+  // já tem a quebra de linha entre seções — aqui só juntamos os itens DENTRO
+  // de cada seção com " | " (o parâmetro do template não pode ter \n real).
+  const header = `🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`
 
+  let hojeParam: string
   if (todayActs.length > 0) {
     const items = todayActs.map(a => {
       const emoji = CAT_EMOJI[a.category] ?? '•'
@@ -213,18 +236,19 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
       if (busca) parts.push(`🏠 busca: ${busca}`)
       return parts.join(' · ')
     })
-    blocks.push(`*Hoje* · ${items.join(' | ')}`)
+    hojeParam = items.join(' | ')
   } else {
-    blocks.push('*Hoje* — nenhuma atividade. Aproveite! 💚')
+    hojeParam = 'Nenhuma atividade hoje. Aproveite! 💚'
   }
 
+  let proximosParam = 'Nenhuma atividade nos próximos 7 dias.'
   if (nextActs.length > 0) {
     const items = nextActs.slice(0, 8).map(a => {
       const childName = a.child?.name ? ` (${a.child.name})` : ''
-      return `• ${fmtShort(a.date)} — ${a.title}${childName}`
+      return `${fmtShort(a.date)} — ${a.title}${childName}`
     })
-    if (nextActs.length > 8) items.push(`… e mais ${nextActs.length - 8} atividades no app`)
-    blocks.push(`*Próximos 7 dias* · ${items.join(' | ')}`)
+    if (nextActs.length > 8) items.push(`… e mais ${nextActs.length - 8} no app`)
+    proximosParam = items.join(' | ')
   }
 
   // Documentos vencidos ou vencendo nos próximos 15 dias
@@ -238,6 +262,7 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     ? await docExpiryQuery.in('family_id', familyIds)
     : await docExpiryQuery.eq('user_id', userId)
 
+  let documentosParam = 'Nenhum vencimento nos próximos 15 dias.'
   if (expiringDocs && expiringDocs.length > 0) {
     const items = expiringDocs.map(d => {
       const childName = (d.child as unknown as { name: string } | null)?.name
@@ -248,9 +273,9 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
         : daysLeft === 1 ? 'vence amanhã'
         : `vence em ${daysLeft} dias`
       const who = childName ? ` (${childName})` : ''
-      return `📄 ${d.title}${who} — ${status}`
+      return `${d.title}${who} — ${status}`
     })
-    blocks.push(`*Documentos — vencimentos* · ${items.join(' | ')}`)
+    documentosParam = items.join(' | ')
   }
 
   // Vacinas com próxima dose vencida ou nos próximos 30 dias
@@ -277,19 +302,25 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
         : daysLeft === 1 ? 'amanhã'
         : `em ${daysLeft} dias`
       const who = childName ? ` (${childName})` : ''
-      vaccineLines.push(`💉 ${v.nome}${who} — dose ${status}`)
+      vaccineLines.push(`${v.nome}${who} — dose ${status}`)
     }
   }
-  if (vaccineLines.length > 0) {
-    blocks.push(`*Vacinas — doses próximas* · ${vaccineLines.join(' | ')}`)
+  const vacinasParam = vaccineLines.length > 0
+    ? vaccineLines.join(' | ')
+    : 'Nenhuma dose prevista nos próximos 30 dias.'
+
+  const full = [
+    `${header}\n\n📆 Hoje\n${hojeParam}`,
+    `🗓️ Próximos 7 dias\n${proximosParam}`,
+    `📄 Documentos — vencimentos\n${documentosParam}`,
+    `💉 Vacinas — doses próximas\n${vacinasParam}`,
+    '💚 Família em Dia',
+  ].join('\n\n')
+
+  return {
+    full,
+    params: [`${header} · ${hojeParam}`, proximosParam, documentosParam, vacinasParam],
   }
-
-  blocks.push('💚 _Família em Dia_')
-
-  // Templates aprovados do WhatsApp não permitem quebra de linha no parâmetro
-  // dinâmico — "·" liga rótulos/partes da mesma atividade, "|" só separa
-  // atividades/itens diferentes (horários ou datas distintos).
-  return blocks.join(' · ')
 }
 
 // ── Número de WhatsApp do usuário ────────────────────────────────────────────

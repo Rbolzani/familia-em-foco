@@ -20,9 +20,14 @@ export async function POST() {
 
   const admin = adminClient()
   const summary = await buildDailySummary(admin, user.id)
-  const body = summary ?? '🌿 *Família em Dia* — teste de conexão OK!\nNenhuma atividade nos próximos 7 dias.'
+  const params: [string, string, string, string] = summary?.params ?? [
+    '🌿 *Família em Dia* — teste de conexão OK!',
+    'Nenhuma atividade nos próximos 7 dias.',
+    'Nenhum vencimento nos próximos 15 dias.',
+    'Nenhuma dose prevista nos próximos 30 dias.',
+  ]
 
-  const result = await sendWhatsApp(settings.whatsapp_number, body)
+  const result = await sendWhatsApp(settings.whatsapp_number, params)
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 502 })
   }
