@@ -13,12 +13,23 @@ export const maxDuration = 60
 const MAX_FILE_BYTES = 8 * 1024 * 1024
 const MAX_TEXT_CHARS = 12_000
 
-const WEEKDAY_NAMES = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
-const today = new Date()
-const todayISO = today.toISOString().split('T')[0]
-const todayWeekday = WEEKDAY_NAMES[today.getDay()]
+// Data "de hoje" no fuso de Brasília, calculada POR REQUISIÇÃO. Dois motivos:
+// (1) o servidor da Vercel roda em UTC — toISOString() daria o dia errado à
+//     noite no Brasil (após 21h BRT, em UTC já é o dia seguinte), fazendo a IA
+//     entender "amanhã" como +2 dias; (2) se fosse const de módulo, a data
+//     ficaria congelada no cold start. 'en-CA' formata como YYYY-MM-DD; 'pt-BR'
+//     long dá o dia da semana no mesmo formato de WEEKDAY_NAMES.
+function spTodayISO(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+}
+function spTodayWeekday(): string {
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long' }).format(new Date())
+}
 
-const PROMPT = `Você é um assistente inteligente que analisa conteúdo enviado por pais e classifica automaticamente em três categorias distintas.
+function buildPrompt(): string {
+  const todayISO = spTodayISO()
+  const todayWeekday = spTodayWeekday()
+  return `Você é um assistente inteligente que analisa conteúdo enviado por pais e classifica automaticamente em três categorias distintas.
 
 Hoje é: ${todayISO} (${todayWeekday})
 
@@ -125,6 +136,7 @@ Regras para documents:
 
 Se não houver itens de uma categoria, retorne array vazio [].
 Retorne apenas o JSON, sem texto antes ou depois.`
+}
 
 // Quantas semanas materializar para itens de grade de horário (recurring:
 // true) — a tabela activities não tem conceito de recorrência, então cada
@@ -242,7 +254,7 @@ export async function POST(req: NextRequest) {
         ...(isScheduleGrid ? { thinking: { type: 'enabled' as const, budget_tokens: 4000 } } : {}),
         messages: [{
           role: 'user',
-          content: [imageBlock, { type: 'text', text: PROMPT }],
+          content: [imageBlock, { type: 'text', text: buildPrompt() }],
         }],
       })
     } else {
@@ -251,7 +263,7 @@ export async function POST(req: NextRequest) {
         max_tokens: 8192,
         messages: [{
           role: 'user',
-          content: `Conteúdo para analisar:\n\n${text}\n\n${PROMPT}`,
+          content: `Conteúdo para analisar:\n\n${text}\n\n${buildPrompt()}`,
         }],
       })
     }
