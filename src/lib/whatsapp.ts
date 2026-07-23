@@ -135,7 +135,7 @@ interface SummaryActivity {
 // template (ver painel-projeto / CLAUDE.md para o corpo aprovado).
 export interface DailySummary {
   full: string        // versão texto corrido, para Twilio/texto livre (usa \n\n real)
-  params: [string, string, string, string]  // [hoje, próximos 7 dias, documentos, vacinas]
+  params: [string, string, string, string, string]  // [data, hoje, próximos 7 dias, documentos, vacinas]
 }
 
 // ── Monta o resumo do dia + próximos 7 dias para um usuário ─────────────────
@@ -221,7 +221,7 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
   // Cada seção vira uma linha própria no WhatsApp: no template, o texto fixo
   // já tem a quebra de linha entre seções — aqui só juntamos os itens DENTRO
   // de cada seção com " | " (o parâmetro do template não pode ter \n real).
-  const header = `🌿 *Bom dia! Resumo da família* — ${fmtShort(today)}`
+  const dataParam = fmtShort(today)
 
   let hojeParam: string
   if (todayActs.length > 0) {
@@ -310,16 +310,16 @@ export async function buildDailySummary(admin: SupabaseClient, userId: string): 
     : 'Nenhuma dose prevista nos próximos 30 dias.'
 
   const full = [
-    `${header}\n\n📆 Hoje\n${hojeParam}`,
-    `🗓️ Próximos 7 dias\n${proximosParam}`,
+    `🌿 Bom dia! Resumo da Família — ${dataParam}`,
+    `🔥 Hoje\n${hojeParam}`,
+    `📅 Próximos 7 dias\n${proximosParam}`,
     `📄 Documentos — vencimentos\n${documentosParam}`,
-    `💉 Vacinas — doses próximas\n${vacinasParam}`,
-    '💚 Família em Dia',
+    `💉 Vacinas — lembretes\n${vacinasParam}`,
   ].join('\n\n')
 
   return {
     full,
-    params: [`${header} · ${hojeParam}`, proximosParam, documentosParam, vacinasParam],
+    params: [dataParam, hojeParam, proximosParam, documentosParam, vacinasParam],
   }
 }
 
