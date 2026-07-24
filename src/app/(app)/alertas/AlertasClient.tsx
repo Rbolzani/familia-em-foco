@@ -15,6 +15,9 @@ interface Props {
   whatsappBlocked?: boolean
 }
 
+const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'))
+const MINUTES = ['00', '15', '30', '45']
+
 export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFromCadastro, twilioMode, twilioKeyword, whatsappBlocked }: Props) {
   const supabase = createClient()
 
@@ -28,7 +31,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFr
     return raw.replace(/\D/g, '')
   }
 
-  async function saveWhatsApp(enabledOverride?: boolean) {
+  async function saveWhatsApp(enabledOverride?: boolean, timeOverride?: string) {
     const digits = normalizePhone(waNumber)
     const enabled = enabledOverride ?? waEnabled
     if (enabled && (digits.length < 12 || digits.length > 14)) {
@@ -42,7 +45,7 @@ export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFr
         user_id: userId,
         whatsapp_number: digits || null,
         daily_summary_enabled: enabled,
-        summary_time: waTime,
+        summary_time: timeOverride ?? waTime,
         updated_at: new Date().toISOString(),
       })
     setWaSaving(false)
@@ -259,18 +262,36 @@ export default function AlertasClient({ userId, userEmail, whatsapp, prefilledFr
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1A2B1C' }}>Horário do envio</div>
             <div style={{ fontSize: 11.5, color: 'rgba(26,43,28,0.45)' }}>
-              Fuso de Brasília · enviado a cada 15 min mais próximos
+              Fuso de Brasília · horários de 15 em 15 minutos
             </div>
           </div>
-          <input
-            type="time"
-            value={waTime}
-            step={900}
-            onChange={e => { setWaTime(e.target.value); }}
-            onBlur={() => saveWhatsApp()}
-            className="input-field"
-            style={{ width: 110, flexShrink: 0, textAlign: 'center', fontWeight: 700 }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <select
+              value={waTime.slice(0, 2)}
+              onChange={e => {
+                const next = `${e.target.value}:${waTime.slice(3, 5)}`
+                setWaTime(next)
+                saveWhatsApp(undefined, next)
+              }}
+              className="input-field"
+              style={{ width: 62, textAlign: 'center', fontWeight: 700, paddingLeft: 4, paddingRight: 4 }}
+            >
+              {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+            <span style={{ fontWeight: 700, color: 'rgba(26,43,28,0.45)' }}>:</span>
+            <select
+              value={waTime.slice(3, 5)}
+              onChange={e => {
+                const next = `${waTime.slice(0, 2)}:${e.target.value}`
+                setWaTime(next)
+                saveWhatsApp(undefined, next)
+              }}
+              className="input-field"
+              style={{ width: 62, textAlign: 'center', fontWeight: 700, paddingLeft: 4, paddingRight: 4 }}
+            >
+              {MINUTES.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Teste */}
